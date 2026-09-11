@@ -419,7 +419,7 @@ func TestSandboxList(t *testing.T) {
 	client, cleanup := setupSandboxTest(t, mock)
 	defer cleanup()
 
-	result, err := client.List(context.Background(), "default")
+	result, err := client.ListAll(context.Background(), "default")
 
 	require.NoError(t, err)
 	assert.Len(t, result, 2)
@@ -430,11 +430,28 @@ func TestSandboxList_Empty(t *testing.T) {
 	client, cleanup := setupSandboxTest(t, mock)
 	defer cleanup()
 
-	result, err := client.List(context.Background(), "default")
+	result, err := client.ListAll(context.Background(), "default")
 
 	require.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.Empty(t, result)
+}
+
+func TestSandboxListAll_SelectsAllWorkspaces(t *testing.T) {
+	mock := newMockSandboxServer()
+	client, cleanup := setupSandboxTest(t, mock)
+	defer cleanup()
+
+	sandboxes, err := client.ListAll(context.Background(), "", ListOptions{
+		PageSize:      10,
+		AllWorkspaces: true,
+	})
+
+	require.NoError(t, err)
+	assert.Empty(t, sandboxes)
+	require.Len(t, mock.listRequests, 1)
+	assert.Equal(t, int32(10), mock.listRequests[0].GetPageSize())
+	assert.NotNil(t, mock.listRequests[0].GetWorkspaceScope().GetAllWorkspaces())
 }
 
 func TestSandboxList_WithOptions(t *testing.T) {
@@ -446,7 +463,7 @@ func TestSandboxList_WithOptions(t *testing.T) {
 	client, cleanup := setupSandboxTest(t, mock)
 	defer cleanup()
 
-	result, err := client.List(context.Background(), "default", ListOptions{PageSize: 10})
+	result, err := client.ListAll(context.Background(), "default", ListOptions{PageSize: 10})
 
 	require.NoError(t, err)
 	assert.Len(t, result, 1)
@@ -461,7 +478,7 @@ func TestSandboxList_FollowsContinuationTokens(t *testing.T) {
 	client, cleanup := setupSandboxTest(t, mock)
 	defer cleanup()
 
-	result, err := client.List(context.Background(), "default", ListOptions{
+	result, err := client.ListAll(context.Background(), "default", ListOptions{
 		PageSize:      1,
 		LabelSelector: "team=core",
 	})
