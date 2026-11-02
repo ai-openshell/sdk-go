@@ -129,7 +129,7 @@ const loginHint = "run `openshell gateway login prod`"
 
 func TestDiskTokenSource_ValidBundle(t *testing.T) {
 	dir := t.TempDir()
-	fixture, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "conformance", "oidc-token-bundle.json"))
+	fixture, err := os.ReadFile(filepath.Join("testdata", "oidc-token-bundle.json"))
 	require.NoError(t, err)
 	writeFile(t, dir, oidctoken.FileName, string(fixture))
 

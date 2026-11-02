@@ -57,7 +57,7 @@ type clientCredentialsFixture struct {
 
 func loadClientCredentialsFixture(t *testing.T) clientCredentialsFixture {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "conformance", "oauth-client-credentials.json"))
+	data, err := os.ReadFile(filepath.Join("testdata", "oauth-client-credentials.json"))
 	require.NoError(t, err)
 	var fixture clientCredentialsFixture
 	require.NoError(t, json.Unmarshal(data, &fixture))

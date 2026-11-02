@@ -55,11 +55,56 @@ run = "go build ./..."
 
 [tasks.ci]
 description = "Run full CI pipeline"
-depends = ["format:check", "lint", "build", "test", "proto:check", "docs:check"]
+depends = ["format:check", "lint", "build", "test", "proto:check", "conformance:check", "docs:check"]
 
 [tasks."core:version"]
 description = "Print the core release tag the bindings are pinned to"
 run = "yq -r '.inputs[0].tag' buf.gen.yaml"
+
+[tasks."conformance:check"]
+description = "Verify vendored conformance fixtures match core at the pinned tag"
+run = """
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Shared cross-SDK fixtures live in core's sdk/conformance/. A copy sits next
+# to the tests that read it, and must match core at the pinned tag.
+TAG=$(yq -r '.inputs[0].tag' buf.gen.yaml)
+BASE="https://raw.githubusercontent.com/NVIDIA/OpenShell/$TAG/sdk/conformance"
+FAILED=0
+TMP=$(mktemp)
+trap 'rm -f "$TMP"' EXIT
+
+for local in \
+  openshell/v1/oidc/testdata/oauth-client-credentials.json \
+  openshell/v1/oidc/testdata/oidc-token-bundle.json \
+  openshell/v1/gateway/testdata/oidc-token-bundle.json; do
+  name=$(basename "$local")
+  status=$(curl -sS -o "$TMP" -w '%{http_code}' "$BASE/$name")
+  if [ "$status" = 404 ]; then
+    # Vendored from core main before the pinned tag had it; enforced from
+    # the first pin that contains the file.
+    echo "WARNING: core $TAG has no sdk/conformance/$name yet, skipping $local"
+    continue
+  fi
+  if [ "$status" != 200 ]; then
+    echo "ERROR: fetching $BASE/$name returned HTTP $status"
+    FAILED=1
+    continue
+  fi
+  if ! diff -u "$TMP" "$local"; then
+    echo "ERROR: $local differs from core $TAG sdk/conformance/$name"
+    FAILED=1
+  fi
+done
+
+if [ "$FAILED" -ne 0 ]; then
+  echo "Copy the fixture from core at $TAG and adjust the tests."
+  exit 1
+fi
+
+echo "Conformance check passed: fixtures match core $TAG."
+"""
 
 [tasks."docs:check"]
 description = "Verify every public package has a docs page"

@@ -20,7 +20,7 @@ import (
 
 func loadOIDCTokenFixture(t *testing.T) []byte {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "conformance", "oidc-token-bundle.json"))
+	data, err := os.ReadFile(filepath.Join("testdata", "oidc-token-bundle.json"))
 	require.NoError(t, err)
 	return data
 }
