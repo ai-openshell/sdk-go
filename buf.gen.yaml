@@ -1,19 +1,25 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Code generation for the Go SDK. buf compiles the proto module with its own
-# compiler and runs protoc-gen-go / protoc-gen-go-grpc from mise-managed
-# binaries. The public SDK entry points are declared here; imported schemas
-# are included automatically, so their canonical dependency closure is
-# generated without duplicating a filename list in the generation scripts.
+# Code generation for the Go SDK. buf fetches core's proto/ directory at the
+# pinned release tag and runs protoc-gen-go / protoc-gen-go-grpc from
+# mise-managed binaries. inputs[0].tag is the single core pin: the core-watch
+# automation changes only that line, and `mise run core:version` prints it.
+# Imported schemas are included automatically, so their dependency closure is
+# generated without listing every file.
 version: v2
 
 inputs:
-  - proto_file: proto/openshell.proto
+  - git_repo: https://github.com/NVIDIA/OpenShell.git
+    tag: v0.1.6
+    depth: 1
+    subdir: proto
+    paths:
+      - openshell.proto
 
 plugins:
   - local: protoc-gen-go
-    out: sdk/go
+    out: .
     include_imports: true
     opt:
       - module=github.com/ai-openshell/sdk-go
@@ -22,7 +28,7 @@ plugins:
       - Msandbox.proto=github.com/ai-openshell/sdk-go/proto/sandboxv1
       - Moptions.proto=github.com/ai-openshell/sdk-go/proto/optionsv1
   - local: protoc-gen-go-grpc
-    out: sdk/go
+    out: .
     include_imports: true
     opt:
       - module=github.com/ai-openshell/sdk-go
