@@ -20,3 +20,10 @@ The migration is tracked in NVIDIA/OpenShell#5031.
 3. `verify-tree.sh <fresh-core-clone> <freeze-sha> <out-dir> HEAD` must exit 0.
 4. Push `<out-dir>` `main` as `import/history`, merge it into a branch from `main` with `--no-ff --allow-unrelated-histories`, resolve `README.md` in favor of the SDK's, and open the import PR.
 5. Merge the import PR with a merge commit, never squash: the merge commit is what carries the history.
+
+## Porting procedure
+
+1. From the root of a clean clone: `hack/migration/port-pr.sh <core-pr-number>`. It builds `port/<n>` from `origin/main` and prints the PR body. Nothing is pushed yet.
+2. On a conflict, resolve it and `git add` the files. Then run `port-pr.sh --fix-paths <n>`, `git am --continue`, and `port-pr.sh --continue <n>`.
+3. Review the branch and the body, then run `port-pr.sh --continue --push <n>` to push and open the PR.
+4. Port only the top PR of a stack. A PR that contains another PR's commits brings them along.
