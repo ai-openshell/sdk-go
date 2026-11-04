@@ -79,10 +79,7 @@ FAILED=0
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
 
-for local in \
-  openshell/v1/oidc/testdata/oauth-client-credentials.json \
-  openshell/v1/oidc/testdata/oidc-token-bundle.json \
-  openshell/v1/gateway/testdata/oidc-token-bundle.json; do
+for local in $(grep -v '^#' hack/conformance-fixtures.txt); do
   name=$(basename "$local")
   status=$(curl -sS -o "$TMP" -w '%{http_code}' "$BASE/$name")
   if [ "$status" = 404 ]; then
