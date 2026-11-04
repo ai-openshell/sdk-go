@@ -236,3 +236,15 @@ run = [
 [tasks."docs:build"]
 description = "Build the mdbook docs into docs/book"
 run = "mdbook build docs"
+
+[tasks."core:tags"]
+description = "List core release tags newer than the pin (newest pre-release only, --all for every tag)"
+run = "hack/automation/core-tags.sh"
+
+[tasks."core:bump"]
+description = "Open the update proposal for a core tag: mise run core:bump -- <tag> [--dry-run]"
+run = "hack/automation/open-bump-pr.sh"
+
+[tasks."release:tag"]
+description = "Tag the lockstep SDK release for a stable pin (--dry-run prints what it would do)"
+run = "hack/automation/tag-release.sh"
