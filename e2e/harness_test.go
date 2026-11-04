@@ -59,6 +59,11 @@ func TestMain(m *testing.M) {
 		_ = sharedClient.Close()
 		os.Exit(1)
 	}
+	if err := importTestProfiles(sharedClient); err != nil {
+		fmt.Fprintf(os.Stderr, "e2e: %v\n", err)
+		_ = sharedClient.Close()
+		os.Exit(1)
+	}
 
 	code := m.Run()
 	_ = sharedClient.Close()
