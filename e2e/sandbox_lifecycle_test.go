@@ -112,7 +112,7 @@ func TestSandboxCreateDuplicateAlreadyExists(t *testing.T) {
 	defer cancel()
 
 	name := uniqueName("sb-dup")
-	sandbox, err := client.Sandboxes().Create(ctx, "default", name, &v1.SandboxSpec{}, nil)
+	sandbox, err := client.Sandboxes().Create(ctx, "default", name, &v1.SandboxSpec{})
 	require.NoError(t, err)
 	requireSandboxResponse(t, sandbox, "default", name)
 	t.Cleanup(func() {
@@ -122,7 +122,7 @@ func TestSandboxCreateDuplicateAlreadyExists(t *testing.T) {
 		require.NoError(t, err)
 	})
 
-	_, err = client.Sandboxes().Create(ctx, "default", name, &v1.SandboxSpec{}, nil)
+	_, err = client.Sandboxes().Create(ctx, "default", name, &v1.SandboxSpec{})
 	require.True(t, v1.IsAlreadyExists(err), "expected AlreadyExists, got %v", err)
 }
 
@@ -149,7 +149,7 @@ func TestSandboxListScopedAndAllWorkspaces(t *testing.T) {
 	})
 
 	defaultName := uniqueName("ls-def")
-	defaultSandbox, err := client.Sandboxes().Create(ctx, "default", defaultName, &v1.SandboxSpec{}, nil)
+	defaultSandbox, err := client.Sandboxes().Create(ctx, "default", defaultName, &v1.SandboxSpec{})
 	require.NoError(t, err)
 	requireSandboxResponse(t, defaultSandbox, "default", defaultName)
 	t.Cleanup(func() {
@@ -159,7 +159,7 @@ func TestSandboxListScopedAndAllWorkspaces(t *testing.T) {
 	})
 
 	otherName := uniqueName("ls-oth")
-	otherSandbox, err := client.Sandboxes().Create(ctx, otherWorkspace, otherName, &v1.SandboxSpec{}, nil)
+	otherSandbox, err := client.Sandboxes().Create(ctx, otherWorkspace, otherName, &v1.SandboxSpec{})
 	require.NoError(t, err)
 	requireSandboxResponse(t, otherSandbox, otherWorkspace, otherName)
 	t.Cleanup(func() {
@@ -198,7 +198,7 @@ func TestSandboxLabelsAndSelectors(t *testing.T) {
 	primarySelector := fmt.Sprintf("aiq-test=%s,role=primary", suffix)
 
 	refA, err := client.Sandboxes().Create(ctx, "default", jobA, &v1.SandboxSpec{},
-		map[string]string{"aiq-test": suffix, "role": "primary"})
+		v1.WithLabels(map[string]string{"aiq-test": suffix, "role": "primary"}))
 	require.NoError(t, err)
 	requireSandboxResponse(t, refA, "default", jobA)
 	deletedA := false
@@ -212,7 +212,7 @@ func TestSandboxLabelsAndSelectors(t *testing.T) {
 	})
 
 	refB, err := client.Sandboxes().Create(ctx, "default", jobB, &v1.SandboxSpec{},
-		map[string]string{"aiq-test": suffix, "role": "secondary"})
+		v1.WithLabels(map[string]string{"aiq-test": suffix, "role": "secondary"}))
 	require.NoError(t, err)
 	requireSandboxResponse(t, refB, "default", jobB)
 	deletedB := false
