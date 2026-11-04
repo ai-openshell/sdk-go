@@ -11,6 +11,7 @@ import (
 	"time"
 
 	v1 "github.com/ai-openshell/sdk-go/openshell/v1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // The gateway ships no provider profiles; every profile a provider uses must
@@ -75,4 +76,26 @@ func importTestProfiles(client *v1.Client) error {
 		return fmt.Errorf("import provider profiles: rejected: %+v", res.Diagnostics)
 	}
 	return nil
+}
+
+// boundCredentialPolicy is defaultPolicy plus one endpoint bound to the
+// provider's credentials. The fixture profiles declare no endpoints, and the
+// gateway withholds credentials of such profiles unless the sandbox policy
+// binds them explicitly (core's
+// test_endpointless_profile_credentials_use_explicit_policy_binding).
+func boundCredentialPolicy(provider, host string) *v1.SandboxPolicy {
+	p := defaultPolicy()
+	p.NetworkPolicies = map[string]v1.NetworkPolicyRule{
+		"e2e_credentials": {
+			Name: "e2e_credentials",
+			Endpoints: []v1.PolicyNetworkEndpoint{{
+				Host:              host,
+				Port:              443,
+				Protocol:          "rest",
+				Access:            v1.NetworkAccessPresetFull,
+				CredentialBinding: &types.NetworkCredentialBinding{Provider: provider},
+			}},
+		},
+	}
+	return p
 }

@@ -29,7 +29,7 @@ func TestSandboxCRUDAndExec(t *testing.T) {
 	sb, err := client.Sandboxes().Create(ctx, "default", name, &v1.SandboxSpec{
 		Policy:  policy,
 		Command: []string{"sleep", "infinity"},
-	}, nil)
+	})
 	require.NoError(t, err)
 	t.Cleanup(func() {
 		cleanupCtx, cleanupCancel := context.WithTimeout(context.Background(), 2*time.Minute)

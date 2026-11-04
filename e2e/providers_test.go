@@ -137,10 +137,10 @@ func TestProviderCredentialsAvailableAsEnvVar(t *testing.T) {
 
 	sandboxName := uniqueName("sb-penv")
 	sandbox, err := client.Sandboxes().Create(ctx, "default", sandboxName, &v1.SandboxSpec{
-		Policy:    defaultPolicy(),
+		Policy:    boundCredentialPolicy(providerName, "api.anthropic.com"),
 		Providers: []string{providerName},
 		Command:   []string{"sleep", "infinity"},
-	}, nil)
+	})
 	require.NoError(t, err)
 	requireSandboxResponse(t, sandbox, "default", sandboxName)
 	t.Cleanup(func() {
@@ -205,9 +205,9 @@ func TestAttachDetachProviderUpdatesCredentials(t *testing.T) {
 
 	sandboxName := uniqueName("sb-patt")
 	sandbox, err := client.Sandboxes().Create(ctx, "default", sandboxName, &v1.SandboxSpec{
-		Policy:  defaultPolicy(),
+		Policy:  boundCredentialPolicy(providerName, "integrate.api.nvidia.com"),
 		Command: []string{"sleep", "infinity"},
-	}, nil)
+	})
 	require.NoError(t, err)
 	requireSandboxResponse(t, sandbox, "default", sandboxName)
 	t.Cleanup(func() {
