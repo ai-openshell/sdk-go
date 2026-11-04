@@ -1,10 +1,10 @@
 # OpenShell SDK for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/NVIDIA/OpenShell/sdk/go.svg)](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](../../LICENSE)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ai-openshell/sdk-go.svg)](https://pkg.go.dev/github.com/ai-openshell/sdk-go)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 
 > [!IMPORTANT]
-> **[Read the full documentation](https://ro14nd.de/openshell-sdk-go/)** for guides, API reference with gRPC mapping, and testing patterns.
+> **[Read the full documentation](https://ai-openshell.github.io/sdk-go/)** for guides, API reference with gRPC mapping, and testing patterns.
 
 A Go SDK for interacting with [OpenShell](https://github.com/NVIDIA/OpenShell)
 servers, providing idiomatic Go bindings for shell session management, command
@@ -40,8 +40,12 @@ patterns will look familiar:
 
 ## Quick Start
 
+```bash
+go get github.com/ai-openshell/sdk-go@latest
+```
+
 ```go
-import v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
+import v1 "github.com/ai-openshell/sdk-go/openshell/v1"
 
 // Connect to a gateway
 client, err := v1.NewClient(v1.Config{
@@ -129,7 +133,7 @@ defer client.Close()
 Concurrent callers share a single refresh call. If the token source fails, the
 SDK falls back to the cached token with a logged warning until that token
 expires; after that, RPCs fail with the refresh error. See the
-[Auth](https://ro14nd.de/openshell-sdk-go/api/auth.html) docs for details.
+[Auth](https://ai-openshell.github.io/sdk-go/api/auth.html) docs for details.
 
 ### With edge proxy headers
 
@@ -153,7 +157,7 @@ client, err := v1.NewClient(v1.Config{
 For Cloudflare Access, use the convenience constructor in the `edge` package:
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/edge"
+import "github.com/ai-openshell/sdk-go/openshell/v1/edge"
 
 auth, err := edge.CloudflareAccess(base, os.Getenv("CF_ACCESS_TOKEN"))
 ```
@@ -183,7 +187,7 @@ The `oidc` package provides gateway-aware OIDC authentication with browser,
 keyboard, device code, and client credentials flows:
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc"
+import "github.com/ai-openshell/sdk-go/openshell/v1/oidc"
 
 // Gateway-aware login: reads OIDC config from gateway metadata
 token, err := oidc.Login(ctx, "my-gateway")
@@ -236,9 +240,24 @@ You can use explicit `WithIssuer`, `WithClientID`, `WithScopes`, and
 `WithAudience` options instead of `WithGateway`. The provider repeats the grant
 before expiry and never writes the secret or access token to disk.
 
-See the [oidc package docs](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc) for all options and flows.
+See the [oidc package docs](https://pkg.go.dev/github.com/ai-openshell/sdk-go/openshell/v1/oidc) for all options and flows.
 
-See the [Getting Started](https://ro14nd.de/openshell-sdk-go/getting-started.html) guide for the full walkthrough.
+See the [Getting Started](https://ai-openshell.github.io/sdk-go/getting-started.html) guide for the full walkthrough.
+
+## Supported core versions
+
+The bindings are generated from OpenShell core v0.1.7 (`mise run core:version` prints the pin). SDK releases follow core releases, so SDK `vX.Y.Z` works with core `vX.Y.Z`.
+
+## Migrating from `github.com/NVIDIA/OpenShell/sdk/go`
+
+The SDK moved out of the OpenShell repository into its own module. Packages and APIs are unchanged, only the module path is new. Rewrite the imports, then fetch the new module:
+
+```bash
+grep -rl --include='*.go' --include=go.mod 'github.com/NVIDIA/OpenShell/sdk/go' . | xargs perl -pi -e 's#github.com/NVIDIA/OpenShell/sdk/go#github.com/ai-openshell/sdk-go#g'
+go get github.com/ai-openshell/sdk-go@latest && go mod tidy
+```
+
+Releases tagged before the move stay available at the old path.
 
 ## Migrating from v0.0.101
 
@@ -275,7 +294,7 @@ Client
 
 All domain types live in `openshell/v1/types/`. Proto-to-Go conversions happen in
 an internal converter layer. The public API surface uses type aliases so
-consumers import a single package. See the [Architecture](https://ro14nd.de/openshell-sdk-go/architecture.html) overview for details.
+consumers import a single package. See the [Architecture](https://ai-openshell.github.io/sdk-go/architecture.html) overview for details.
 
 ## Features
 
@@ -293,27 +312,27 @@ stream completion.
 
 | Feature | Interface | Docs |
 |---------|-----------|------|
-| Sandbox lifecycle (create, get, list, delete, watch, wait) | `SandboxInterface` | [Sandboxes](https://ro14nd.de/openshell-sdk-go/api/sandboxes.html) |
-| Command execution (collected, streamed, interactive PTY) | `ExecInterface` | [Exec](https://ro14nd.de/openshell-sdk-go/api/exec.html) |
-| Provider management (CRUD + idempotent ensure) | `ProviderInterface` | [Providers](https://ro14nd.de/openshell-sdk-go/api/providers.html) |
-| Provider profiles (list, import, lint, update) | `ProfileInterface` | [Profiles](https://ro14nd.de/openshell-sdk-go/api/profiles.html) |
-| Credential refresh (configure, rotate, status) | `RefreshInterface` | [Refresh](https://ro14nd.de/openshell-sdk-go/api/refresh.html) |
-| Service exposure (expose, list, delete) | `ServiceInterface` | [Services](https://ro14nd.de/openshell-sdk-go/api/services.html) |
-| File transfer API (transport capability-gated) | `FileInterface` | [Files](https://ro14nd.de/openshell-sdk-go/api/files.html) |
-| Policy management (draft review, approve, reject, merge, global policy) | `PolicyInterface` | [Policy](https://ro14nd.de/openshell-sdk-go/api/policy.html) |
-| Sandbox logs (streaming retrieval) | `SandboxInterface` | [Sandboxes](https://ro14nd.de/openshell-sdk-go/api/sandboxes.html) |
-| Workspace management (create, get, list, delete, members) | `WorkspaceInterface` | [Workspaces](https://ro14nd.de/openshell-sdk-go/api/workspaces.html) |
-| Sandbox provider attachment (attach, detach, list) | `SandboxInterface` | [Sandboxes](https://ro14nd.de/openshell-sdk-go/api/sandboxes.html) |
-| Gateway info and current user identity | `HealthInterface` | [Health](https://ro14nd.de/openshell-sdk-go/api/health.html) |
-| Health checking | `HealthInterface` | [Health](https://ro14nd.de/openshell-sdk-go/api/health.html) |
-| SSH tunneling and TCP forwarding | `SSHInterface`, `TCPInterface` | [SSH](https://ro14nd.de/openshell-sdk-go/api/ssh.html), [TCP](https://ro14nd.de/openshell-sdk-go/api/tcp.html) |
-| Auth: static token, refreshable token (oauth2.TokenSource) | `AuthProvider` | [Auth](https://ro14nd.de/openshell-sdk-go/api/auth.html) |
-| Edge auth: extra headers, Cloudflare Access, WebSocket tunnel | `AuthProvider`, `edge.TunnelProxy` | [Edge](https://ro14nd.de/openshell-sdk-go/api/edge.html) |
-| Typed errors (`IsNotFound`, `IsAlreadyExists`, `IsConflict`, ...) | `StatusError` | [Error Handling](https://ro14nd.de/openshell-sdk-go/error-handling.html) |
-| Real-time watch with auto-stop on terminal phase | `WatchInterface[T]` | [Sandboxes](https://ro14nd.de/openshell-sdk-go/api/sandboxes.html) |
-| Fake client for testing (no gRPC server needed) | `fake.Client` | [Testing](https://ro14nd.de/openshell-sdk-go/testing.html) |
-| OIDC login and renewable service auth | `oidc.Login`, `oidc.DeviceLogin`, `oidc.ClientCredentials`, `oidc.NewClientCredentialsAuth` | [OIDC](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc) |
-| Gateway config convenience (load CLI gateway configs, auto-wire auth) | `gateway.NewClient`, `gateway.LoadConfig` | [Gateway](https://ro14nd.de/openshell-sdk-go/api/gateway.html) |
+| Sandbox lifecycle (create, get, list, delete, watch, wait) | `SandboxInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
+| Command execution (collected, streamed, interactive PTY) | `ExecInterface` | [Exec](https://ai-openshell.github.io/sdk-go/api/exec.html) |
+| Provider management (CRUD + idempotent ensure) | `ProviderInterface` | [Providers](https://ai-openshell.github.io/sdk-go/api/providers.html) |
+| Provider profiles (list, import, lint, update) | `ProfileInterface` | [Profiles](https://ai-openshell.github.io/sdk-go/api/profiles.html) |
+| Credential refresh (configure, rotate, status) | `RefreshInterface` | [Refresh](https://ai-openshell.github.io/sdk-go/api/refresh.html) |
+| Service exposure (expose, list, delete) | `ServiceInterface` | [Services](https://ai-openshell.github.io/sdk-go/api/services.html) |
+| File transfer API (transport capability-gated) | `FileInterface` | [Files](https://ai-openshell.github.io/sdk-go/api/files.html) |
+| Policy management (draft review, approve, reject, merge, global policy) | `PolicyInterface` | [Policy](https://ai-openshell.github.io/sdk-go/api/policy.html) |
+| Sandbox logs (streaming retrieval) | `SandboxInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
+| Workspace management (create, get, list, delete, members) | `WorkspaceInterface` | [Workspaces](https://ai-openshell.github.io/sdk-go/api/workspaces.html) |
+| Sandbox provider attachment (attach, detach, list) | `SandboxInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
+| Gateway info and current user identity | `HealthInterface` | [Health](https://ai-openshell.github.io/sdk-go/api/health.html) |
+| Health checking | `HealthInterface` | [Health](https://ai-openshell.github.io/sdk-go/api/health.html) |
+| SSH tunneling and TCP forwarding | `SSHInterface`, `TCPInterface` | [SSH](https://ai-openshell.github.io/sdk-go/api/ssh.html), [TCP](https://ai-openshell.github.io/sdk-go/api/tcp.html) |
+| Auth: static token, refreshable token (oauth2.TokenSource) | `AuthProvider` | [Auth](https://ai-openshell.github.io/sdk-go/api/auth.html) |
+| Edge auth: extra headers, Cloudflare Access, WebSocket tunnel | `AuthProvider`, `edge.TunnelProxy` | [Edge](https://ai-openshell.github.io/sdk-go/api/edge.html) |
+| Typed errors (`IsNotFound`, `IsAlreadyExists`, `IsConflict`, ...) | `StatusError` | [Error Handling](https://ai-openshell.github.io/sdk-go/error-handling.html) |
+| Real-time watch with auto-stop on terminal phase | `WatchInterface[T]` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
+| Fake client for testing (no gRPC server needed) | `fake.Client` | [Testing](https://ai-openshell.github.io/sdk-go/testing.html) |
+| OIDC login and renewable service auth | `oidc.Login`, `oidc.DeviceLogin`, `oidc.ClientCredentials`, `oidc.NewClientCredentialsAuth` | [OIDC](https://pkg.go.dev/github.com/ai-openshell/sdk-go/openshell/v1/oidc) |
+| Gateway config convenience (load CLI gateway configs, auto-wire auth) | `gateway.NewClient`, `gateway.LoadConfig` | [Gateway](https://ai-openshell.github.io/sdk-go/api/gateway.html) |
 
 ## Prerequisites
 
@@ -323,19 +342,21 @@ stream completion.
 ## Build and Test
 
 ```bash
-git clone https://github.com/NVIDIA/OpenShell.git
-cd OpenShell/sdk/go
+git clone https://github.com/ai-openshell/sdk-go.git
+cd sdk-go
 
-mise run test    # Run tests with coverage
-mise run lint    # Run golangci-lint
-mise run ci      # Full CI pipeline (lint + build + test)
+mise install            # Install the pinned toolchain
+mise run test           # Run tests with coverage
+mise run lint           # Run golangci-lint
+mise run proto:gen      # Regenerate bindings from the pinned core tag
+mise run ci             # Full CI pipeline (format, lint, build, test, proto and docs checks)
 ```
 
 Build commands use [mise](https://mise.jdx.dev) for reproducible tool management.
 
 ## Documentation
 
-Full API documentation is available at the [OpenShell Go SDK Docs](https://ro14nd.de/openshell-sdk-go/) site.
+Full API documentation is available at the [OpenShell Go SDK Docs](https://ai-openshell.github.io/sdk-go/) site.
 
 To build the docs locally:
 
@@ -346,6 +367,6 @@ mdbook serve docs
 
 ## License
 
-Apache-2.0. See [LICENSE](../../LICENSE) for details.
+Apache-2.0. See [LICENSE](./LICENSE) for details.
 
 Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.

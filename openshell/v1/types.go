@@ -4,7 +4,7 @@
 package v1
 
 import (
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // SandboxPhase represents the lifecycle phase of a sandbox.

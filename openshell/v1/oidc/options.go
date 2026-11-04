@@ -8,7 +8,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 )
 
 // defaultScopes are the OIDC scopes requested when no custom scopes

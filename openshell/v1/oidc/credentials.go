@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/gateway"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 )
 
 // ClientCredentials performs a non-interactive OAuth2 client credentials

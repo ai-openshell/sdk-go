@@ -9,7 +9,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/oidctoken"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
 // writeToken persists an OIDC token bundle to disk as oidc_token.json in

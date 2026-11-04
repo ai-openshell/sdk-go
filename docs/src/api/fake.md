@@ -11,7 +11,7 @@ conditions (`NotFound`, `AlreadyExists`, `Unavailable`, `Unimplemented`).
 ## Quick Start
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/fake"
+import "github.com/ai-openshell/sdk-go/openshell/v1/fake"
 
 func TestSandboxLifecycle(t *testing.T) {
     client := fake.NewClient()

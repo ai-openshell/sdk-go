@@ -15,7 +15,7 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/oidctoken"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
 const (

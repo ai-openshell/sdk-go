@@ -4,8 +4,8 @@
 package fake
 
 import (
-	v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	v1 "github.com/ai-openshell/sdk-go/openshell/v1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 func deletionResult(existed bool, sandboxID string, opts []v1.DeleteOptions) (*types.DeletionResult, error) {

@@ -6,9 +6,9 @@ package converter
 import (
 	"testing"
 
-	dm "github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1"
-	pb "github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1"
-	sandboxpb "github.com/NVIDIA/OpenShell/sdk/go/proto/sandboxv1"
+	dm "github.com/ai-openshell/sdk-go/proto/datamodelv1"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
+	sandboxpb "github.com/ai-openshell/sdk-go/proto/sandboxv1"
 	"google.golang.org/protobuf/reflect/protoreflect"
 )
 

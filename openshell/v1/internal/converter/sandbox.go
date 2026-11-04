@@ -8,9 +8,9 @@ import (
 	"slices"
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
-	dm "github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1"
-	pb "github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
+	dm "github.com/ai-openshell/sdk-go/proto/datamodelv1"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
 	"google.golang.org/protobuf/types/known/durationpb"
 	"google.golang.org/protobuf/types/known/structpb"
 )

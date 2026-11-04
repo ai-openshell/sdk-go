@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 )
 
 func TestTunnelOption_NilIgnored(t *testing.T) {

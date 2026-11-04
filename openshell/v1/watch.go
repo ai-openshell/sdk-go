@@ -7,7 +7,7 @@ import (
 	"context"
 	"sync"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // Event represents a watch event carrying a resource that changed.

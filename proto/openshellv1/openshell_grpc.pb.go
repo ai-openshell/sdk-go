@@ -11,7 +11,7 @@ package openshellv1
 
 import (
 	context "context"
-	sandboxv1 "github.com/NVIDIA/OpenShell/sdk/go/proto/sandboxv1"
+	sandboxv1 "github.com/ai-openshell/sdk-go/proto/sandboxv1"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"

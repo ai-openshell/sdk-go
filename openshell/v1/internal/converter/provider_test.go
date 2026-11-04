@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
-	dm "github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
+	dm "github.com/ai-openshell/sdk-go/proto/datamodelv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/timestamppb"

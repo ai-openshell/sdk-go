@@ -7,8 +7,8 @@ import (
 	"context"
 	"strconv"
 
-	v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	v1 "github.com/ai-openshell/sdk-go/openshell/v1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 func newSlicePager[T any](items []T, pageSize int, pageToken string) (*v1.Pager[T], error) {

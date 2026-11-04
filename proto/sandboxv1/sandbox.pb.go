@@ -10,7 +10,7 @@
 package sandboxv1
 
 import (
-	datamodelv1 "github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1"
+	datamodelv1 "github.com/ai-openshell/sdk-go/proto/datamodelv1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	durationpb "google.golang.org/protobuf/types/known/durationpb"

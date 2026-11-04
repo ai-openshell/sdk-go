@@ -14,7 +14,7 @@ import (
 	"log"
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc"
+	"github.com/ai-openshell/sdk-go/openshell/v1/oidc"
 )
 
 func ExampleLogin_gateway() {

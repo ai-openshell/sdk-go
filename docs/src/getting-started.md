@@ -12,7 +12,7 @@ This guide walks you through installing the OpenShell Go SDK, connecting to a ga
 Add the SDK to your Go module:
 
 ```bash
-go get github.com/NVIDIA/OpenShell/sdk/go@latest
+go get github.com/ai-openshell/sdk-go@latest
 ```
 
 ## Connect to the Gateway
@@ -27,7 +27,7 @@ import (
     "fmt"
     "log"
 
-    v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
+    v1 "github.com/ai-openshell/sdk-go/openshell/v1"
 )
 
 func main() {

@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"log"
 
-	v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/fake"
+	v1 "github.com/ai-openshell/sdk-go/openshell/v1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/fake"
 )
 
 // ExampleClient_Sandboxes demonstrates the sandbox lifecycle: create a sandbox,

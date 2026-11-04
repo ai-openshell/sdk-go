@@ -6,7 +6,7 @@ package types
 import (
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 )
 
 // PolicyLoadStatus represents the load state of a policy revision.

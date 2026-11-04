@@ -30,5 +30,5 @@ Browse the full [API Overview](api/overview.md) to see all 13 interfaces at a gl
 ## Related Projects
 
 - [**OpenShell**](https://github.com/NVIDIA/OpenShell) (by NVIDIA): The upstream project that defines the gateway API and sandbox runtime this SDK wraps.
-- [**openshell-sdk-go**](https://github.com/NVIDIA/OpenShell/sdk/go): This SDK's source repository on GitHub.
-- [**pkg.go.dev**](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go/openshell/v1): Go package documentation with type signatures and godoc.
+- [**openshell-sdk-go**](https://github.com/ai-openshell/sdk-go): This SDK's source repository on GitHub.
+- [**pkg.go.dev**](https://pkg.go.dev/github.com/ai-openshell/sdk-go/openshell/v1): Go package documentation with type signatures and godoc.

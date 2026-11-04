@@ -23,7 +23,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 )
 
 type clientCredentialsFixture struct {
@@ -57,7 +57,7 @@ type clientCredentialsFixture struct {
 
 func loadClientCredentialsFixture(t *testing.T) clientCredentialsFixture {
 	t.Helper()
-	data, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "conformance", "oauth-client-credentials.json"))
+	data, err := os.ReadFile(filepath.Join("testdata", "oauth-client-credentials.json"))
 	require.NoError(t, err)
 	var fixture clientCredentialsFixture
 	require.NoError(t, json.Unmarshal(data, &fixture))

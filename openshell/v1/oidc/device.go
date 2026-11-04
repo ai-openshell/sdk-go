@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/gateway"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 )
 
 // deviceAuthResponse holds the parsed response from the device

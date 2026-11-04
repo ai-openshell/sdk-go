@@ -12,9 +12,9 @@ import (
 
 	"golang.org/x/oauth2"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/gateway"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/oidctoken"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 )
 
 // Login performs an interactive OIDC authorization code login.

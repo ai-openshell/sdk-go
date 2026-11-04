@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/oidctoken"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
 // --- T014: Edge token loading tests ---
@@ -129,7 +129,7 @@ const loginHint = "run `openshell gateway login prod`"
 
 func TestDiskTokenSource_ValidBundle(t *testing.T) {
 	dir := t.TempDir()
-	fixture, err := os.ReadFile(filepath.Join("..", "..", "..", "..", "conformance", "oidc-token-bundle.json"))
+	fixture, err := os.ReadFile(filepath.Join("testdata", "oidc-token-bundle.json"))
 	require.NoError(t, err)
 	writeFile(t, dir, oidctoken.FileName, string(fixture))
 
