@@ -248,3 +248,7 @@ run = "hack/automation/open-bump-pr.sh"
 [tasks."release:tag"]
 description = "Tag the lockstep SDK release for a stable pin (--dry-run prints what it would do)"
 run = "hack/automation/tag-release.sh"
+
+[tasks."core:drift"]
+description = "Compare core main with the pin: mise run core:drift -- --out <report.md>"
+run = "hack/automation/drift-check.sh"
