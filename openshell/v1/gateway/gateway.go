@@ -6,9 +6,9 @@ package gateway
 import (
 	"fmt"
 
-	v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	v1 "github.com/ai-openshell/sdk-go/openshell/v1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // NewClient creates a fully wired SDK client from an on-disk gateway

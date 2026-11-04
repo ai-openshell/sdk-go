@@ -6,7 +6,7 @@ package v1
 import (
 	"math"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // CreateOption configures a Create call.

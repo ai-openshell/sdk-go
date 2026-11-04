@@ -8,7 +8,7 @@ import (
 	"maps"
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

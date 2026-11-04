@@ -6,7 +6,7 @@ package types
 import (
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 )
 
 // createConfig holds configuration for Create calls.

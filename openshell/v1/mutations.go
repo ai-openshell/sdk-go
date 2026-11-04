@@ -3,7 +3,7 @@
 
 package v1
 
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+import "github.com/ai-openshell/sdk-go/openshell/v1/types"
 
 // DeletionOutcome distinguishes completion from asynchronous acceptance.
 type DeletionOutcome = types.DeletionOutcome

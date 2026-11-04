@@ -6,7 +6,7 @@ package v1
 import (
 	"context"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // RefreshStrategy describes how credentials are refreshed.

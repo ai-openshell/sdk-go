@@ -7,9 +7,9 @@ import (
 	"context"
 	"sync"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 
-	internalgrpc "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/grpc"
+	internalgrpc "github.com/ai-openshell/sdk-go/openshell/v1/internal/grpc"
 	"google.golang.org/grpc"
 )
 

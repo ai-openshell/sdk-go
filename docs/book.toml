@@ -15,8 +15,8 @@ create-missing = false
 default-theme = "ayu"
 preferred-dark-theme = "navy"
 additional-css = ["theme/custom.css"]
-git-repository-url = "https://github.com/NVIDIA/OpenShell/sdk/go"
-edit-url-template = "https://github.com/NVIDIA/OpenShell/sdk/go/edit/main/docs/src/{path}"
+git-repository-url = "https://github.com/ai-openshell/sdk-go"
+edit-url-template = "https://github.com/ai-openshell/sdk-go/edit/main/docs/src/{path}"
 
 [output.html.search]
 enable = true

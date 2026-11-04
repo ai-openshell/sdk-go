@@ -10,7 +10,7 @@ tokens, and wiring auth providers.
 ## Quick Start
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/gateway"
+import "github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 
 // Connect to a named gateway
 client, err := gateway.NewClient("prod")

@@ -6,7 +6,7 @@ package gateway
 import (
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 // clientConfig holds resolved options applied after gateway config

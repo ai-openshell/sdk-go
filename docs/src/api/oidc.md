@@ -9,7 +9,7 @@ PKCE, keyboard fallback, device code (RFC 8628), and client credentials.
 ## Quick Start
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc"
+import "github.com/ai-openshell/sdk-go/openshell/v1/oidc"
 
 // Gateway-aware login (reads OIDC config from gateway metadata)
 token, err := oidc.Login(ctx, "my-gateway")

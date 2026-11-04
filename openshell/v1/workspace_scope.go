@@ -3,7 +3,7 @@
 
 package v1
 
-import dm "github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1"
+import dm "github.com/ai-openshell/sdk-go/proto/datamodelv1"
 
 func namedWorkspaceScope(workspace string) *dm.WorkspaceSelector {
 	return &dm.WorkspaceSelector{

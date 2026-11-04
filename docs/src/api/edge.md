@@ -13,7 +13,7 @@ Wrap any `AuthProvider` with Cloudflare Access headers
 (`cf-access-jwt-assertion` and `CF_Authorization` cookie):
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/edge"
+import "github.com/ai-openshell/sdk-go/openshell/v1/edge"
 
 base := v1.StaticToken("my-gateway-token")
 auth, err := edge.CloudflareAccess(base, os.Getenv("CF_ACCESS_TOKEN"))

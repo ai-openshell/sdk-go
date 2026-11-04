@@ -16,17 +16,17 @@ plugins:
     out: sdk/go
     include_imports: true
     opt:
-      - module=github.com/NVIDIA/OpenShell/sdk/go
-      - Mopenshell.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1
-      - Mdatamodel.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1
-      - Msandbox.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/sandboxv1
-      - Moptions.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/optionsv1
+      - module=github.com/ai-openshell/sdk-go
+      - Mopenshell.proto=github.com/ai-openshell/sdk-go/proto/openshellv1
+      - Mdatamodel.proto=github.com/ai-openshell/sdk-go/proto/datamodelv1
+      - Msandbox.proto=github.com/ai-openshell/sdk-go/proto/sandboxv1
+      - Moptions.proto=github.com/ai-openshell/sdk-go/proto/optionsv1
   - local: protoc-gen-go-grpc
     out: sdk/go
     include_imports: true
     opt:
-      - module=github.com/NVIDIA/OpenShell/sdk/go
-      - Mopenshell.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1
-      - Mdatamodel.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/datamodelv1
-      - Msandbox.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/sandboxv1
-      - Moptions.proto=github.com/NVIDIA/OpenShell/sdk/go/proto/optionsv1
+      - module=github.com/ai-openshell/sdk-go
+      - Mopenshell.proto=github.com/ai-openshell/sdk-go/proto/openshellv1
+      - Mdatamodel.proto=github.com/ai-openshell/sdk-go/proto/datamodelv1
+      - Msandbox.proto=github.com/ai-openshell/sdk-go/proto/sandboxv1
+      - Moptions.proto=github.com/ai-openshell/sdk-go/proto/optionsv1

@@ -15,7 +15,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/oidctoken"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
 func loadOIDCTokenFixture(t *testing.T) []byte {

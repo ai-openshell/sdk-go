@@ -17,8 +17,8 @@ import (
 
 	"github.com/coder/websocket"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/types"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
 
 const defaultCloseTimeout = 5 * time.Second

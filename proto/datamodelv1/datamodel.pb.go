@@ -10,7 +10,7 @@
 package datamodelv1
 
 import (
-	_ "github.com/NVIDIA/OpenShell/sdk/go/proto/optionsv1"
+	_ "github.com/ai-openshell/sdk-go/proto/optionsv1"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"

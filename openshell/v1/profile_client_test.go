@@ -10,8 +10,8 @@ import (
 	"sync"
 	"testing"
 
-	pb "github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1"
-	sbv1 "github.com/NVIDIA/OpenShell/sdk/go/proto/sandboxv1"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
+	sbv1 "github.com/ai-openshell/sdk-go/proto/sandboxv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"

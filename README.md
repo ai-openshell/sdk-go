@@ -1,6 +1,6 @@
 # OpenShell SDK for Go
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/NVIDIA/OpenShell/sdk/go.svg)](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go)
+[![Go Reference](https://pkg.go.dev/badge/github.com/ai-openshell/sdk-go.svg)](https://pkg.go.dev/github.com/ai-openshell/sdk-go)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](../../LICENSE)
 
 > [!IMPORTANT]
@@ -41,7 +41,7 @@ patterns will look familiar:
 ## Quick Start
 
 ```go
-import v1 "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1"
+import v1 "github.com/ai-openshell/sdk-go/openshell/v1"
 
 // Connect to a gateway
 client, err := v1.NewClient(v1.Config{
@@ -153,7 +153,7 @@ client, err := v1.NewClient(v1.Config{
 For Cloudflare Access, use the convenience constructor in the `edge` package:
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/edge"
+import "github.com/ai-openshell/sdk-go/openshell/v1/edge"
 
 auth, err := edge.CloudflareAccess(base, os.Getenv("CF_ACCESS_TOKEN"))
 ```
@@ -183,7 +183,7 @@ The `oidc` package provides gateway-aware OIDC authentication with browser,
 keyboard, device code, and client credentials flows:
 
 ```go
-import "github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc"
+import "github.com/ai-openshell/sdk-go/openshell/v1/oidc"
 
 // Gateway-aware login: reads OIDC config from gateway metadata
 token, err := oidc.Login(ctx, "my-gateway")
@@ -236,7 +236,7 @@ You can use explicit `WithIssuer`, `WithClientID`, `WithScopes`, and
 `WithAudience` options instead of `WithGateway`. The provider repeats the grant
 before expiry and never writes the secret or access token to disk.
 
-See the [oidc package docs](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc) for all options and flows.
+See the [oidc package docs](https://pkg.go.dev/github.com/ai-openshell/sdk-go/openshell/v1/oidc) for all options and flows.
 
 See the [Getting Started](https://ro14nd.de/openshell-sdk-go/getting-started.html) guide for the full walkthrough.
 
@@ -312,7 +312,7 @@ stream completion.
 | Typed errors (`IsNotFound`, `IsAlreadyExists`, `IsConflict`, ...) | `StatusError` | [Error Handling](https://ro14nd.de/openshell-sdk-go/error-handling.html) |
 | Real-time watch with auto-stop on terminal phase | `WatchInterface[T]` | [Sandboxes](https://ro14nd.de/openshell-sdk-go/api/sandboxes.html) |
 | Fake client for testing (no gRPC server needed) | `fake.Client` | [Testing](https://ro14nd.de/openshell-sdk-go/testing.html) |
-| OIDC login and renewable service auth | `oidc.Login`, `oidc.DeviceLogin`, `oidc.ClientCredentials`, `oidc.NewClientCredentialsAuth` | [OIDC](https://pkg.go.dev/github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/oidc) |
+| OIDC login and renewable service auth | `oidc.Login`, `oidc.DeviceLogin`, `oidc.ClientCredentials`, `oidc.NewClientCredentialsAuth` | [OIDC](https://pkg.go.dev/github.com/ai-openshell/sdk-go/openshell/v1/oidc) |
 | Gateway config convenience (load CLI gateway configs, auto-wire auth) | `gateway.NewClient`, `gateway.LoadConfig` | [Gateway](https://ro14nd.de/openshell-sdk-go/api/gateway.html) |
 
 ## Prerequisites

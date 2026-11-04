@@ -6,7 +6,7 @@ package converter
 import (
 	"testing"
 
-	pb "github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

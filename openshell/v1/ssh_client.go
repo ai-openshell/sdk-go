@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/converter"
-	"github.com/NVIDIA/OpenShell/sdk/go/openshell/v1/internal/options"
-	pb "github.com/NVIDIA/OpenShell/sdk/go/proto/openshellv1"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/converter"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
 	"google.golang.org/grpc"
 )
 
