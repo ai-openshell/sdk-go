@@ -13,6 +13,7 @@ Workflows run them with a token of the `ai-openshell-sdk-bot` GitHub App, never 
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report. |
 | `report-failure.sh <job> <run-url>` | | Append a dated failure line to the drift issue. Called from `if: failure()` steps. |
+| `drift-issue.sh` | | Shared helpers for the two drift issue scripts (sourced, not run). |
 | `start-gateway.sh <core-semver>`, `stop-gateway.sh` | | Run the published gateway container for a core version with the Docker driver and a plaintext endpoint for the E2E lane, and collect its log. |
 | `adapt-context.sh <pr-or-issue-number>` | | Build the `## Adaptation task` comment for the agent workflow: pin diff, proto diff, failed log tail, uncovered RPCs. |
 | `adapt-task-body.md` | | Comment template for `adapt-context.sh`. |
