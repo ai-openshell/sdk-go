@@ -16,7 +16,9 @@ import (
 // The gateway ships no provider profiles; every profile a provider uses must
 // be imported first. These fixtures follow core's example profiles
 // (providers/claude-code.yaml and providers/nvidia.yaml), reduced to the
-// credentials and endpoints the tests rely on.
+// credentials and endpoints the tests rely on. The endpoints are plain
+// host/port entries: the SDK's NetworkEndpoint has no access or rules fields
+// yet, and the gateway rejects a protocol without them.
 var testProfiles = []v1.ProviderProfile{
 	{
 		ID:               "claude-code",
@@ -31,7 +33,7 @@ var testProfiles = []v1.ProviderProfile{
 			AuthStyle:  "header",
 			HeaderName: "x-api-key",
 		}},
-		Endpoints: []v1.NetworkEndpoint{{Host: "api.anthropic.com", Port: 443, Protocol: "rest"}},
+		Endpoints: []v1.NetworkEndpoint{{Host: "api.anthropic.com", Port: 443}},
 	},
 	{
 		ID:               "nvidia",
@@ -44,7 +46,7 @@ var testProfiles = []v1.ProviderProfile{
 			EnvVars:  []string{"NVIDIA_API_KEY"},
 			Required: true,
 		}},
-		Endpoints: []v1.NetworkEndpoint{{Host: "integrate.api.nvidia.com", Port: 443, Protocol: "rest"}},
+		Endpoints: []v1.NetworkEndpoint{{Host: "integrate.api.nvidia.com", Port: 443}},
 	},
 }
 
