@@ -20,13 +20,16 @@ concurrency:
 jobs:
   drift:
     name: drift
+    # The bot secrets live in the sdk-bot environment, which only main can
+    # deploy to, so a pushed branch can't mint a bot token.
+    environment: sdk-bot
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
       - id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
-          app-id: ${{ secrets.SDK_BOT_APP_ID }}
+          client-id: ${{ secrets.SDK_BOT_CLIENT_ID }}
           private-key: ${{ secrets.SDK_BOT_PRIVATE_KEY }}
           permission-issues: write
 
