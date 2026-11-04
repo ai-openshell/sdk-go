@@ -55,3 +55,33 @@ jobs:
 
       - name: Lint workflows
         run: mise run workflows:check
+
+  changes:
+    name: changes
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      e2e: ${{ steps.diff.outputs.e2e }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - id: diff
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: |
+          set -euo pipefail
+          if git diff --name-only "${BASE_SHA}...HEAD" | grep -qE '^(buf\.gen\.yaml$|proto/|openshell/|e2e/|hack/automation/(start|stop)-gateway\.sh$)'; then
+            echo "e2e=true" >>"$GITHUB_OUTPUT"
+          else
+            echo "e2e=false" >>"$GITHUB_OUTPUT"
+          fi
+
+  e2e:
+    name: e2e
+    needs: changes
+    if: needs.changes.outputs.e2e == 'true'
+    uses: ./.github/workflows/e2e.yml

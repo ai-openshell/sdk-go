@@ -253,3 +253,7 @@ run = "hack/automation/tag-release.sh"
 [tasks."core:drift"]
 description = "Compare core main with the pin: mise run core:drift -- --out <report.md>"
 run = "hack/automation/drift-check.sh"
+
+[tasks.e2e]
+description = "Run the E2E suite against the gateway named in OPENSHELL_GATEWAY (see hack/automation/start-gateway.sh)"
+run = "go vet -tags=e2e ./e2e/... && go test -tags=e2e -timeout 8m -parallel ${E2E_PARALLEL:-5} ./e2e/..."
