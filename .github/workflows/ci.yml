@@ -36,3 +36,22 @@ jobs:
       # buf fetches proto/ from NVIDIA/OpenShell at the pinned tag (public, no credentials).
       - name: Run CI pipeline
         run: mise run ci
+
+  workflows:
+    name: workflows
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: false
+
+      - name: Install tools
+        run: mise install --locked actionlint shellcheck zizmor
+
+      - name: Lint workflows
+        run: mise run workflows:check
