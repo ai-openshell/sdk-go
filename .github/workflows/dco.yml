@@ -1,0 +1,48 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Every commit in a pull request needs a Signed-off-by trailer from its
+# author, certifying the Developer Certificate of Origin (DCO file).
+name: DCO
+
+on:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  dco:
+    name: DCO
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Check sign-offs
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: |
+          set -euo pipefail
+          missing=0
+          for c in $(git rev-list --no-merges "${BASE_SHA}..${HEAD_SHA}"); do
+            author=$(git log -1 --format='%an <%ae>' "$c")
+            email=$(git log -1 --format='%ae' "$c")
+            case "$email" in
+              *'dependabot[bot]@users.noreply.github.com'|*'ai-openshell-sdk-bot[bot]@users.noreply.github.com') continue ;;
+            esac
+            if ! git log -1 --format='%(trailers:key=Signed-off-by,valueonly)' "$c" |
+                 grep -qiF "<${email}>"; then
+              echo "::error::$(git log -1 --format='%h %s' "$c") has no Signed-off-by from ${author}"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            echo "Sign off each commit with 'git commit --signoff', for example: git rebase --signoff ${BASE_SHA}"
+            exit 1
+          fi
+          echo "All commits are signed off by their authors."
