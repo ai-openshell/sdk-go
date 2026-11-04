@@ -49,8 +49,12 @@ var testProfiles = []v1.ProviderProfile{
 	},
 }
 
-// importTestProfiles replaces the fixtures in the default workspace, so a
-// rerun against the same gateway starts from the same definitions.
+// globalScope selects global provider profiles. A provider without a profile
+// workspace resolves its type against them, as the tests' providers do.
+const globalScope = ""
+
+// importTestProfiles replaces the global fixtures, so a rerun against the
+// same gateway starts from the same definitions.
 func importTestProfiles(client *v1.Client) error {
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
@@ -60,10 +64,10 @@ func importTestProfiles(client *v1.Client) error {
 	for _, p := range testProfiles {
 		// A missing profile is the normal case; any other problem shows up in
 		// the import below.
-		_, _ = profiles.Delete(ctx, "default", p.ID)
+		_, _ = profiles.Delete(ctx, globalScope, p.ID)
 		items = append(items, v1.ProfileImportItem{Profile: p, Source: "e2e/profiles_test.go"})
 	}
-	res, err := profiles.Import(ctx, "default", items)
+	res, err := profiles.Import(ctx, globalScope, items)
 	if err != nil {
 		return fmt.Errorf("import provider profiles: %w", err)
 	}
