@@ -139,12 +139,11 @@ type TokenGrantAudienceOverride struct {
 	Scopes   []string
 }
 
-// NetworkEndpoint describes a network endpoint provided by a profile.
-type NetworkEndpoint struct {
-	Host     string
-	Port     uint32
-	Protocol string
-}
+// NetworkEndpoint describes a network endpoint provided by a profile. Profiles
+// and sandbox policies share one endpoint message, so it is the same type as
+// [PolicyNetworkEndpoint], with access, enforcement, rules, and credential
+// settings.
+type NetworkEndpoint = PolicyNetworkEndpoint
 
 // NetworkBinary describes a binary artifact provided by a profile.
 type NetworkBinary struct {

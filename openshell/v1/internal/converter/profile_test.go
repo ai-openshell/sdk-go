@@ -11,6 +11,7 @@ import (
 	sbv1 "github.com/ai-openshell/sdk-go/proto/sandboxv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -750,4 +751,55 @@ func TestProviderProfileRoundTrip(t *testing.T) {
 	assert.Equal(t, original.Binaries[0].Path, back.Binaries[0].Path)
 
 	assert.Equal(t, original.Discovery.Credentials, back.Discovery.Credentials)
+}
+
+// Profile endpoints share the policy endpoint message; access, enforcement,
+// credential settings, and every other field must survive both directions
+// (ai-openshell/sdk-go#12).
+func TestNetworkEndpointRoundTripKeepsAllFields(t *testing.T) {
+	in := &sbv1.NetworkEndpoint{
+		Host:                        "api.anthropic.com",
+		Port:                        443,
+		Ports:                       []uint32{443, 8443},
+		Protocol:                    "rest",
+		Tls:                         sbv1.NetworkTlsMode_NETWORK_TLS_MODE_SKIP,
+		Enforcement:                 sbv1.NetworkEnforcementMode_NETWORK_ENFORCEMENT_MODE_ENFORCE,
+		Access:                      sbv1.NetworkAccessPreset_NETWORK_ACCESS_PRESET_FULL,
+		AllowedIps:                  []string{"10.0.0.0/8"},
+		Path:                        "/v1",
+		AllowUninspectedCredentials: true,
+		ProviderCredentialed:        true,
+		CredentialBinding:           &sbv1.NetworkCredentialBinding{Provider: "anthropic"},
+	}
+
+	ep := NetworkEndpointFromProto(in)
+	require.NotNil(t, ep)
+	assert.Equal(t, v1.NetworkAccessPresetFull, ep.Access)
+	assert.True(t, ep.AllowUninspectedCredentials)
+	require.NotNil(t, ep.CredentialBinding)
+	assert.Equal(t, "anthropic", ep.CredentialBinding.Provider)
+
+	out := NetworkEndpointToProto(ep)
+	assert.True(t, proto.Equal(in, out), "round trip changed the endpoint:\nin:  %v\nout: %v", in, out)
+}
+
+func TestProviderProfileRoundTripKeepsEndpointAccess(t *testing.T) {
+	in := &pb.ProviderProfile{
+		Id: "claude-code",
+		Endpoints: []*sbv1.NetworkEndpoint{{
+			Host:        "api.anthropic.com",
+			Port:        443,
+			Protocol:    "rest",
+			Access:      sbv1.NetworkAccessPreset_NETWORK_ACCESS_PRESET_READ_WRITE,
+			Enforcement: sbv1.NetworkEnforcementMode_NETWORK_ENFORCEMENT_MODE_ENFORCE,
+		}},
+	}
+
+	profile := ProviderProfileFromProto(in)
+	require.Len(t, profile.Endpoints, 1)
+	assert.Equal(t, v1.NetworkAccessPresetReadWrite, profile.Endpoints[0].Access)
+
+	out := ProviderProfileToProto(profile)
+	require.Len(t, out.GetEndpoints(), 1)
+	assert.True(t, proto.Equal(in.GetEndpoints()[0], out.GetEndpoints()[0]))
 }
