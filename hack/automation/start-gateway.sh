@@ -70,6 +70,15 @@ grep -q "supervisor:$semver" "$state/gateway.toml" || {
   echo "ERROR: could not pin the supervisor image in core's gateway.toml at $tag" >&2
   exit 1
 }
+# Core's file binds the health server to loopback inside the container, where
+# the published port can't reach it. Bind it to all container interfaces; the
+# compose file publishes the port on the host's 127.0.0.1 only.
+sed -i.bak 's#^health_bind_address *= *"127\.0\.0\.1:8081"#health_bind_address = "0.0.0.0:8081"#' \
+  "$state/gateway.toml" && rm -f "$state/gateway.toml.bak"
+grep -q '^health_bind_address = "0.0.0.0:8081"' "$state/gateway.toml" || {
+  echo "ERROR: could not rebind the health server in core's gateway.toml at $tag" >&2
+  exit 1
+}
 
 compose() { IMAGE_TAG=$semver docker compose -p openshell-e2e -f "$state/docker-compose.yml" "$@"; }
 echo "Starting gateway $semver ..."
