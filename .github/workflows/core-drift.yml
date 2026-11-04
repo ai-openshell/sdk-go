@@ -1,0 +1,62 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Nightly comparison of core main with the pinned core tag; keeps the single
+# "Core main drift" issue current (hack/automation/drift-check.sh).
+name: core-drift
+
+on:
+  schedule:
+    - cron: "41 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: core-drift
+  cancel-in-progress: false
+
+jobs:
+  drift:
+    name: drift
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          app-id: ${{ secrets.SDK_BOT_APP_ID }}
+          private-key: ${{ secrets.SDK_BOT_PRIVATE_KEY }}
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: false
+
+      - name: Install tools
+        run: mise install --locked
+
+      # Exit 1 with a report means drift; the issue records it. No report
+      # means the check itself broke, which the failure step records.
+      - name: Check drift against core main
+        run: |
+          hack/automation/drift-check.sh --out drift-report.md || true
+          test -s drift-report.md
+          cat drift-report.md >>"$GITHUB_STEP_SUMMARY"
+
+      - name: Update the drift issue
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: hack/automation/update-drift-issue.sh drift-report.md
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: hack/automation/report-failure.sh core-drift "$RUN_URL"
