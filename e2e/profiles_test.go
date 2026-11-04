@@ -20,7 +20,7 @@ import (
 // the credentials the tests rely on. They declare no endpoints: the gateway
 // requires L7 rules, access, or allow_uninspected_credentials on a
 // credentialed endpoint, and the SDK's NetworkEndpoint can't express those
-// yet.
+// yet (ai-openshell/sdk-go#12).
 var testProfiles = []v1.ProviderProfile{
 	{
 		ID:               "claude-code",

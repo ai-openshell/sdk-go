@@ -201,8 +201,8 @@ func TestAttachDetachProviderUpdatesCredentials(t *testing.T) {
 	// a sandbox policy binding, and a binding can't name a provider that isn't
 	// attached yet. Attaching later therefore needs a profile with endpoints,
 	// which the SDK can't import until NetworkEndpoint carries access and
-	// rules (tracked as an sdk-go issue).
-	t.Skip("needs a provider profile with endpoints; the SDK can't import one yet")
+	// rules (ai-openshell/sdk-go#12).
+	t.Skip("needs a provider profile with endpoints; the SDK can't import one yet (ai-openshell/sdk-go#12)")
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
