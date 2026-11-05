@@ -15,8 +15,6 @@ Workflows run them with a token of the `ai-openshell-go-sdk` GitHub App (`ai-ope
 | `report-failure.sh <job> <run-url>` | | Append a dated failure line to the drift issue. Called from `if: failure()` steps. |
 | `drift-issue.sh` | | Shared helpers for the two drift issue scripts (sourced, not run). |
 | `start-gateway.sh <core-semver>`, `stop-gateway.sh` | | Run the published gateway container for a core version with the Docker driver and a plaintext endpoint for the E2E lane, and collect its log. |
-| `adapt-context.sh <pr-or-issue-number>` | | Build the `## Adaptation task` comment for the agent workflow: pin diff, proto diff, failed log tail, uncovered RPCs. |
-| `adapt-task-body.md` | | Comment template for `adapt-context.sh`. |
 
 | Workflow | Script |
 |----------|--------|
@@ -24,4 +22,3 @@ Workflows run them with a token of the `ai-openshell-go-sdk` GitHub App (`ai-ope
 | `release-tag.yml` (push to `main`) | `tag-release.sh` |
 | `core-drift.yml` (nightly) | `drift-check.sh`, then `update-drift-issue.sh` |
 | `e2e.yml` (reusable) | `start-gateway.sh`, `mise run e2e`, `stop-gateway.sh` |
-| `adapt.yml` (label `agent:adapt`) | `adapt-context.sh` |
