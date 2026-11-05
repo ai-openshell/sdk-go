@@ -19,6 +19,10 @@ yq = "4.53.6"
 "go:google.golang.org/protobuf/cmd/protoc-gen-go" = "1.36.11"
 "go:google.golang.org/grpc/cmd/protoc-gen-go-grpc" = "1.6.2"
 "go:golang.org/x/tools/cmd/goimports" = "0.48.0"
+actionlint = "1.7.12"
+shellcheck = "0.11.0"
+zizmor = "1.32.0"
+mdbook = "0.5.4"
 
 [tasks.test]
 description = "Run unit tests with coverage"
@@ -224,3 +228,14 @@ fi
 
 echo "Proto check passed: generated files match core $(yq -r '.inputs[0].tag' buf.gen.yaml)."
 """
+
+[tasks."workflows:check"]
+description = "Lint GitHub workflows with actionlint (with shellcheck) and zizmor"
+run = [
+  "actionlint",
+  "zizmor --offline --min-severity medium .github",
+]
+
+[tasks."docs:build"]
+description = "Build the mdbook docs into docs/book"
+run = "mdbook build docs"
