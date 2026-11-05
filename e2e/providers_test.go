@@ -127,7 +127,7 @@ func detachProviderRetry(ctx context.Context, t *testing.T, client *v1.Client, w
 }
 
 func TestProviderCredentialsAvailableAsEnvVar(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
@@ -175,7 +175,7 @@ func TestProviderCredentialsAvailableAsEnvVar(t *testing.T) {
 }
 
 func TestProfilelessProviderCreationIsRejected(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -196,7 +196,7 @@ func TestProfilelessProviderCreationIsRejected(t *testing.T) {
 }
 
 func TestAttachDetachProviderUpdatesCredentials(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	// The gateway delivers credentials of an endpointless profile only through
 	// a sandbox policy binding, and a binding can't name a provider that isn't
 	// attached yet. Attaching later therefore needs a profile with endpoints,
@@ -273,7 +273,7 @@ func TestAttachDetachProviderUpdatesCredentials(t *testing.T) {
 }
 
 func TestProviderCRUDResponseContract(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)

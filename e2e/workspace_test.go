@@ -25,7 +25,7 @@ func requireWorkspaceResponse(t *testing.T, workspace *v1.Workspace, name string
 }
 
 func TestWorkspaceCRUD(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -53,7 +53,7 @@ func TestWorkspaceCRUD(t *testing.T) {
 }
 
 func TestWorkspaceCreateWithLabels(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -81,7 +81,7 @@ func TestWorkspaceCreateWithLabels(t *testing.T) {
 }
 
 func TestWorkspaceListIncludesCreated(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -115,7 +115,7 @@ func TestWorkspaceListIncludesCreated(t *testing.T) {
 }
 
 func TestWorkspaceDeleteNonexistentNotFound(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -126,7 +126,7 @@ func TestWorkspaceDeleteNonexistentNotFound(t *testing.T) {
 }
 
 func TestWorkspaceGetNonexistentNotFound(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

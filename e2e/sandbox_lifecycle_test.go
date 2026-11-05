@@ -18,7 +18,7 @@ import (
 )
 
 func TestSandboxCRUDAndExec(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -83,7 +83,7 @@ func TestSandboxCRUDAndExec(t *testing.T) {
 }
 
 func TestSandboxGetNonexistentNotFound(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -94,7 +94,7 @@ func TestSandboxGetNonexistentNotFound(t *testing.T) {
 }
 
 func TestSandboxDeleteNonexistentNotFound(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -105,7 +105,7 @@ func TestSandboxDeleteNonexistentNotFound(t *testing.T) {
 }
 
 func TestSandboxCreateDuplicateAlreadyExists(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -127,7 +127,7 @@ func TestSandboxCreateDuplicateAlreadyExists(t *testing.T) {
 }
 
 func TestSandboxListScopedAndAllWorkspaces(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)
@@ -185,7 +185,7 @@ func TestSandboxListScopedAndAllWorkspaces(t *testing.T) {
 }
 
 func TestSandboxLabelsAndSelectors(t *testing.T) {
-	client := requireClient(t)
+	client := clientOrSkip(t)
 	t.Parallel()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Minute)

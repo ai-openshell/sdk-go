@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 func run(m *testing.M) int {
 	gatewayName = os.Getenv("OPENSHELL_GATEWAY")
 	if gatewayName == "" {
-		// No gateway configured; requireClient skips every test individually.
+		// No gateway configured; clientOrSkip skips every test individually.
 		return m.Run()
 	}
 
@@ -99,9 +99,9 @@ func mtlsClientOption(dir string) gateway.ClientOption {
 	return gateway.WithTLS(cfg)
 }
 
-// requireClient returns the shared gateway client, skipping the calling test
+// clientOrSkip returns the shared gateway client, skipping the calling test
 // when OPENSHELL_GATEWAY was not set at process startup.
-func requireClient(t *testing.T) *v1.Client {
+func clientOrSkip(t *testing.T) *v1.Client {
 	t.Helper()
 	if gatewayName == "" {
 		t.Skip("OPENSHELL_GATEWAY not set")
