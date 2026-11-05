@@ -30,16 +30,23 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// os.Exit skips deferred calls, so the setup and its cleanup live in run.
+	os.Exit(run(m))
+}
+
+// run sets up the shared client, runs the tests, and closes the client. It
+// returns the process exit code.
+func run(m *testing.M) int {
 	gatewayName = os.Getenv("OPENSHELL_GATEWAY")
 	if gatewayName == "" {
 		// No gateway configured; requireClient skips every test individually.
-		os.Exit(m.Run())
+		return m.Run()
 	}
 
 	cfg, err := gateway.LoadConfig(gatewayName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: failed to load gateway config: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 
 	var opts []gateway.ClientOption
@@ -50,24 +57,21 @@ func TestMain(m *testing.M) {
 	client, err := gateway.NewClient(gatewayName, opts...)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: failed to build gateway client: %v\n", err)
-		os.Exit(1)
+		return 1
 	}
 	sharedClient = client
+	defer func() { _ = sharedClient.Close() }()
 
 	if err := waitForPersistenceReady(sharedClient); err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: %v\n", err)
-		_ = sharedClient.Close()
-		os.Exit(1)
+		return 1
 	}
 	if err := importTestProfiles(sharedClient); err != nil {
 		fmt.Fprintf(os.Stderr, "e2e: %v\n", err)
-		_ = sharedClient.Close()
-		os.Exit(1)
+		return 1
 	}
 
-	code := m.Run()
-	_ = sharedClient.Close()
-	os.Exit(code)
+	return m.Run()
 }
 
 // mtlsClientOption inspects <dir>/mtls for an on-disk certificate bundle
