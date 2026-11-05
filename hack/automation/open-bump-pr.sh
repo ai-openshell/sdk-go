@@ -11,8 +11,9 @@
 # for older tags. --dry-run does the local part, prints the PR body, and
 # changes nothing on GitHub.
 #
-# Skips the tag when branch core/<tag> exists on origin or a PR from it was
-# merged. When the core tag no longer exists, closes an open proposal for it.
+# Skips the tag when branch core/<tag> exists on origin or any PR from it
+# exists (merged or closed), so a closed proposal is never reopened. When the
+# core tag no longer exists, closes an open proposal for it.
 # Git identity and GH_TOKEN come from the environment (the App in CI).
 set -euo pipefail
 
@@ -64,8 +65,10 @@ open_pr_for_branch() {
   gh pr list -R "$sdk_repo" --head "$branch" --state open --json number --jq '.[0].number // empty'
 }
 
-# The core tag may have been deleted (a withdrawn pre-release).
-if ! gh api "repos/$core_repo/git/ref/tags/$tag" --silent 2>/dev/null; then
+# The core tag may have been deleted (a withdrawn pre-release). Only a 404
+# means that; any other failure (rate limit, 5xx) stops the run.
+if ! err=$(gh api "repos/$core_repo/git/ref/tags/$tag" --silent 2>&1); then
+  grep -q 'HTTP 404' <<<"$err" || die "looking up core tag $tag failed: $err"
   n=$(open_pr_for_branch)
   if [ -n "$n" ]; then
     echo "Core tag $tag is gone; closing #$n."
@@ -81,8 +84,12 @@ if [ -n "$(git ls-remote --heads origin "$branch")" ]; then
   echo "Branch $branch exists on origin; skipping $tag."
   exit 0
 fi
-if [ -n "$(gh pr list -R "$sdk_repo" --head "$branch" --state merged --json number --jq '.[0].number // empty')" ]; then
-  echo "A proposal for $tag was merged already; skipping."
+# Any earlier proposal is final: merged, closed by a maintainer, or closed as
+# superseded by a newer pre-release. Its branch may be gone, so ask for PRs.
+prev=$(gh pr list -R "$sdk_repo" --head "$branch" --state all --json number,state \
+  --jq '.[0] | select(.) | "#\(.number) (\(.state | ascii_downcase))"')
+if [ -n "$prev" ]; then
+  echo "Proposal $prev exists for $tag already; skipping."
   exit 0
 fi
 
