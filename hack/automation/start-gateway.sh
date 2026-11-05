@@ -13,8 +13,10 @@
 # gateway image of a fresh tag to be published.
 #
 # Needs docker with the compose plugin and a host path /var/lib/openshell
-# (core's compose file bind-mounts it at the same path). stop-gateway.sh
-# undoes everything.
+# (core's compose file bind-mounts it at the same path). Meant for throwaway
+# CI hosts: it registers the gateway as the active one, and stop-gateway.sh
+# removes every container labelled with core's default sandbox namespace,
+# including sandboxes of another local gateway that uses the same namespace.
 set -euo pipefail
 
 core_repo=${CORE_REPO:-NVIDIA/OpenShell}
@@ -66,10 +68,12 @@ sed -i.bak \
   -e "s#\"$registry/supervisor:latest\"#\"$registry/supervisor:$semver\"#" \
   -e "s#\"$registry/sandbox:latest\"#\"$registry/sandbox:$semver\"#" \
   "$state/gateway.toml" && rm -f "$state/gateway.toml.bak"
-grep -q "supervisor:$semver" "$state/gateway.toml" || {
-  echo "ERROR: could not pin the supervisor image in core's gateway.toml at $tag" >&2
-  exit 1
-}
+for img in supervisor sandbox; do
+  grep -q "\"$registry/$img:$semver\"" "$state/gateway.toml" || {
+    echo "ERROR: could not pin the $img image in core's gateway.toml at $tag" >&2
+    exit 1
+  }
+done
 # Core's file binds the health server to loopback inside the container, where
 # the published port can't reach it. Bind it to all container interfaces; the
 # compose file publishes the port on the host's 127.0.0.1 only.

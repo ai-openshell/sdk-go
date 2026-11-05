@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # stop-gateway.sh: stop the E2E gateway started by start-gateway.sh, save its
-# log, and remove the sandbox containers it created.
+# log, remove the sandbox containers, and remove the "e2e" gateway
+# registration (and the active-gateway pointer when it still names "e2e").
 #
 # Usage: stop-gateway.sh [--state-dir <dir>]
 #
@@ -20,4 +21,10 @@ echo "Gateway log: $state/gateway.log"
 ids=$(docker ps -aq --filter label=openshell.sandbox_namespace=openshell)
 [ -z "$ids" ] || docker rm -f $ids >/dev/null
 compose down --volumes --remove-orphans >/dev/null 2>&1
+
+config_home=${XDG_CONFIG_HOME:-$HOME/.config}
+rm -rf "$config_home/openshell/gateways/e2e"
+if [ "$(cat "$config_home/openshell/active_gateway" 2>/dev/null)" = e2e ]; then
+  rm -f "$config_home/openshell/active_gateway"
+fi
 echo "Gateway stopped."
