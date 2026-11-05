@@ -56,12 +56,15 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           EVENT: ${{ github.event_name }}
           INPUT_SHA: ${{ inputs.sha }}
+          BEFORE: ${{ github.event.before }}
         run: |
           set -euo pipefail
           if [ "$EVENT" = workflow_dispatch ]; then
             hack/automation/tag-release.sh --force --sha "${INPUT_SHA:-$GITHUB_SHA}"
           else
-            hack/automation/tag-release.sh
+            # Compare against the commit before the push, so a pin change
+            # that isn't the pushed tip still counts.
+            hack/automation/tag-release.sh --since "$BEFORE"
           fi
 
       - name: Report failure
