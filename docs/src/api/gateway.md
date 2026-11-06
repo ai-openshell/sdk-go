@@ -127,6 +127,8 @@ type Info struct {
 | `"oidc"` | `AuthModeOIDC` | `v1.RefreshableToken` that reads `oidc_token.json` near expiry and fails once the token has expired |
 | `"mtls"` | `AuthModeMTLS` | Unsupported (use `WithAuth`) |
 
+With `AuthModeCloudflareJWT`, the SDK rereads the edge token file on each request, so a token refreshed by `openshell gateway login` takes effect without a restart. Keep the token file readable. After `openshell gateway logout`, RPCs from a running client fail.
+
 ### ClientOption
 
 | Constructor | Effect |
