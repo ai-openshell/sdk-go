@@ -45,7 +45,7 @@ jobs:
           token: ${{ steps.app-token.outputs.token }}
           persist-credentials: true
 
-      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+      - uses: jdx/mise-action@6be3c7ed4c21d4f76b208d351d95aac273ebb76d # v5.2.4
         with:
           install: false
 
