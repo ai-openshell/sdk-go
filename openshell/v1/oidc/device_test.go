@@ -118,8 +118,6 @@ func TestDeviceLogin_Success(t *testing.T) {
 	assert.Equal(t, "ABCD-1234", displayedCode)
 }
 
-// TestDeviceLogin_MissingIssuer verifies that DeviceLogin returns
-// ErrOIDCConfig when the issuer is not provided.
 // DeviceLogin authenticates a user, so the device authorization request must
 // carry "openid" on the wire even when the caller supplied its own scopes.
 func TestDeviceLogin_AlwaysRequestsOpenIDScope(t *testing.T) {
@@ -283,6 +281,8 @@ func setupScopeCapturingDeviceProvider(t *testing.T, scope *capturedScope) *http
 	return srv
 }
 
+// TestDeviceLogin_MissingIssuer verifies that DeviceLogin returns
+// ErrOIDCConfig when the issuer is not provided.
 func TestDeviceLogin_MissingIssuer(t *testing.T) {
 	resetDiscoveryCache()
 

@@ -396,6 +396,62 @@ func TestClientCredentialsScopesAreNotNormalized(t *testing.T) {
 	}
 }
 
+// Without scopes (unset or WithScopes()), the token request must carry no
+// scope parameter at all, not a bare "scope=", for both entry points.
+func TestClientCredentialsSendNoScopeParameterWithoutScopes(t *testing.T) {
+	entryPoints := map[string]func(opts ...LoginOption) error{
+		"ClientCredentials": func(opts ...LoginOption) error {
+			_, err := ClientCredentials(context.Background(), opts...)
+			return err
+		},
+		"NewClientCredentialsAuth": func(opts ...LoginOption) error {
+			auth, err := NewClientCredentialsAuth(opts...)
+			if err != nil {
+				return err
+			}
+			_, err = auth.GetRequestMetadata(context.Background())
+			return err
+		},
+	}
+	scopeOptions := map[string][]LoginOption{
+		"unset":          nil,
+		"explicit empty": {WithScopes()},
+	}
+
+	for entryName, run := range entryPoints {
+		for scopeName, scopeOpts := range scopeOptions {
+			t.Run(entryName+"/"+scopeName, func(t *testing.T) {
+				resetDiscoveryCache()
+				var form url.Values
+				var srv *httptest.Server
+				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/.well-known/openid-configuration" {
+						_ = json.NewEncoder(w).Encode(map[string]string{
+							"issuer":                 srv.URL,
+							"authorization_endpoint": srv.URL + "/authorize",
+							"token_endpoint":         srv.URL + "/token",
+						})
+						return
+					}
+					_ = r.ParseForm()
+					form = r.Form
+					_, _ = w.Write([]byte(tokenResponseJSON("token", "", 3600)))
+				}))
+				t.Cleanup(srv.Close)
+
+				opts := append([]LoginOption{
+					WithIssuer(srv.URL),
+					WithClientID("client"),
+					WithClientSecret("secret"),
+				}, scopeOpts...)
+				require.NoError(t, run(opts...))
+				require.NotNil(t, form, "the token request was never made")
+				assert.False(t, form.Has("scope"), "unexpected scope parameter %q", form.Get("scope"))
+			})
+		}
+	}
+}
+
 // ClientCredentials applies WithTimeout when the caller's context has no
 // deadline, the same way Login and DeviceLogin do.
 func TestClientCredentials_WithTimeoutBoundsExchange(t *testing.T) {
