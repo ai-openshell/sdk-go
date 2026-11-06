@@ -73,7 +73,13 @@ func DeviceLogin(ctx context.Context, opts ...LoginOption) (*oauth2.Token, error
 		}
 		cfg.issuer = gwCfg.OIDCIssuer
 		cfg.clientID = gwCfg.OIDCClientID
+		cfg.applyGatewayScopes(gwCfg)
 	}
+
+	// DeviceLogin authenticates a user, so the request must be an OIDC one
+	// whether the scopes came from the caller, the gateway metadata, or the
+	// defaults.
+	cfg.requireOpenIDScope()
 
 	// Validate required configuration.
 	if cfg.issuer == "" || cfg.clientID == "" {
