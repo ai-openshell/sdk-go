@@ -121,7 +121,7 @@ if [ "$fix" -eq 1 ]; then
   else
     echo "Rewrote the old module path on:"
     sed 's/^/  /' <<<"$fixed"
-    git add -- $(sed 's/:[0-9]*$//' <<<"$fixed" | sort -u)
+    sed 's/:[0-9]*$//' <<<"$fixed" | sort -u | while IFS= read -r f; do git add -- "$f"; done
   fi
   exit 0
 fi

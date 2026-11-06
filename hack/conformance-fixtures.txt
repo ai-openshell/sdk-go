@@ -1,0 +1,6 @@
+# Fixtures vendored from core's sdk/conformance/ at the pinned tag, one path
+# per line. conformance:check compares them with core; core bump PRs
+# refresh them (hack/automation/open-bump-pr.sh).
+openshell/v1/oidc/testdata/oauth-client-credentials.json
+openshell/v1/oidc/testdata/oidc-token-bundle.json
+openshell/v1/gateway/testdata/oidc-token-bundle.json

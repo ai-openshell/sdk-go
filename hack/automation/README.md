@@ -2,7 +2,7 @@
 
 Every workflow under `.github/workflows/` wraps one of these scripts through a mise task, so each job can be run locally before it runs in CI.
 Scripts that write to GitHub take `--dry-run` and print what they would do instead.
-Workflows run them with a token of the `ai-openshell-sdk-bot` GitHub App, never with `GITHUB_TOKEN`, so their pushes and PRs trigger CI.
+Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-openshell-sdk-go[bot]`; secrets `SDK_BOT_CLIENT_ID` and `SDK_BOT_PRIVATE_KEY` in the `sdk-bot` environment, which only `main` can deploy to), never with `GITHUB_TOKEN`, so their pushes and PRs trigger CI.
 
 | File | mise task | Purpose |
 |------|-----------|---------|
@@ -13,9 +13,8 @@ Workflows run them with a token of the `ai-openshell-sdk-bot` GitHub App, never 
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report. |
 | `report-failure.sh <job> <run-url>` | | Append a dated failure line to the drift issue. Called from `if: failure()` steps. |
+| `drift-issue.sh` | | Shared helpers for the two drift issue scripts (sourced, not run). |
 | `start-gateway.sh <core-semver>`, `stop-gateway.sh` | | Run the published gateway container for a core version with the Docker driver and a plaintext endpoint for the E2E lane, and collect its log. |
-| `adapt-context.sh <pr-or-issue-number>` | | Build the `## Adaptation task` comment for the agent workflow: pin diff, proto diff, failed log tail, uncovered RPCs. |
-| `adapt-task-body.md` | | Comment template for `adapt-context.sh`. |
 
 | Workflow | Script |
 |----------|--------|
@@ -23,4 +22,3 @@ Workflows run them with a token of the `ai-openshell-sdk-bot` GitHub App, never 
 | `release-tag.yml` (push to `main`) | `tag-release.sh` |
 | `core-drift.yml` (nightly) | `drift-check.sh`, then `update-drift-issue.sh` |
 | `e2e.yml` (reusable) | `start-gateway.sh`, `mise run e2e`, `stop-gateway.sh` |
-| `adapt.yml` (label `agent:adapt`) | `adapt-context.sh` |

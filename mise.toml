@@ -79,10 +79,7 @@ FAILED=0
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
 
-for local in \
-  openshell/v1/oidc/testdata/oauth-client-credentials.json \
-  openshell/v1/oidc/testdata/oidc-token-bundle.json \
-  openshell/v1/gateway/testdata/oidc-token-bundle.json; do
+for local in $(grep -v '^#' hack/conformance-fixtures.txt); do
   name=$(basename "$local")
   status=$(curl -sS -o "$TMP" -w '%{http_code}' "$BASE/$name")
   if [ "$status" = 404 ]; then
@@ -230,12 +227,33 @@ echo "Proto check passed: generated files match core $(yq -r '.inputs[0].tag' bu
 """
 
 [tasks."workflows:check"]
-description = "Lint GitHub workflows with actionlint (with shellcheck) and zizmor"
+description = "Lint GitHub workflows (actionlint with shellcheck, zizmor) and the hack/ scripts (shellcheck)"
 run = [
   "actionlint",
   "zizmor --offline --min-severity medium .github",
+  "shellcheck -x -S warning hack/automation/*.sh hack/migration/*.sh",
 ]
 
 [tasks."docs:build"]
 description = "Build the mdbook docs into docs/book"
 run = "mdbook build docs"
+
+[tasks."core:tags"]
+description = "List core release tags newer than the pin (newest pre-release only, --all for every tag)"
+run = "hack/automation/core-tags.sh"
+
+[tasks."core:bump"]
+description = "Open the update proposal for a core tag: mise run core:bump -- <tag> [--dry-run]"
+run = "hack/automation/open-bump-pr.sh"
+
+[tasks."release:tag"]
+description = "Tag the lockstep SDK release for a stable pin (--dry-run prints what it would do)"
+run = "hack/automation/tag-release.sh"
+
+[tasks."core:drift"]
+description = "Compare core main with the pin: mise run core:drift -- --out <report.md>"
+run = "hack/automation/drift-check.sh"
+
+[tasks.e2e]
+description = "Run the E2E suite against the gateway named in OPENSHELL_GATEWAY (see hack/automation/start-gateway.sh)"
+run = "go vet -tags=e2e ./e2e/... && go test -tags=e2e -timeout 8m -parallel ${E2E_PARALLEL:-5} ./e2e/..."

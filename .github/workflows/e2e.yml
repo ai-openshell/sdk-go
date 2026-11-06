@@ -1,0 +1,66 @@
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# Runs the E2E suite against the published gateway of a core version, started
+# from core's deploy/docker files (hack/automation/start-gateway.sh).
+name: e2e
+
+on:
+  workflow_call:
+    inputs:
+      core-version:
+        description: Core version (default the pin in buf.gen.yaml)
+        type: string
+        default: ""
+  workflow_dispatch:
+    inputs:
+      core-version:
+        description: Core version, for example v0.1.7 (default the pin in buf.gen.yaml)
+        type: string
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    name: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: jdx/mise-action@e6a8b3978addb5a52f2b4cd9d91eafa7f0ab959d # v4.2.0
+        with:
+          install: false
+
+      - name: Install tools
+        run: mise install --locked go yq
+
+      - name: Start the gateway
+        env:
+          CORE_VERSION: ${{ inputs.core-version }}
+        run: |
+          set -euo pipefail
+          version=${CORE_VERSION:-$(yq -r '.inputs[0].tag' buf.gen.yaml)}
+          echo "Core version: $version" >>"$GITHUB_STEP_SUMMARY"
+          hack/automation/start-gateway.sh "$version"
+
+      - name: Run the E2E suite
+        env:
+          OPENSHELL_GATEWAY: e2e
+        run: mise run e2e
+
+      - name: Stop the gateway
+        if: always()
+        run: hack/automation/stop-gateway.sh
+
+      - name: Upload the gateway log
+        if: failure()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: gateway-log
+          path: ${{ runner.temp }}/openshell-e2e/gateway.log
+          if-no-files-found: ignore
