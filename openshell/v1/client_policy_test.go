@@ -6,22 +6,20 @@ package v1
 import (
 	"context"
 	"fmt"
-	"google.golang.org/grpc/metadata"
-	"sync"
-
-	"github.com/ai-openshell/sdk-go/openshell/v1/types"
-
 	"net"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 	dm "github.com/ai-openshell/sdk-go/proto/datamodelv1"
 	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 )
 
@@ -30,6 +28,8 @@ type policyServer struct {
 	health        func(context.Context) (*pb.HealthResponse, error)
 	streamCalls   atomic.Int32
 	streamStarted chan struct{}
+	// failExec makes ExecSandbox fail with Unavailable before sending anything.
+	failExec bool
 }
 
 func (s *policyServer) Health(ctx context.Context, _ *pb.HealthRequest) (*pb.HealthResponse, error) {
@@ -48,6 +48,9 @@ func (s *policyServer) WatchSandbox(_ *pb.WatchSandboxRequest, stream grpc.Serve
 }
 func (s *policyServer) ExecSandbox(_ *pb.ExecSandboxRequest, stream grpc.ServerStreamingServer[pb.ExecSandboxEvent]) error {
 	s.streamCalls.Add(1)
+	if s.failExec {
+		return status.Error(codes.Unavailable, "stream failed")
+	}
 	close(s.streamStarted)
 	<-stream.Context().Done()
 	return status.Error(codes.Unavailable, "stream failed")
@@ -145,6 +148,19 @@ func TestClientPolicy_StreamLifetime(t *testing.T) {
 		}
 	}, time.Second, time.Millisecond)
 	assert.Equal(t, int32(2), s.streamCalls.Load())
+}
+
+func TestClientPolicy_StreamFailureNotReplayed(t *testing.T) {
+	s := &policyServer{failExec: true}
+	c, err := NewClient(Config{Address: policyAddress(t, s), RetryPolicy: &types.RetryPolicy{MaxRetries: 3, InitialWait: time.Millisecond}})
+	require.NoError(t, err)
+	t.Cleanup(func() { require.NoError(t, c.Close()) })
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	_, err = c.Exec().Run(ctx, "default", "sb", []string{"true"})
+	require.Error(t, err)
+	assert.False(t, IsCancelled(err), "stream must fail on its own, not by cancellation: %v", err)
+	assert.Equal(t, int32(1), s.streamCalls.Load())
 }
 func TestClientPolicy_PollingLifetime(t *testing.T) {
 	c := newPolicyTestClient(t, &policyServer{}, 40*time.Millisecond)

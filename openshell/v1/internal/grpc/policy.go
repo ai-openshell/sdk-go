@@ -82,13 +82,14 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 	if p.retry != nil {
 		delay = p.retry.InitialWait
 	}
-	for retries := 0; ; {
+	for {
 		if err := ctx.Err(); err != nil {
 			return status.FromContextError(err).Err()
 		}
 		attempts++
 		err := invoke(ctx, method, req, reply, cc, opts...)
-		if p.retry == nil || retries >= p.retry.MaxRetries || !safeReadMethods[method] || status.Code(err) != codes.Unavailable {
+		// attempts-1 retries have been made; MaxRetries is validated non-negative.
+		if p.retry == nil || attempts > uint64(p.retry.MaxRetries) || !safeReadMethods[method] || status.Code(err) != codes.Unavailable {
 			return err
 		}
 		if p.logger != nil {
@@ -101,7 +102,6 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 			return status.FromContextError(ctx.Err()).Err()
 		case <-timer.C:
 		}
-		retries++
 		delay = nextDelay(delay, p.retry.MaxWait)
 	}
 }
