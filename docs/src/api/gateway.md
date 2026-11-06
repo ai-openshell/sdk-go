@@ -132,10 +132,25 @@ type Info struct {
 | Constructor | Effect |
 |-------------|--------|
 | `WithLogger(l)` | Set logger on the SDK client |
-| `WithTimeout(d)` | Set connection timeout |
+| `WithTimeout(d)` | Set default unary RPC deadline |
 | `WithTLS(cfg)` | Override TLS settings from gateway config |
 | `WithAuth(provider)` | Override auto-resolved auth provider |
-| `WithRetryPolicy(p)` | Set retry policy |
+| `WithRetryPolicy(p)` | Set safe-read unary retry policy |
+
+Options use the same [request policy](client.md#request-deadlines) as
+`v1.NewClient`: explicit caller deadlines take precedence; streams and overall
+polling lifetimes use caller contexts. Nil retry policy or zero retries disables
+configured replay. Zero waits select 100 ms initial and 5 s maximum, with capped
+exponential backoff for eligible reads on gRPC `Unavailable` only. Policies are
+copied at construction.
+
+`WithLogger` receives sanitized unary completion and retry diagnostics even
+without a retry policy. Nil disables these logs; implementations must support
+concurrent calls. See [diagnostics](client.md#diagnostics) for fields and levels.
+
+Negative timeout or retry fields, or effective maximum wait below initial wait,
+return an SDK invalid-argument error from `NewClient`. Zero timeout supplies no
+default deadline.
 
 ## Error Handling
 
