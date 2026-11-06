@@ -5,13 +5,13 @@ package grpc
 
 import (
 	"context"
-	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"time"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/types"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 type clientPolicy struct {
@@ -48,12 +48,14 @@ func newClientPolicy(timeout time.Duration, retry *types.RetryPolicy, logger typ
 }
 
 // ClientOptions validates and snapshots request policy settings.
+// NewConnection disables gRPC's built-in retries after all caller options,
+// so the interceptor returned here is the only retry mechanism.
 func ClientOptions(timeout time.Duration, retry *types.RetryPolicy, logger types.Logger) ([]grpc.DialOption, error) {
 	p, err := newClientPolicy(timeout, retry, logger)
 	if err != nil {
 		return nil, err
 	}
-	return []grpc.DialOption{grpc.WithChainUnaryInterceptor(p.unary), grpc.WithDisableRetry()}, nil
+	return []grpc.DialOption{grpc.WithChainUnaryInterceptor(p.unary)}, nil
 }
 
 func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoke grpc.UnaryInvoker, opts ...grpc.CallOption) (result error) {

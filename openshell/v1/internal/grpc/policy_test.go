@@ -5,26 +5,22 @@ package grpc
 
 import (
 	"context"
-	"google.golang.org/grpc/metadata"
-
-	"net"
-	"sync/atomic"
-
 	"fmt"
-	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
-	"sync"
-
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"math"
-
+	"net"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/types"
+	pb "github.com/ai-openshell/sdk-go/proto/openshellv1"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
+	"google.golang.org/grpc/status"
 )
 
 func TestClientOptions_Validation(t *testing.T) {
@@ -110,8 +106,36 @@ func TestClientPolicy_CallerDeadline(t *testing.T) {
 	assert.Zero(t, calls)
 }
 
+// expectedSafeReads is the independently maintained list of RPCs that may be
+// retried. It is written out literally so that a change to safeReadMethods
+// (for example swapping in a mutating RPC) fails this test.
+var expectedSafeReads = map[string]bool{
+	"/openshell.v1.OpenShell/Health":                   true,
+	"/openshell.v1.OpenShell/GetCurrentUser":           true,
+	"/openshell.v1.OpenShell/GetGatewayInfo":           true,
+	"/openshell.v1.OpenShell/GetSandbox":               true,
+	"/openshell.v1.OpenShell/ListSandboxes":            true,
+	"/openshell.v1.OpenShell/GetSandboxTemplate":       true,
+	"/openshell.v1.OpenShell/ListSandboxTemplates":     true,
+	"/openshell.v1.OpenShell/ListSandboxProviders":     true,
+	"/openshell.v1.OpenShell/GetService":               true,
+	"/openshell.v1.OpenShell/ListServices":             true,
+	"/openshell.v1.OpenShell/GetProvider":              true,
+	"/openshell.v1.OpenShell/ListProviders":            true,
+	"/openshell.v1.OpenShell/GetProviderRefreshStatus": true,
+	"/openshell.v1.OpenShell/GetGatewayConfig":         true,
+	"/openshell.v1.OpenShell/GetSandboxPolicyStatus":   true,
+	"/openshell.v1.OpenShell/ListSandboxPolicies":      true,
+	"/openshell.v1.OpenShell/GetSandboxLogs":           true,
+	"/openshell.v1.OpenShell/GetDraftPolicy":           true,
+	"/openshell.v1.OpenShell/GetDraftHistory":          true,
+	"/openshell.v1.OpenShell/GetWorkspace":             true,
+	"/openshell.v1.OpenShell/ListWorkspaces":           true,
+	"/openshell.v1.OpenShell/ListWorkspaceMembers":     true,
+}
+
 func TestClientPolicy_Retry(t *testing.T) {
-	require.Len(t, safeReadMethods, 22)
+	require.Equal(t, expectedSafeReads, safeReadMethods)
 	for _, method := range pb.OpenShell_ServiceDesc.Methods {
 		t.Run(method.MethodName, func(t *testing.T) {
 			full := "/" + pb.OpenShell_ServiceDesc.ServiceName + "/" + method.MethodName
@@ -124,7 +148,7 @@ func TestClientPolicy_Retry(t *testing.T) {
 				}
 				return nil
 			})
-			if safeReadMethods[full] {
+			if expectedSafeReads[full] {
 				assert.Equal(t, 2, calls)
 				require.NoError(t, err)
 			} else {
