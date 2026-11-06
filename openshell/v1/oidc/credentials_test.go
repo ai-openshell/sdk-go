@@ -308,9 +308,10 @@ func TestClientCredentialsAuthLateFlightReusesCachedToken(t *testing.T) {
 	assert.Equal(t, "cached-token", accessToken)
 }
 
-// A non-positive timeout means "no deadline". The exchange context must not be
-// born expired, so the token exchange should still succeed.
-func TestClientCredentialsAuthNonPositiveTimeoutHasNoDeadline(t *testing.T) {
+// No caller can cancel the detached background exchange, so a non-positive
+// timeout falls back to the default instead of leaving it unbounded. The
+// exchange context must not be born expired either, so the exchange succeeds.
+func TestClientCredentialsAuthNonPositiveTimeoutUsesDefaultBound(t *testing.T) {
 	for _, timeout := range []time.Duration{0, -1 * time.Second} {
 		t.Run(timeout.String(), func(t *testing.T) {
 			resetDiscoveryCache()
@@ -328,20 +329,29 @@ func TestClientCredentialsAuthNonPositiveTimeoutHasNoDeadline(t *testing.T) {
 			}))
 			t.Cleanup(server.Close)
 
+			// The secret provider runs on the exchange context, so it sees
+			// the bound the exchange runs under.
+			var remaining time.Duration
+			var hasDeadline bool
 			auth, err := NewClientCredentialsAuth(
 				WithIssuer(server.URL),
 				WithClientID("client"),
-				WithClientSecret("secret"),
-				WithTimeout(timeout), // explicitly no timeout
+				WithClientSecretProvider(func(ctx context.Context) (string, error) {
+					var deadline time.Time
+					deadline, hasDeadline = ctx.Deadline()
+					remaining = time.Until(deadline)
+					return "secret", nil
+				}),
+				WithTimeout(timeout),
 			)
 			require.NoError(t, err)
-
-			// The explicit timeout must be preserved (not replaced by the default).
-			require.Equal(t, timeout, auth.(*clientCredentialsAuth).cfg.timeout)
 
 			metadata, err := auth.GetRequestMetadata(context.Background())
 			require.NoError(t, err)
 			assert.Equal(t, "Bearer token", metadata["authorization"])
+			require.True(t, hasDeadline, "the background exchange must have a deadline")
+			assert.Greater(t, remaining, defaultTimeout-time.Minute)
+			assert.LessOrEqual(t, remaining, defaultTimeout)
 		})
 	}
 }
@@ -384,6 +394,23 @@ func TestClientCredentialsScopesAreNotNormalized(t *testing.T) {
 			assert.Equal(t, tt.want, cfg.scopes)
 		})
 	}
+}
+
+// ClientCredentials applies WithTimeout when the caller's context has no
+// deadline, the same way Login and DeviceLogin do.
+func TestClientCredentials_WithTimeoutBoundsExchange(t *testing.T) {
+	start := time.Now()
+	_, err := ClientCredentials(context.Background(),
+		WithIssuer("https://issuer.example.com"),
+		WithClientID("client"),
+		WithClientSecretProvider(func(ctx context.Context) (string, error) {
+			<-ctx.Done()
+			return "", ctx.Err()
+		}),
+		WithTimeout(50*time.Millisecond),
+	)
+	require.ErrorIs(t, err, ErrClientCredentials)
+	assert.Less(t, time.Since(start), 5*time.Second)
 }
 
 func TestClientCredentialsAuthCancellationDoesNotPoisonSharedExchange(t *testing.T) {

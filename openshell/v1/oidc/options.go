@@ -19,8 +19,10 @@ const scopeOpenID = "openid"
 // are specified via [WithScopes].
 var defaultScopes = []string{scopeOpenID, "profile", "email"}
 
-// defaultTimeout is the maximum duration for interactive login flows
-// (browser, keyboard, device code) when no custom timeout is set.
+// defaultTimeout is the maximum duration of a flow (browser, keyboard,
+// device code, client credentials) when no custom timeout is set. It also
+// bounds every background exchange of [NewClientCredentialsAuth] that has no
+// positive timeout.
 const defaultTimeout = 2 * time.Minute
 
 // loginConfig holds the resolved configuration for a single login
@@ -154,12 +156,16 @@ func WithCallbackPort(port int) LoginOption {
 	}
 }
 
-// WithTimeout sets the maximum duration for a login flow.
-// The default is 2 minutes.
+// WithTimeout sets the maximum duration for a flow. The default is 2 minutes.
 //
-// A non-positive duration (d <= 0) means "no deadline": the flow runs until
-// it completes or the caller's context is cancelled. A caller-supplied
-// context that already carries a deadline always takes precedence.
+// [Login], [DeviceLogin] and [ClientCredentials] apply it only when the
+// caller's context has no deadline; a caller-supplied deadline always takes
+// precedence. For them, a non-positive duration (d <= 0) means "no deadline":
+// the flow runs until it completes or the caller's context is cancelled.
+//
+// [NewClientCredentialsAuth] runs each token exchange in the background,
+// detached from any caller context, so it always bounds the exchange: by d
+// when d is positive and by the 2 minute default otherwise.
 func WithTimeout(d time.Duration) LoginOption {
 	return func(c *loginConfig) {
 		c.timeout = d

@@ -71,13 +71,16 @@ func (a *clientCredentialsAuth) accessTokenForExchange() (string, error) {
 		return accessToken, nil
 	}
 
-	// A zero timeout means "no deadline"; only bound the exchange when a
-	// positive timeout was configured (mirrors Login and DeviceFlow).
-	exchangeCtx := context.Background()
-	cancel := context.CancelFunc(func() {})
-	if a.cfg.timeout > 0 {
-		exchangeCtx, cancel = context.WithTimeout(exchangeCtx, a.cfg.timeout)
+	// The exchange is detached from caller contexts on purpose, so no caller
+	// can cancel it. Always bound it, or a secret provider that blocks would
+	// hold the singleflight key forever and wedge every later request. A
+	// non-positive timeout falls back to the default here instead of meaning
+	// "no deadline" as it does for the caller-driven flows.
+	timeout := a.cfg.timeout
+	if timeout <= 0 {
+		timeout = defaultTimeout
 	}
+	exchangeCtx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	token, err := exchangeClientCredentials(exchangeCtx, a.cfg, true)
 	if err != nil {

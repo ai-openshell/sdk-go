@@ -33,6 +33,13 @@ func ClientCredentials(ctx context.Context, opts ...LoginOption) (*oauth2.Token,
 	if err != nil {
 		return nil, err
 	}
+	// Same rule as Login and DeviceLogin: a caller deadline wins, and a
+	// non-positive timeout means no deadline.
+	if _, hasDeadline := ctx.Deadline(); !hasDeadline && cfg.timeout > 0 {
+		var cancel context.CancelFunc
+		ctx, cancel = context.WithTimeout(ctx, cfg.timeout)
+		defer cancel()
+	}
 	return exchangeClientCredentials(ctx, cfg, false)
 }
 
