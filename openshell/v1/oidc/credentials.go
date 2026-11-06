@@ -73,10 +73,7 @@ func resolveClientCredentialsConfig(opts ...LoginOption) (*loginConfig, error) {
 		if !cfg.audienceSet {
 			cfg.audience = gwCfg.OIDCAudience
 		}
-		if !cfg.scopesSet && gwCfg.OIDCScopes != "" {
-			cfg.scopes = strings.Fields(gwCfg.OIDCScopes)
-			cfg.scopesSet = true
-		}
+		cfg.applyGatewayScopes(gwCfg)
 	}
 
 	// Validate required configuration.

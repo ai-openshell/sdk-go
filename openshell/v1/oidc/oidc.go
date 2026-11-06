@@ -9,7 +9,6 @@ import (
 	"io"
 	"os"
 	"slices"
-	"strings"
 
 	"golang.org/x/oauth2"
 
@@ -145,12 +144,7 @@ func resolveOIDCConfig(cfg *loginConfig, gatewayName string) (string, error) {
 		}
 		cfg.issuer = gwCfg.OIDCIssuer
 		cfg.clientID = gwCfg.OIDCClientID
-		// Gateway-configured scopes fill only genuinely-unset scopes, so an
-		// explicit WithScopes always wins.
-		if !cfg.scopesSet && gwCfg.OIDCScopes != "" {
-			cfg.scopes = strings.Fields(gwCfg.OIDCScopes)
-			cfg.scopesSet = true
-		}
+		cfg.applyGatewayScopes(gwCfg)
 		if tokenDir == "" {
 			tokenDir = gwCfg.Dir
 		}

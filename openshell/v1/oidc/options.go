@@ -6,6 +6,7 @@ package oidc
 import (
 	"context"
 	"io"
+	"strings"
 	"time"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
@@ -64,6 +65,17 @@ func (c *loginConfig) applyDefaults() {
 	}
 	if !c.timeoutSet {
 		c.timeout = defaultTimeout
+	}
+}
+
+// applyGatewayScopes fills unset scopes from the gateway's oidc_scopes, a
+// whitespace-separated list in metadata.json. Gateway scopes only fill
+// genuinely-unset scopes, so an explicit [WithScopes] always wins. All flows
+// that read gateway metadata use this one rule.
+func (c *loginConfig) applyGatewayScopes(gw *gateway.Config) {
+	if !c.scopesSet && gw.OIDCScopes != "" {
+		c.scopes = strings.Fields(gw.OIDCScopes)
+		c.scopesSet = true
 	}
 }
 

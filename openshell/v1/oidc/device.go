@@ -73,12 +73,7 @@ func DeviceLogin(ctx context.Context, opts ...LoginOption) (*oauth2.Token, error
 		}
 		cfg.issuer = gwCfg.OIDCIssuer
 		cfg.clientID = gwCfg.OIDCClientID
-		// Gateway-configured scopes fill only genuinely-unset scopes, so an
-		// explicit WithScopes always wins.
-		if !cfg.scopesSet && gwCfg.OIDCScopes != "" {
-			cfg.scopes = strings.Fields(gwCfg.OIDCScopes)
-			cfg.scopesSet = true
-		}
+		cfg.applyGatewayScopes(gwCfg)
 	}
 
 	// DeviceLogin authenticates a user, so the request must be an OIDC one
