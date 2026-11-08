@@ -8,15 +8,13 @@
 # Imported schemas are included automatically, so their dependency closure is
 # generated without listing every file.
 version: v2
-
 inputs:
   - git_repo: https://github.com/NVIDIA/OpenShell.git
-    tag: v0.1.7
+    tag: v0.1.8-pre.3
     depth: 1
     subdir: proto
     paths:
       - openshell.proto
-
 plugins:
   - local: protoc-gen-go
     out: .
