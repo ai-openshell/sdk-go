@@ -127,9 +127,10 @@ git worktree add --quiet -b "$branch" "$work/wt" "$base"
   done
 
   # Keep the README's "generated from OpenShell core vX.Y.Z" line in step
-  # with stable pins.
+  # with stable pins. Match any version: after a merged pre-release
+  # proposal, the line still names the last stable tag, not the old pin.
   if [ "$kind" = stable ]; then
-    sed -i.bak "s/generated from OpenShell core ${old}/generated from OpenShell core ${tag}/" README.md && rm -f README.md.bak
+    sed -E -i.bak "s/generated from OpenShell core v[0-9]+\.[0-9]+\.[0-9]+(-pre\.[0-9]+)?/generated from OpenShell core ${tag}/" README.md && rm -f README.md.bak
   fi
 
   git add -A
