@@ -49,21 +49,21 @@ url_api = "https://api.github.com/repos/bufbuild/buf/releases/assets/480772487"
 provenance = "minisign"
 
 [[tools.go]]
-version = "1.25.14"
+version = "1.26.11"
 backend = "core:go"
-specifiers = ["1.25.14"]
+specifiers = ["1.26.11"]
 
 [tools.go."platforms.linux-arm64"]
-checksum = "sha256:9bf234ea70ffec9347fdf6b22ce4add51717d3386a38a441e8c8743fceb5eaee"
-url = "https://dl.google.com/go/go1.25.14.linux-arm64.tar.gz"
+checksum = "sha256:6c2f29b458b5add0835f18b776f69c8881a6d88428f1484a6da55755e620757e"
+url = "https://dl.google.com/go/go1.26.11.linux-arm64.tar.gz"
 
 [tools.go."platforms.linux-x64"]
-checksum = "sha256:a21ae5633a269bcd7e90cf767e48225633795e99d831742cbf3397064fee7712"
-url = "https://dl.google.com/go/go1.25.14.linux-amd64.tar.gz"
+checksum = "sha256:9849f4e04ee35303714e34fbc3ac8ab44ea3e448a95aa182f91e3b9b79c710ec"
+url = "https://dl.google.com/go/go1.26.11.linux-amd64.tar.gz"
 
 [tools.go."platforms.macos-arm64"]
-checksum = "sha256:5b26c0b6f308240fca2614fb02f622cfcc8c0cc3b69c78bba4845489a4590259"
-url = "https://dl.google.com/go/go1.25.14.darwin-arm64.tar.gz"
+checksum = "sha256:e3a42e67a7a8acf450ebada2b074c7ca863000ca514907b7185b45e8f5cdff57"
+url = "https://dl.google.com/go/go1.26.11.darwin-arm64.tar.gz"
 
 [[tools."go:github.com/golangci/golangci-lint/v2/cmd/golangci-lint"]]
 version = "2.12.2"
