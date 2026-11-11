@@ -92,13 +92,44 @@ Use `WithClientSecretProvider` when the application rotates secret material.
 | `WithClientSecret(secret)` | OAuth2 client secret (for client credentials) |
 | `WithClientSecretProvider(provider)` | Resolve the client secret for each exchange |
 | `WithAudience(audience)` | Optional OAuth2 resource-server audience |
-| `WithScopes(scopes...)` | Custom scopes (client credentials has no implicit scopes) |
+| `WithScopes(scopes...)` | Replace the default scopes (`openid profile email`); see [Scopes](#scopes) |
 | `WithCallbackPort(port)` | Fixed port for localhost callback (default: tries 8000, then 18000) |
-| `WithTimeout(d)` | Auth flow timeout (default: 2 minutes) |
+| `WithTimeout(d)` | Flow timeout (default: 2 minutes); see [Timeouts](#timeouts) |
 | `WithKeyboardFlow()` | Use keyboard flow instead of browser |
 | `WithInMemory()` | Skip token persistence to disk |
 | `WithDisplayFunc(fn)` | Custom display for device code flow |
 | `WithGateway(name)` | Resolve OIDC config from gateway metadata |
+
+### Scopes
+
+Scopes come from `WithScopes` if set, then from the gateway's
+`oidc_scopes` (when the flow reads gateway metadata), then from the
+defaults.
+
+- `Login` and `DeviceLogin` authenticate a user, so they always request
+  `openid`: `WithScopes("sandbox:read")` sends `openid sandbox:read`, and
+  `WithScopes()` sends only `openid`.
+- `ClientCredentials` and `NewClientCredentialsAuth` have no user, so they
+  send exactly the scopes set by `WithScopes` or the gateway, with no
+  defaults. Without scopes, the token request carries no `scope`
+  parameter.
+
+### Timeouts
+
+`Login`, `DeviceLogin` and `ClientCredentials` apply `WithTimeout` only
+when the context has no deadline; a context deadline always wins. For
+these flows, a zero or negative duration means no deadline, so the flow
+runs until it completes or the context is cancelled.
+
+`NewClientCredentialsAuth` renews tokens in the background, where no
+caller context can cancel the exchange. It always bounds each exchange:
+by `WithTimeout` when positive, otherwise by the 2 minute default.
+
+`ErrTimeout` covers only the interactive flows. When a client credentials
+exchange runs out of time or its context is cancelled, the error matches
+both `ErrClientCredentials` and the context error, so
+`errors.Is(err, context.DeadlineExceeded)` tells a timeout apart from a
+provider failure.
 
 ## Error Handling
 
@@ -110,7 +141,7 @@ The package defines sentinel errors for `errors.Is()` matching:
 | `ErrAuthCode` | Authorization code exchange failed |
 | `ErrDeviceCode` | Device code flow failed |
 | `ErrClientCredentials` | Client credentials exchange failed |
-| `ErrTimeout` | Authentication flow timed out |
+| `ErrTimeout` | Interactive flow (browser, keyboard or device code) timed out |
 | `ErrCallbackServer` | Localhost callback server failed |
 | `ErrTokenPersist` | Token read/write failed |
 | `ErrOIDCConfig` | Missing or invalid OIDC configuration |
@@ -129,7 +160,9 @@ if errors.Is(err, oidc.ErrTimeout) {
 
 When a gateway's `metadata.json` contains `oidc_issuer` and
 `oidc_client_id` fields, `Login` and `DeviceLogin` can resolve
-configuration automatically:
+configuration automatically. An `oidc_scopes` field (space-separated)
+sets the scopes for every flow that reads the gateway, unless
+`WithScopes` is set:
 
 ```go
 // Login reads OIDC config from the gateway
