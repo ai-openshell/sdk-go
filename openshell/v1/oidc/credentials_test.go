@@ -469,6 +469,54 @@ func TestClientCredentials_WithTimeoutBoundsExchange(t *testing.T) {
 	assert.Less(t, time.Since(start), 5*time.Second)
 }
 
+// The other two WithTimeout rules for ClientCredentials: a caller deadline
+// wins over WithTimeout, and a non-positive timeout means no deadline.
+func TestClientCredentials_TimeoutDeadlineRules(t *testing.T) {
+	callerDeadline := time.Now().Add(time.Hour)
+	tests := []struct {
+		name         string
+		ctxDeadline  bool
+		timeout      time.Duration
+		wantDeadline bool
+	}{
+		{name: "caller deadline wins", ctxDeadline: true, timeout: time.Second, wantDeadline: true},
+		{name: "zero timeout", timeout: 0},
+		{name: "negative timeout", timeout: -time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetDiscoveryCache()
+			provider := setupCredentialsMockProvider(t, "client", "secret")
+
+			ctx := context.Background()
+			if tt.ctxDeadline {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithDeadline(ctx, callerDeadline)
+				t.Cleanup(cancel)
+			}
+
+			// The secret provider runs on the exchange context, so it sees
+			// the deadline the exchange runs under.
+			var deadline time.Time
+			var hasDeadline bool
+			_, err := ClientCredentials(ctx,
+				WithIssuer(provider.URL),
+				WithClientID("client"),
+				WithClientSecretProvider(func(ctx context.Context) (string, error) {
+					deadline, hasDeadline = ctx.Deadline()
+					return "secret", nil
+				}),
+				WithTimeout(tt.timeout),
+			)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantDeadline, hasDeadline)
+			if tt.wantDeadline {
+				assert.True(t, deadline.Equal(callerDeadline), "deadline %v, want the caller's %v", deadline, callerDeadline)
+			}
+		})
+	}
+}
+
 func TestClientCredentialsAuthCancellationDoesNotPoisonSharedExchange(t *testing.T) {
 	resetDiscoveryCache()
 	var server *httptest.Server
