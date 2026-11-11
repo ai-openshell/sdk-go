@@ -466,7 +466,45 @@ func TestClientCredentials_WithTimeoutBoundsExchange(t *testing.T) {
 		WithTimeout(50*time.Millisecond),
 	)
 	require.ErrorIs(t, err, ErrClientCredentials)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Less(t, time.Since(start), 5*time.Second)
+}
+
+// A token endpoint that outlives the deadline yields an error that matches
+// context.DeadlineExceeded, so callers can tell a timeout from a provider
+// failure.
+func TestClientCredentials_TokenRequestTimeoutWrapsContextError(t *testing.T) {
+	resetDiscoveryCache()
+	release := make(chan struct{})
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/openid-configuration" {
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"issuer":                 srv.URL,
+				"authorization_endpoint": srv.URL + "/authorize",
+				"token_endpoint":         srv.URL + "/token",
+			})
+			return
+		}
+		// Hold the token response until the test ends.
+		<-release
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(release) }) // runs before srv.Close
+
+	// Fetch discovery first, so the timeout hits the token request.
+	_, err := discover(context.Background(), srv.URL)
+	require.NoError(t, err)
+
+	_, err = ClientCredentials(context.Background(),
+		WithIssuer(srv.URL),
+		WithClientID("client"),
+		WithClientSecret("secret"),
+		WithTimeout(50*time.Millisecond),
+	)
+	require.ErrorIs(t, err, ErrClientCredentials)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Contains(t, err.Error(), "token request failed")
 }
 
 // The other two WithTimeout rules for ClientCredentials: a caller deadline

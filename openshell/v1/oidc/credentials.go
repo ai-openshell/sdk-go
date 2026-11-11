@@ -92,12 +92,23 @@ func resolveClientCredentialsConfig(opts ...LoginOption) (*loginConfig, error) {
 	return cfg, nil
 }
 
+// clientCredentialsError wraps ErrClientCredentials and, once ctx has ended,
+// the context error too, so callers can tell a timeout or cancellation from
+// a provider failure. The underlying cause is left out on purpose: it may
+// carry secret material (FR-014), the context error never does.
+func clientCredentialsError(ctx context.Context, msg string) error {
+	if ctxErr := ctx.Err(); ctxErr != nil {
+		return fmt.Errorf("%w: %s: %w", ErrClientCredentials, msg, ctxErr)
+	}
+	return fmt.Errorf("%w: %s", ErrClientCredentials, msg)
+}
+
 func exchangeClientCredentials(ctx context.Context, cfg *loginConfig, requirePositiveExpiry bool) (*oauth2.Token, error) {
 	secret := cfg.clientSecret
 	if cfg.secretProvider != nil {
 		value, err := cfg.secretProvider(ctx)
 		if err != nil {
-			return nil, fmt.Errorf("%w: client secret provider failed", ErrClientCredentials)
+			return nil, clientCredentialsError(ctx, "client secret provider failed")
 		}
 		secret = value
 	}
@@ -139,14 +150,14 @@ func exchangeClientCredentials(ctx context.Context, cfg *loginConfig, requirePos
 	}
 	resp, err := noRedirectClient.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("%w: token request failed", ErrClientCredentials)
+		return nil, clientCredentialsError(ctx, "token request failed")
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	const maxResponseBytes = 1 << 20
 	body, err := io.ReadAll(io.LimitReader(resp.Body, maxResponseBytes+1))
 	if err != nil {
-		return nil, fmt.Errorf("%w: failed to read token response", ErrClientCredentials)
+		return nil, clientCredentialsError(ctx, "failed to read token response")
 	}
 	if len(body) > maxResponseBytes {
 		return nil, fmt.Errorf("%w: token response is too large", ErrClientCredentials)

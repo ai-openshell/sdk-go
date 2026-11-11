@@ -125,6 +125,12 @@ runs until it completes or the context is cancelled.
 caller context can cancel the exchange. It always bounds each exchange:
 by `WithTimeout` when positive, otherwise by the 2 minute default.
 
+`ErrTimeout` covers only the interactive flows. When a client credentials
+exchange runs out of time or its context is cancelled, the error matches
+both `ErrClientCredentials` and the context error, so
+`errors.Is(err, context.DeadlineExceeded)` tells a timeout apart from a
+provider failure.
+
 ## Error Handling
 
 The package defines sentinel errors for `errors.Is()` matching:
@@ -135,7 +141,7 @@ The package defines sentinel errors for `errors.Is()` matching:
 | `ErrAuthCode` | Authorization code exchange failed |
 | `ErrDeviceCode` | Device code flow failed |
 | `ErrClientCredentials` | Client credentials exchange failed |
-| `ErrTimeout` | Authentication flow timed out |
+| `ErrTimeout` | Interactive flow (browser, keyboard or device code) timed out |
 | `ErrCallbackServer` | Localhost callback server failed |
 | `ErrTokenPersist` | Token read/write failed |
 | `ErrOIDCConfig` | Missing or invalid OIDC configuration |
