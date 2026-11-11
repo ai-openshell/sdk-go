@@ -264,6 +264,83 @@ for event := range watcher.ResultChan() {
 // Channel closes after Ready or Error
 ```
 
+## WatchLogs
+
+Streams a sandbox's log lines and platform events with loss-aware resume. Returns a `WatchInterface[*WatchLogEvent]`.
+
+`WatchLogs` lives on the optional `SandboxLogsWatchInterface`, reached through `client.SandboxLogsWatch()`, so `SandboxInterface` stays unchanged for existing mocks and wrappers.
+
+Each delivered item carries an opaque `Cursor`. The watcher tracks the highest cursor it has seen, reconnects transparently when the stream drops, and asks the gateway to replay only what follows that cursor, so a reconnect neither loses nor duplicates events. The gateway delivers live log and platform events in cursor order across both sources, which is what makes the highest cursor a safe resume point.
+
+Only gRPC `Unavailable` (a dropped connection or gateway restart) is retried, with exponential backoff from 100ms capped at 2s, and it is retried indefinitely. Nothing is emitted while the watcher reconnects, so a gateway that stays down looks the same as a quiet sandbox. Bound the watch with a context deadline, or call `Stop`, when that matters. This differs from `Watch`, which reports `Unavailable` as an `EventError` immediately. Every other error ends the stream with an `EventError`.
+
+Every `Event[*WatchLogEvent]` has `Type` `EventAdded`, except a terminal failure, which arrives as `EventError` with `Err` set and no `Object`. The `Object.Kind` field selects the populated payload:
+
+| Kind | Payload | Meaning |
+|------|---------|---------|
+| `WatchLogKindLog` | `Log *LogLine` | A log line |
+| `WatchLogKindEvent` | `Event *PlatformEvent` | A runtime event from the compute backend |
+| `WatchLogKindWarning` | `Warning string` | Recoverable loss — the server skipped ahead after a lag and the stream continues |
+
+**Available options** (`WatchLogsOptions`):
+
+| Field | Description |
+|-------|-------------|
+| `FollowLogs bool` | Stream log lines. Defaults to true when neither follow flag is set |
+| `FollowEvents bool` | Stream platform events |
+| `LogSources []string` | Filter log lines by source (e.g. `"gateway"`, `"sandbox"`) |
+| `LogMinLevel string` | Minimum log level (e.g. `"WARN"`) |
+| `ResumeAfterCursor string` | Replay only what follows a cursor from an earlier watch |
+| `LogTailLines uint32` | Bound the initial log backfill. Ignored when resuming from a cursor |
+| `EventTail uint32` | Bound the initial event backfill. Ignored when resuming from a cursor |
+
+```go
+watcher, err := client.SandboxLogsWatch().WatchLogs(ctx, "default", "my-sandbox", v1.WatchLogsOptions{
+    FollowLogs:   true,
+    FollowEvents: true,
+    LogTailLines: 100,
+})
+if err != nil {
+    log.Fatal(err)
+}
+defer watcher.Stop()
+
+var cursor string
+for event := range watcher.ResultChan() {
+    if event.Type == v1.EventError {
+        if v1.IsOutOfRange(event.Err) {
+            // Unrecoverable gap: events after the resume point are gone.
+            fmt.Println("log history was trimmed; some events were lost")
+        }
+        break
+    }
+    switch item := event.Object; item.Kind {
+    case v1.WatchLogKindLog:
+        fmt.Printf("[%s] %s\n", item.Log.Level, item.Log.Message)
+    case v1.WatchLogKindEvent:
+        fmt.Printf("event %s: %s\n", item.Event.Reason, item.Event.Message)
+    case v1.WatchLogKindWarning:
+        fmt.Printf("warning: %s\n", item.Warning)
+    }
+    if item := event.Object; item.Cursor > cursor {
+        cursor = item.Cursor
+    }
+}
+```
+
+Loss is never silent. A recoverable gap arrives as a `WatchLogKindWarning` item and the stream continues. An unrecoverable gap ends the stream with an `EventError` carrying `ErrorOutOfRange`: the resume point is gone, so the events after it cannot be replayed. The SDK does not retry that error, because restarting from the tail would hide the loss. To continue anyway, start a new watch with an empty `ResumeAfterCursor`; retrying the same cursor fails identically.
+
+Persist the highest cursor to resume across process restarts:
+
+```go
+watcher, err := client.SandboxLogsWatch().WatchLogs(ctx, "default", "my-sandbox", v1.WatchLogsOptions{
+    FollowLogs:        true,
+    ResumeAfterCursor: savedCursor,
+})
+```
+
+Cursors are opaque. Do not parse or construct one. The only supported operation is comparing two cursors observed on the same stream and keeping the greater one.
+
 ## GetLogs
 
 Retrieves log entries from a sandbox. The sandbox is looked up by name (the SDK resolves the name to an internal ID automatically). Use functional options to filter results.

@@ -25,6 +25,12 @@ const (
 	ErrorUnimplemented
 	ErrorConflict
 	ErrorUnauthenticated
+	// ErrorOutOfRange mirrors gRPC OUT_OF_RANGE: the operation was attempted
+	// past a valid range, such as a read or seek beyond the end of a resource.
+	// Unlike ErrorInvalidArgument, the request was well formed and may succeed
+	// against a different state. Each operation documents what the range is;
+	// for WatchLogs it means the resume cursor is gone.
+	ErrorOutOfRange
 )
 
 // String returns the human-readable name of the error code.
@@ -52,6 +58,8 @@ func (c ErrorCode) String() string {
 		return "Conflict"
 	case ErrorUnauthenticated:
 		return "Unauthenticated"
+	case ErrorOutOfRange:
+		return "OutOfRange"
 	default:
 		return fmt.Sprintf("Unknown(%d)", int(c))
 	}
@@ -142,6 +150,13 @@ func IsConflict(err error) bool {
 // IsUnauthenticated returns true if the error indicates invalid or missing credentials.
 func IsUnauthenticated(err error) bool {
 	return hasCode(err, ErrorUnauthenticated)
+}
+
+// IsOutOfRange returns true if the error indicates an operation was attempted
+// past a valid range (gRPC OUT_OF_RANGE). On WatchLogs it means the resume
+// cursor is no longer available and the events after it are unrecoverable.
+func IsOutOfRange(err error) bool {
+	return hasCode(err, ErrorOutOfRange)
 }
 
 func hasCode(err error, code ErrorCode) bool {

@@ -293,6 +293,7 @@ type fakeSandboxClient struct {
 var _ v1.SandboxInterface = (*fakeSandboxClient)(nil)
 var _ v1.SandboxTemplateCreateInterface = (*fakeSandboxClient)(nil)
 var _ v1.SandboxSuspendResumeInterface = (*fakeSandboxClient)(nil)
+var _ v1.SandboxLogsWatchInterface = (*fakeSandboxClient)(nil)
 
 // newFakeSandboxClient creates a new fakeSandboxClient.
 func newFakeSandboxClient(
@@ -897,6 +898,15 @@ func (c *fakeSandboxClient) GetLogs(_ context.Context, _, _ string, _ ...v1.LogO
 		return nil, &types.StatusError{Code: types.ErrorUnavailable, Message: "client is closed"}
 	}
 	return nil, &types.StatusError{Code: types.ErrorUnimplemented, Message: "GetLogs not implemented in fake client"}
+}
+
+// WatchLogs returns Unimplemented — the fake client has no log or platform
+// event stream to replay, so it cannot honor the cursor resume contract.
+func (c *fakeSandboxClient) WatchLogs(_ context.Context, _, _ string, _ ...v1.WatchLogsOptions) (types.WatchInterface[*types.WatchLogEvent], error) {
+	if c.closedFunc() {
+		return nil, &types.StatusError{Code: types.ErrorUnavailable, Message: "client is closed"}
+	}
+	return nil, &types.StatusError{Code: types.ErrorUnimplemented, Message: "WatchLogs not implemented in fake client"}
 }
 
 // ListProviders returns a pager over stub Provider objects attached to the
