@@ -52,9 +52,7 @@ func NewClient(name string, opts ...ClientOption) (*v1.Client, error) {
 		sdkCfg.TLS = &types.TLSConfig{Insecure: true}
 	}
 
-	if cc.timeout > 0 {
-		sdkCfg.Timeout = cc.timeout
-	}
+	sdkCfg.Timeout = cc.timeout
 	if cc.retryPolicy != nil {
 		sdkCfg.RetryPolicy = cc.retryPolicy
 	}

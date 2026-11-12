@@ -28,7 +28,7 @@ type TLSParams struct {
 // The address may include an http:// or https:// scheme (as written by the
 // upstream gateway). The scheme drives transport selection: http:// uses
 // plaintext, https:// or no scheme uses TLS.
-func NewConnection(address string, tlsCfg *TLSParams, auth credentials.PerRPCCredentials) (*grpc.ClientConn, error) {
+func NewConnection(address string, tlsCfg *TLSParams, auth credentials.PerRPCCredentials, options ...grpc.DialOption) (*grpc.ClientConn, error) {
 	usePlaintext := false
 	if strings.HasPrefix(address, "http://") {
 		usePlaintext = true
@@ -60,6 +60,8 @@ func NewConnection(address string, tlsCfg *TLSParams, auth credentials.PerRPCCre
 		opts = append(opts, grpc.WithPerRPCCredentials(auth))
 	}
 
+	opts = append(opts, options...)
+	opts = append(opts, grpc.WithDisableRetry())
 	conn, err := grpc.NewClient(address, opts...)
 	if err != nil {
 		return nil, fmt.Errorf("grpc connect: %w", err)
