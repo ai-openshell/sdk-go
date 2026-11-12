@@ -10,7 +10,7 @@
 version: v2
 inputs:
   - git_repo: https://github.com/NVIDIA/OpenShell.git
-    tag: v0.1.8
+    tag: v0.1.9-pre.2
     depth: 1
     subdir: proto
     paths:
