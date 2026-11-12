@@ -21,6 +21,10 @@ type Bundle struct {
 	ExpiresAt    *uint64 `json:"expires_at,omitempty"` // unix seconds
 	Issuer       string  `json:"issuer"`
 	ClientID     string  `json:"client_id"`
+	// ClientCredentials marks a token from the client_credentials grant.
+	// The CLI renews such a token by repeating that grant, so the field is
+	// kept when the file is rewritten.
+	ClientCredentials bool `json:"client_credentials,omitempty"`
 }
 
 // FromToken converts tok into the bundle stored for issuer and clientID.
