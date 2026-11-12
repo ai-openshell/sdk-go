@@ -83,8 +83,8 @@ func CredentialTokenGrantTypeToProto(t types.CredentialTokenGrantType) pb.Provid
 // --- NetworkEndpoint ---
 
 // NetworkEndpointFromProto converts a proto NetworkEndpoint to an SDK
-// NetworkEndpoint. Profile endpoints carry the same fields as policy
-// endpoints, so every field is mapped.
+// NetworkEndpoint, preserving the shared policy endpoint fields. The
+// gateway-derived token_grant_owner field is intentionally omitted.
 func NetworkEndpointFromProto(ep *sbv1.NetworkEndpoint) *types.NetworkEndpoint {
 	if ep == nil {
 		return nil
@@ -94,7 +94,8 @@ func NetworkEndpointFromProto(ep *sbv1.NetworkEndpoint) *types.NetworkEndpoint {
 }
 
 // NetworkEndpointToProto converts an SDK NetworkEndpoint to a proto
-// NetworkEndpoint, mapping every field.
+// NetworkEndpoint, preserving the shared policy endpoint fields. The
+// gateway-derived token_grant_owner field is intentionally omitted.
 func NetworkEndpointToProto(ep *types.NetworkEndpoint) *sbv1.NetworkEndpoint {
 	if ep == nil {
 		return nil

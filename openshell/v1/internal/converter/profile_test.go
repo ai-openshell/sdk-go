@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/reflect/protoreflect"
 	"google.golang.org/protobuf/types/known/durationpb"
 )
 
@@ -753,34 +754,66 @@ func TestProviderProfileRoundTrip(t *testing.T) {
 	assert.Equal(t, original.Discovery.Credentials, back.Discovery.Credentials)
 }
 
-// Profile endpoints share the policy endpoint message; access, enforcement,
-// credential settings, and every other field must survive both directions
-// (ai-openshell/sdk-go#12).
-func TestNetworkEndpointRoundTripKeepsAllFields(t *testing.T) {
-	in := &sbv1.NetworkEndpoint{
-		Host:                        "api.anthropic.com",
-		Port:                        443,
-		Ports:                       []uint32{443, 8443},
-		Protocol:                    "rest",
-		Tls:                         sbv1.NetworkTlsMode_NETWORK_TLS_MODE_SKIP,
-		Enforcement:                 sbv1.NetworkEnforcementMode_NETWORK_ENFORCEMENT_MODE_ENFORCE,
-		Access:                      sbv1.NetworkAccessPreset_NETWORK_ACCESS_PRESET_FULL,
-		AllowedIps:                  []string{"10.0.0.0/8"},
-		Path:                        "/v1",
-		AllowUninspectedCredentials: true,
-		ProviderCredentialed:        true,
-		CredentialBinding:           &sbv1.NetworkCredentialBinding{Provider: "anthropic"},
-	}
+// Profile endpoints share the policy endpoint message. Every field except the
+// gateway-derived token_grant_owner must survive both directions (#12).
+func TestNetworkEndpointRoundTripKeepsConfigurableFields(t *testing.T) {
+	in := &sbv1.NetworkEndpoint{}
+	populateEndpointFields(t, in.ProtoReflect())
+	require.NotEmpty(t, in.TokenGrantOwner)
+	want := proto.Clone(in).(*sbv1.NetworkEndpoint)
+	want.TokenGrantOwner = "" // The gateway derives this authority; the SDK does not author it.
 
 	ep := NetworkEndpointFromProto(in)
 	require.NotNil(t, ep)
-	assert.Equal(t, v1.NetworkAccessPresetFull, ep.Access)
-	assert.True(t, ep.AllowUninspectedCredentials)
-	require.NotNil(t, ep.CredentialBinding)
-	assert.Equal(t, "anthropic", ep.CredentialBinding.Provider)
 
 	out := NetworkEndpointToProto(ep)
-	assert.True(t, proto.Equal(in, out), "round trip changed the endpoint:\nin:  %v\nout: %v", in, out)
+	assert.True(t, proto.Equal(want, out), "round trip changed the endpoint:\nwant: %v\nout:  %v", want, out)
+}
+
+// populateEndpointFields uses the proto descriptor so newly added fields cannot
+// silently remain zero in the round-trip fixture. Nested messages, map values,
+// and list elements are populated too. This tests transport, not policy validity.
+func populateEndpointFields(t *testing.T, message protoreflect.Message) {
+	t.Helper()
+	fields := message.Descriptor().Fields()
+	for i := 0; i < fields.Len(); i++ {
+		field := fields.Get(i)
+		switch {
+		case field.IsMap():
+			values := message.Mutable(field).Map()
+			key := endpointFieldValue(t, field.MapKey(), protoreflect.Value{}).MapKey()
+			values.Set(key, endpointFieldValue(t, field.MapValue(), values.NewValue()))
+		case field.IsList():
+			values := message.Mutable(field).List()
+			values.Append(endpointFieldValue(t, field, values.NewElement()))
+		default:
+			message.Set(field, endpointFieldValue(t, field, message.NewField(field)))
+		}
+	}
+}
+
+func endpointFieldValue(t *testing.T, field protoreflect.FieldDescriptor, value protoreflect.Value) protoreflect.Value {
+	t.Helper()
+	switch field.Kind() {
+	case protoreflect.MessageKind:
+		populateEndpointFields(t, value.Message())
+		return value
+	case protoreflect.StringKind:
+		return protoreflect.ValueOfString(string(field.FullName()))
+	case protoreflect.BoolKind:
+		return protoreflect.ValueOfBool(true)
+	case protoreflect.Uint32Kind:
+		return protoreflect.ValueOfUint32(uint32(field.Number()))
+	case protoreflect.EnumKind:
+		values := field.Enum().Values()
+		for i := 0; i < values.Len(); i++ {
+			if number := values.Get(i).Number(); number != 0 {
+				return protoreflect.ValueOfEnum(number)
+			}
+		}
+	}
+	t.Fatalf("add a non-zero fixture value for %s (%s)", field.FullName(), field.Kind())
+	return protoreflect.Value{}
 }
 
 func TestProviderProfileRoundTripKeepsEndpointAccess(t *testing.T) {
