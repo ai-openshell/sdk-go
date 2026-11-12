@@ -115,7 +115,8 @@ func (d *diskTokenSource) loadError(format string, args ...any) error {
 // lazyEdgeAuth implements types.AuthProvider for the cloudflare_jwt auth
 // mode. Token loading is deferred to GetRequestMetadata so that
 // NewClient succeeds even when the token file is missing on disk (FR-007).
-// The error surfaces on the first authentication attempt.
+// Each authentication attempt reads the file; token load errors surface
+// on the RPC that needs the token, even after an earlier successful read.
 type lazyEdgeAuth struct {
 	dir string
 }
