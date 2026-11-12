@@ -248,6 +248,8 @@ See the [Getting Started](https://ai-openshell.github.io/sdk-go/getting-started.
 
 The bindings are generated from OpenShell core v0.1.8 (`mise run core:version` prints the pin). SDK releases follow core releases, so SDK `vX.Y.Z` works with core `vX.Y.Z`.
 
+The [releases page](https://github.com/ai-openshell/sdk-go/releases) lists every SDK release and the core version it matches.
+
 ## Migrating from `github.com/NVIDIA/OpenShell/sdk/go`
 
 The SDK moved out of the OpenShell repository into its own module. Packages and APIs are unchanged, only the module path is new. Rewrite the imports, then fetch the new module:
