@@ -57,10 +57,10 @@ func lockTokenDir(dir string) func() {
 // refreshed is used as is. When the refresh is rejected with invalid_grant,
 // the file is read once more: a valid token another process wrote for the
 // same issuer and client is used as is, and an expired one with a
-// different refresh token is refreshed once with that token. Processes
-// do not share a file lock; like the Python SDK, this recovers instead
-// of locking. The stored argument only decides whether to try; the file
-// read under the lock is what gets refreshed.
+// different refresh token is refreshed once with that token. Like the
+// Python SDK, it takes no file lock across processes. The stored argument
+// only decides whether to try; the file read under the lock is what gets
+// refreshed.
 //
 // In-memory mode does not refresh, since a rotated refresh token that is
 // not written back would leave the file holding a revoked one. If the
@@ -199,8 +199,8 @@ func refreshToken(ctx context.Context, tokenEndpoint, clientID, refresh string, 
 	}
 
 	// An absent expires_in leaves the token without an expiry, as the code
-	// exchange does; a present but non-positive one is rejected rather
-	// than stored as a token that never expires.
+	// exchange does. A present expires_in must be positive; zero or a
+	// negative value is rejected as malformed.
 	var fields map[string]json.RawMessage
 	_ = json.Unmarshal(body, &fields)
 	if _, present := fields["expires_in"]; present && tokResp.ExpiresIn <= 0 {

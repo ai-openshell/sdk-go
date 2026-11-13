@@ -284,8 +284,8 @@ func TestLogin_RefreshFailureFallsBackToFlow(t *testing.T) {
 }
 
 // TestLogin_InMemoryDoesNotRefresh verifies that WithInMemory runs the
-// interactive flow instead of refreshing, so a rotated refresh token is
-// never lost by not being written back.
+// interactive flow without refreshing: a rotated refresh token would not be
+// written back, and the file would keep a revoked one.
 func TestLogin_InMemoryDoesNotRefresh(t *testing.T) {
 	resetDiscoveryCache()
 	provider := newRefreshProvider(t, refreshed)
@@ -324,8 +324,8 @@ func TestLogin_RefreshKeepsClientCredentialsMarker(t *testing.T) {
 	assert.True(t, readStoredBundle(t, dir).ClientCredentials)
 }
 
-// TestLogin_RefreshPersistFailure verifies that Login reports a failure to
-// write the refreshed token instead of returning a token the file lacks.
+// TestLogin_RefreshPersistFailure verifies that Login returns
+// ErrTokenPersist and no token when the refreshed token cannot be written.
 func TestLogin_RefreshPersistFailure(t *testing.T) {
 	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
 		t.Skip("needs a read-only directory")
@@ -337,8 +337,9 @@ func TestLogin_RefreshPersistFailure(t *testing.T) {
 	require.NoError(t, os.Chmod(dir, 0o500))
 	t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
 
-	_, _, err := loginNoPrompt(t, provider.URL, dir)
+	tok, _, err := loginNoPrompt(t, provider.URL, dir)
 	require.ErrorIs(t, err, ErrTokenPersist)
+	assert.Nil(t, tok)
 }
 
 // TestRefreshToken_ErrorOmitsRefreshToken verifies that a failed refresh
@@ -473,8 +474,7 @@ func TestLogin_RefreshKeepsStoredIssuerForm(t *testing.T) {
 }
 
 // TestLogin_RefreshDiscoveryFailure verifies that Login reports a discovery
-// failure without prompting, instead of trying discovery again for the
-// interactive flow.
+// failure after a single discovery request and without prompting.
 func TestLogin_RefreshDiscoveryFailure(t *testing.T) {
 	resetDiscoveryCache()
 	var discoveries sync.Mutex
@@ -498,7 +498,7 @@ func TestLogin_RefreshDiscoveryFailure(t *testing.T) {
 }
 
 // TestLogin_RefreshContextDeadline verifies that a refresh cut short by the
-// caller's deadline returns ErrTimeout instead of starting the flow.
+// caller's deadline returns ErrTimeout and does not start the flow.
 func TestLogin_RefreshContextDeadline(t *testing.T) {
 	resetDiscoveryCache()
 	provider := newRefreshProvider(t, func(form url.Values) (int, string) {
@@ -520,9 +520,9 @@ func TestLogin_RefreshContextDeadline(t *testing.T) {
 }
 
 // TestLogin_ConcurrentRefreshSpendsRefreshTokenOnce verifies that
-// concurrent Login calls in one process refresh once: the second waits,
-// re-reads the file and uses the token the first one wrote, instead of
-// replaying a refresh token that a rotating provider has already revoked.
+// concurrent Login calls in one process refresh once: the others wait,
+// re-read the file and use the token the first one wrote. The mock
+// provider rejects a reused refresh token, as a rotating provider does.
 func TestLogin_ConcurrentRefreshSpendsRefreshTokenOnce(t *testing.T) {
 	resetDiscoveryCache()
 	var used sync.Map
