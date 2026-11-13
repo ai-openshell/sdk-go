@@ -26,7 +26,8 @@
 // use them. A later Login reuses the stored token only when it is valid
 // and was issued for the gateway's issuer and client ID. If that token has
 // expired but carries a refresh token, Login refreshes it and rewrites the
-// file without prompting.
+// file without prompting; see [Login] for what happens when the refresh
+// fails.
 //
 // # Standalone Login
 //

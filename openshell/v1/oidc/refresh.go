@@ -27,22 +27,37 @@ var (
 	// flow.
 	errTokenRefresh = errors.New("oidc: token refresh failed")
 
-	// errInvalidGrant marks a refresh rejected with invalid_grant, which
-	// usually means another process already used the refresh token.
+	// errInvalidGrant marks a refresh rejected with invalid_grant. The
+	// refresh token has expired or been revoked, or another process has
+	// already used it.
 	errInvalidGrant = errors.New("oidc: invalid_grant")
 )
 
 // refreshLocks serializes refreshes of one token file within the process,
-// keyed by the cleaned token directory, so concurrent Login calls do not
-// spend the same refresh token twice. It holds one mutex per directory
-// ever refreshed, which is a handful of gateways in practice.
+// so concurrent Login calls do not spend the same refresh token twice. It
+// maps each absolute token directory to a one-slot semaphore and keeps one
+// entry per directory ever refreshed, which is a handful of gateways in
+// practice.
 var refreshLocks sync.Map
 
-func lockTokenDir(dir string) func() {
-	mu, _ := refreshLocks.LoadOrStore(filepath.Clean(dir), &sync.Mutex{})
-	m := mu.(*sync.Mutex)
-	m.Lock()
-	return m.Unlock
+// lockTokenDir waits for the refresh lock of dir until ctx ends, and
+// returns the function that releases it.
+func lockTokenDir(ctx context.Context, dir string) (func(), error) {
+	key := filepath.Clean(dir)
+	if abs, err := filepath.Abs(key); err == nil {
+		key = abs
+	}
+	slot, _ := refreshLocks.LoadOrStore(key, make(chan struct{}, 1))
+	sem := slot.(chan struct{})
+	if err := ctx.Err(); err != nil {
+		return nil, fmt.Errorf("%w: %w", ErrTimeout, err)
+	}
+	select {
+	case sem <- struct{}{}:
+		return func() { <-sem }, nil
+	case <-ctx.Done():
+		return nil, fmt.Errorf("%w: %w", ErrTimeout, ctx.Err())
+	}
 }
 
 // refreshStoredToken renews an expired stored token with its refresh token
@@ -71,7 +86,10 @@ func refreshStoredToken(ctx context.Context, cfg *loginConfig, tokenDir string, 
 		return nil, nil
 	}
 
-	unlock := lockTokenDir(tokenDir)
+	unlock, err := lockTokenDir(ctx, tokenDir)
+	if err != nil {
+		return nil, err
+	}
 	defer unlock()
 
 	current, err := readToken(tokenDir)
@@ -187,12 +205,11 @@ func refreshToken(ctx context.Context, tokenEndpoint, clientID, refresh string, 
 	if tokResp.Error == "invalid_grant" {
 		return nil, fmt.Errorf("%w: %w", errTokenRefresh, errInvalidGrant)
 	}
-	if resp.StatusCode != http.StatusOK || tokResp.Error != "" {
-		msg := "token refresh failed"
-		if tokResp.Error != "" {
-			msg = fmt.Sprintf("token refresh failed: %s", tokResp.Error)
-		}
-		return nil, fmt.Errorf("%w: %s", errTokenRefresh, msg)
+	if tokResp.Error != "" {
+		return nil, fmt.Errorf("%w: %s", errTokenRefresh, tokResp.Error)
+	}
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("%w: HTTP %d", errTokenRefresh, resp.StatusCode)
 	}
 	if tokResp.AccessToken == "" {
 		return nil, fmt.Errorf("%w: token response has no access_token", errTokenRefresh)
