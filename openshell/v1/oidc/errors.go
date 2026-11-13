@@ -26,7 +26,9 @@ var (
 	ErrClientCredentials = errors.New("oidc: client credentials exchange failed")
 
 	// ErrTimeout is returned when an interactive login flow
-	// (browser, keyboard, or device code) exceeds its deadline.
+	// (browser, keyboard, or device code) exceeds its deadline, or when
+	// the context ends while Login refreshes a stored token. In the
+	// refresh case the error also wraps the context's error.
 	ErrTimeout = errors.New("oidc: login timed out")
 
 	// ErrCallbackServer is returned when the localhost HTTP server
