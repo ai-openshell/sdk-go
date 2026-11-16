@@ -13,13 +13,16 @@
 #
 # Skips the tag when branch core/<tag> exists on origin or any PR from it
 # exists (merged or closed), so a closed proposal is never reopened. When the
-# core tag no longer exists, closes an open proposal for it.
+# core tag no longer exists, closes an open proposal for it. Defers the tag
+# (exit 0, nothing pushed) until core has published its gateway, supervisor
+# and sandbox images for it, so the next core-watch run retries.
 # Git identity and GH_TOKEN come from the environment (the App in CI).
 set -euo pipefail
 
 core_repo=${CORE_REPO:-NVIDIA/OpenShell}
 sdk_repo=${SDK_REPO:-ai-openshell/sdk-go}
-image=ghcr.io/nvidia/openshell/gateway
+registry=ghcr.io/nvidia/openshell
+image=$registry/gateway
 diff_cap=400
 
 tag=
@@ -90,6 +93,32 @@ prev=$(gh pr list -R "$sdk_repo" --head "$branch" --state all --json number,stat
   --jq '.[0] | select(.) | "#\(.number) (\(.state | ascii_downcase))"')
 if [ -n "$prev" ]; then
   echo "Proposal $prev exists for $tag already; skipping."
+  exit 0
+fi
+
+# Core creates the tag before its release build and publishes the versioned
+# images only after the whole build succeeds: minutes later, hours later
+# after a re-run, or never for a failed candidate. The proposal's E2E lane
+# needs them, and a pushed branch is never proposed again, so defer the tag
+# until they exist. Only a 404 means "not yet"; any other failure stops.
+manifest_status() {
+  local repo=${registry#ghcr.io/}/$1 token
+  token=$(curl -fsS "https://ghcr.io/token?scope=repository:$repo:pull" | jq -r .token) || return 1
+  curl -sS -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $token" \
+    -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json' \
+    "https://ghcr.io/v2/$repo/manifests/${tag#v}"
+}
+missing=
+for component in gateway supervisor sandbox; do
+  status=$(manifest_status "$component") || die "looking up $registry/$component:${tag#v} failed"
+  case $status in
+  200) ;;
+  404) missing="$missing $component" ;;
+  *) die "looking up $registry/$component:${tag#v} returned HTTP $status" ;;
+  esac
+done
+if [ -n "$missing" ]; then
+  echo "Core images for $tag are not published yet (missing:$missing); skipping, the next run retries."
   exit 0
 fi
 
