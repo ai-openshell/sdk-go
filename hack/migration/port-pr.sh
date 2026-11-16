@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # port-pr.sh: port an open NVIDIA/OpenShell PR that touches sdk/go into this
 # repository, keeping every commit with its original author, date, and
 # Signed-off-by trailer.

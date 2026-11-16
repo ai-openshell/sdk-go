@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # open-bump-pr.sh: open the update proposal that moves the core pin to <tag>.
 #
 # Usage: open-bump-pr.sh <tag> [--dry-run] [--base <ref>]
