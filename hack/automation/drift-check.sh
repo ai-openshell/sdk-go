@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # drift-check.sh: compare core main with the pinned core tag.
 #
 # Usage: drift-check.sh --out <report.md>

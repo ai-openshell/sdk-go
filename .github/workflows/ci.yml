@@ -26,6 +26,14 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Check license headers
+        uses: ai-openshell/workflows/spdx-check@0b051efd25c3f7319634fed863d2e03e1bd55d7b
+        with:
+          include: >-
+            *.go *.sh *.toml *.yml *.yaml *.json
+            Dockerfile* */Dockerfile*
+          exclude: proto/*
+
       - uses: jdx/mise-action@f5be966e4a917d54244728e6a5fdcd1d93a35e6c # v5.2.6
         with:
           install: false

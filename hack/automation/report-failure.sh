@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # report-failure.sh: record a failed automation run in the drift issue.
 #
 # Usage: report-failure.sh <job> <run-url> [--dry-run]

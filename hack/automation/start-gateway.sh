@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # start-gateway.sh: run the published OpenShell gateway for a core version
 # with the Docker compute driver, for the E2E lane.
 #

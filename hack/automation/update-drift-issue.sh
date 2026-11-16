@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # update-drift-issue.sh: keep the single "Core main drift" issue current.
 #
 # Usage: update-drift-issue.sh <report.md> [--dry-run]

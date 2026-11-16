@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # extract-history.sh: filter the sdk/go subtree history out of a
 # NVIDIA/OpenShell clone at the freeze commit.
 #
