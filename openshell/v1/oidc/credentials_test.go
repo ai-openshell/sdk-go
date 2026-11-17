@@ -24,6 +24,7 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 type clientCredentialsFixture struct {
@@ -68,10 +69,10 @@ func TestClientCredentialsConformanceFixture(t *testing.T) {
 	fixture := loadClientCredentialsFixture(t)
 	assert.Equal(t, int(clientCredentialsLeeway/time.Second), fixture.Expiry.LeewaySeconds)
 	for _, raw := range fixture.URLs.Allowed {
-		assert.NoError(t, validateSecureURL("issuer", raw), raw)
+		assert.NoError(t, oidcclient.ValidateSecureURL("issuer", raw), raw)
 	}
 	for _, raw := range fixture.URLs.Rejected {
-		assert.Error(t, validateSecureURL("issuer", raw), raw)
+		assert.Error(t, oidcclient.ValidateSecureURL("issuer", raw), raw)
 	}
 }
 

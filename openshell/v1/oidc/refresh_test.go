@@ -7,7 +7,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -16,7 +16,6 @@ import (
 	"runtime"
 	"strings"
 	"sync"
-	"syscall"
 	"testing"
 	"time"
 
@@ -25,6 +24,7 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
@@ -616,86 +616,6 @@ func TestLogin_RefreshCanceledContext(t *testing.T) {
 	assert.Equal(t, "still-good", readStoredBundle(t, dir).RefreshToken)
 }
 
-// TestRefreshToken_Errors verifies that every failure of the refresh
-// request is reported as errTokenRefresh, is not mistaken for
-// invalid_grant, and never includes the refresh token.
-func TestRefreshToken_Errors(t *testing.T) {
-	closed := httptest.NewServer(http.NotFoundHandler())
-	closedURL := closed.URL + "/token"
-	closed.Close()
-
-	for name, tc := range map[string]struct {
-		endpoint func(t *testing.T) string
-		want     string
-	}{
-		"invalid endpoint URL": {
-			endpoint: func(*testing.T) string { return "http://[::1]:namedport/token" },
-			want:     "failed to create token request",
-		},
-		"transport failure": {
-			endpoint: func(*testing.T) string { return closedURL },
-			want:     "token request failed",
-		},
-		"truncated response body": {
-			endpoint: func(t *testing.T) string {
-				srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-					conn, buf, err := http.NewResponseController(w).Hijack()
-					if err != nil {
-						t.Errorf("hijack: %v", err)
-						return
-					}
-					_, _ = buf.WriteString("HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\n{\"access")
-					_ = buf.Flush()
-					_ = conn.Close()
-				}))
-				t.Cleanup(srv.Close)
-				return srv.URL + "/token"
-			},
-			want: "failed to read token response",
-		},
-		"invalid JSON": {
-			endpoint: func(t *testing.T) string {
-				return newRefreshProvider(t, func(url.Values) (int, string) {
-					return http.StatusOK, "not json"
-				}).URL + "/token"
-			},
-			want: "invalid token response JSON",
-		},
-		"server error without error code": {
-			endpoint: func(t *testing.T) string {
-				return newRefreshProvider(t, func(url.Values) (int, string) {
-					return http.StatusInternalServerError, `{"access_token":"a"}`
-				}).URL + "/token"
-			},
-			want: "HTTP 500",
-		},
-		"error code with status 401": {
-			endpoint: func(t *testing.T) string {
-				return newRefreshProvider(t, func(url.Values) (int, string) {
-					return http.StatusUnauthorized, `{"error":"invalid_client"}`
-				}).URL + "/token"
-			},
-			want: ": invalid_client",
-		},
-		"error code with status 200": {
-			endpoint: func(t *testing.T) string {
-				return newRefreshProvider(t, func(url.Values) (int, string) {
-					return http.StatusOK, `{"error":"temporarily_unavailable","access_token":"a"}`
-				}).URL + "/token"
-			},
-			want: ": temporarily_unavailable",
-		},
-	} {
-		t.Run(name, func(t *testing.T) {
-			_, err := refreshToken(context.Background(), tc.endpoint(t), "test-client", "secret-refresh-token", nil)
-			require.ErrorIs(t, err, errTokenRefresh)
-			assert.NotErrorIs(t, err, errInvalidGrant)
-			assert.Contains(t, err.Error(), tc.want)
-			assert.NotContains(t, err.Error(), "secret-refresh-token")
-		})
-	}
-}
-
 // TestRefreshStoredToken_RereadsFileUnderLock verifies that
 // refreshStoredToken decides from the file it reads under the refresh
 // lock. The bundle Login read before waiting for the lock only decides
@@ -717,6 +637,18 @@ func TestRefreshStoredToken_RereadsFileUnderLock(t *testing.T) {
 		"token refreshed by another caller": {
 			file: func(issuer string) *oidctoken.Bundle {
 				b := valid(issuer, "test-client")
+				return &b
+			},
+			wantToken: "fresh-access-token",
+		},
+		"token refreshed by another caller, 20 s left": {
+			// Outside Login's 10 s refresh window, so it is used as is.
+			file: func(issuer string) *oidctoken.Bundle {
+				b := oidctoken.FromToken(&oauth2.Token{
+					AccessToken:  "fresh-access-token",
+					RefreshToken: "fresh-refresh-token",
+					Expiry:       time.Now().Add(20 * time.Second),
+				}, issuer, "test-client")
 				return &b
 			},
 			wantToken: "fresh-access-token",
@@ -785,7 +717,7 @@ func TestLogin_RefreshLockWaitHonorsContext(t *testing.T) {
 	provider := newRefreshProvider(t, refreshed)
 	dir := t.TempDir()
 	writeStoredToken(t, dir, provider.URL, expiredToken("still-good"))
-	unlock, err := lockTokenDir(context.Background(), dir)
+	unlock, err := oidcclient.LockDir(context.Background(), dir)
 	require.NoError(t, err)
 	defer unlock()
 
@@ -886,59 +818,94 @@ func TestLogin_RefreshPeerRetryKeepsPeerRefreshToken(t *testing.T) {
 	assert.Equal(t, "peer-refresh-token", readStoredBundle(t, dir).RefreshToken)
 }
 
-// TestRetryReplace verifies the replace retry schedule: transient errors
-// are retried with delays doubling from 5 ms up to 50 ms until they add
-// up to 250 ms, and any other error is returned at once.
-func TestRetryReplace(t *testing.T) {
-	errTransient := errors.New("transient")
-	errOther := errors.New("other")
-	transient := func(err error) bool { return errors.Is(err, errTransient) }
+// TestLoginRefreshError verifies how Login treats each refresh error: run
+// the interactive flow, or stop with the error. A write error is reported
+// even when the context has also ended, and nothing to refresh means the
+// interactive flow even when it has.
+func TestLoginRefreshError(t *testing.T) {
+	live := context.Background()
+	ended, cancel := context.WithCancel(context.Background())
+	cancel()
+	notRefreshable := fmt.Errorf("%w: it has no refresh token", oidcclient.ErrNotRefreshable)
+	invalidGrant := fmt.Errorf("%w: %w", oidcclient.ErrRefresh, oidcclient.ErrInvalidGrant)
+	persist := fmt.Errorf("%w: failed to replace", ErrTokenPersist)
+	discovery := fmt.Errorf("%w: HTTP 500", ErrDiscovery)
+	grant := fmt.Errorf("%w: HTTP 500", oidcclient.ErrRefresh)
 
-	t.Run("succeeds after transient failures", func(t *testing.T) {
-		var slept []time.Duration
-		calls := 0
-		err := retryReplace(func() error {
-			calls++
-			if calls < 3 {
-				return errTransient
+	for name, tc := range map[string]struct {
+		ctx       context.Context
+		err       error
+		wantNil   bool
+		wantIs    []error
+		wantNotIs error
+	}{
+		"nothing to refresh":                    {ctx: live, err: notRefreshable, wantNil: true},
+		"nothing to refresh, context ended":     {ctx: ended, err: notRefreshable, wantNil: true},
+		"rejected with no newer token":          {ctx: live, err: fmt.Errorf("%w: %w", oidcclient.ErrNotRefreshable, invalidGrant), wantNil: true},
+		"write failed":                          {ctx: live, err: persist, wantIs: []error{ErrTokenPersist}},
+		"write failed, context ended":           {ctx: ended, err: persist, wantIs: []error{ErrTokenPersist}, wantNotIs: ErrTimeout},
+		"discovery failed":                      {ctx: live, err: discovery, wantIs: []error{ErrDiscovery}},
+		"discovery failed, context ended":       {ctx: ended, err: discovery, wantIs: []error{ErrTimeout, context.Canceled}},
+		"grant failed":                          {ctx: live, err: grant, wantNil: true},
+		"grant failed, context ended":           {ctx: ended, err: grant, wantIs: []error{ErrTimeout, context.Canceled}},
+		"lock wait ended":                       {ctx: ended, err: context.Canceled, wantIs: []error{ErrTimeout, context.Canceled}},
+		"invalid_grant on retry, context ended": {ctx: ended, err: invalidGrant, wantIs: []error{ErrTimeout}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := loginRefreshError(tc.ctx, tc.err)
+			if tc.wantNil {
+				assert.NoError(t, err)
+				return
 			}
-			return nil
-		}, transient, func(d time.Duration) { slept = append(slept, d) })
-		require.NoError(t, err)
-		assert.Equal(t, 3, calls)
-		assert.Equal(t, []time.Duration{5 * time.Millisecond, 10 * time.Millisecond}, slept)
-	})
-
-	t.Run("returns other errors at once", func(t *testing.T) {
-		var slept []time.Duration
-		err := retryReplace(func() error { return errOther }, transient,
-			func(d time.Duration) { slept = append(slept, d) })
-		require.ErrorIs(t, err, errOther)
-		assert.Empty(t, slept)
-	})
-
-	t.Run("gives up after 250 ms of delays", func(t *testing.T) {
-		var slept []time.Duration
-		calls := 0
-		err := retryReplace(func() error { calls++; return errTransient }, transient,
-			func(d time.Duration) { slept = append(slept, d) })
-		require.ErrorIs(t, err, errTransient)
-		ms := time.Millisecond
-		assert.Equal(t, []time.Duration{5 * ms, 10 * ms, 20 * ms, 40 * ms, 50 * ms, 50 * ms, 50 * ms, 50 * ms}, slept)
-		assert.Equal(t, len(slept)+1, calls)
-	})
+			require.Error(t, err)
+			for _, want := range tc.wantIs {
+				assert.ErrorIs(t, err, want)
+			}
+			if tc.wantNotIs != nil {
+				assert.NotErrorIs(t, err, tc.wantNotIs)
+			}
+		})
+	}
 }
 
-// TestIsTransientReplaceError verifies that only access denied and sharing
-// violation on Windows are retried.
-func TestIsTransientReplaceError(t *testing.T) {
-	link := func(errno syscall.Errno) error {
-		return &os.LinkError{Op: "rename", Old: "a", New: "b", Err: errno}
+// TestRefreshStoredToken_UnreadableFileRunsFlow verifies that Login runs
+// the interactive flow when oidc_token.json cannot be parsed, whether it is
+// read under the refresh lock or after invalid_grant, although a failed
+// read is a token persistence error.
+func TestRefreshStoredToken_UnreadableFileRunsFlow(t *testing.T) {
+	corrupt := func(t *testing.T, dir string) {
+		t.Helper()
+		require.NoError(t, os.WriteFile(filepath.Join(dir, oidctoken.FileName), []byte("{not json"), 0o600))
 	}
-	assert.True(t, isTransientReplaceError("windows", link(5)))
-	assert.True(t, isTransientReplaceError("windows", link(32)))
-	assert.False(t, isTransientReplaceError("windows", link(2)))
-	assert.False(t, isTransientReplaceError("windows", errors.New("rename failed")))
-	assert.False(t, isTransientReplaceError("linux", link(5)))
-	assert.False(t, isTransientReplaceError("darwin", link(32)))
+
+	t.Run("under the lock", func(t *testing.T) {
+		resetDiscoveryCache()
+		provider := newRefreshProvider(t, refreshed)
+		dir := t.TempDir()
+		corrupt(t, dir)
+		cfg := &loginConfig{issuer: provider.URL, clientID: "test-client"}
+		before := oidctoken.FromToken(expiredToken("older-refresh-token"), provider.URL, "test-client")
+
+		tok, err := refreshStoredToken(context.Background(), cfg, dir, before)
+		require.NoError(t, err)
+		assert.Nil(t, tok)
+		assert.Empty(t, provider.grants())
+	})
+
+	t.Run("after invalid_grant", func(t *testing.T) {
+		resetDiscoveryCache()
+		dir := t.TempDir()
+		provider := newRefreshProvider(t, func(url.Values) (int, string) {
+			corrupt(t, dir)
+			return http.StatusBadRequest, invalidGrantJSON
+		})
+		writeStoredToken(t, dir, provider.URL, expiredToken("already-used"))
+		cfg := &loginConfig{issuer: provider.URL, clientID: "test-client"}
+		stored := readStoredBundle(t, dir)
+
+		tok, err := refreshStoredToken(context.Background(), cfg, dir, stored)
+		require.NoError(t, err)
+		assert.Nil(t, tok)
+		assert.Equal(t, []string{"refresh_token"}, provider.grants())
+	})
 }

@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package oidc
+package oidcclient
 
 import (
 	"context"
@@ -16,16 +16,19 @@ import (
 	"time"
 )
 
-var oidcHTTPClient = &http.Client{
+// HTTPClient is the HTTP client for discovery and token requests. It does
+// not follow redirects, so a 3xx response cannot steer a request, or the
+// refresh token it carries, to another host.
+var HTTPClient = &http.Client{
 	Timeout: 30 * time.Second,
 	CheckRedirect: func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
 	},
 }
 
-// providerConfig holds parsed fields from an OIDC discovery document
+// ProviderConfig holds parsed fields from an OIDC discovery document
 // (.well-known/openid-configuration).
-type providerConfig struct {
+type ProviderConfig struct {
 	Issuer                        string   `json:"issuer"`
 	AuthorizationEndpoint         string   `json:"authorization_endpoint"`
 	TokenEndpoint                 string   `json:"token_endpoint"`
@@ -37,7 +40,7 @@ type providerConfig struct {
 const discoveryCacheTTL = 10 * time.Minute
 
 type discoveryCacheEntry struct {
-	config    *providerConfig
+	config    *ProviderConfig
 	fetchedAt time.Time
 }
 
@@ -51,26 +54,26 @@ var (
 	discoveryCache   = make(map[string]*discoveryCacheEntry)
 )
 
-// resetDiscoveryCache clears the in-memory discovery cache. This is
+// ResetDiscoveryCache clears the in-memory discovery cache. This is
 // only used by tests to avoid interference between test cases.
-func resetDiscoveryCache() {
+func ResetDiscoveryCache() {
 	discoveryCacheMu.Lock()
 	defer discoveryCacheMu.Unlock()
 	discoveryCache = make(map[string]*discoveryCacheEntry)
 }
 
-// normalizeIssuer strips a trailing slash from the issuer URL so that
+// NormalizeIssuer strips a trailing slash from the issuer URL so that
 // "https://auth.example.com" and "https://auth.example.com/" resolve
 // to the same cache key.
-func normalizeIssuer(issuer string) string {
+func NormalizeIssuer(issuer string) string {
 	return strings.TrimRight(issuer, "/")
 }
 
-// discover fetches and caches the OIDC discovery document for the
+// Discover fetches and caches the OIDC discovery document for the
 // given issuer URL. Only successful results are cached; failed
 // fetches are retried on the next call.
-func discover(ctx context.Context, issuer string) (*providerConfig, error) {
-	key := normalizeIssuer(issuer)
+func Discover(ctx context.Context, issuer string) (*ProviderConfig, error) {
+	key := NormalizeIssuer(issuer)
 	now := time.Now()
 
 	discoveryCacheMu.Lock()
@@ -98,8 +101,8 @@ func discover(ctx context.Context, issuer string) (*providerConfig, error) {
 
 // fetchDiscovery performs the actual HTTP GET to the OIDC discovery
 // endpoint and parses the response.
-func fetchDiscovery(ctx context.Context, issuer string) (*providerConfig, error) {
-	if err := validateSecureURL("issuer", issuer); err != nil {
+func fetchDiscovery(ctx context.Context, issuer string) (*ProviderConfig, error) {
+	if err := ValidateSecureURL("issuer", issuer); err != nil {
 		return nil, err
 	}
 	url := issuer + "/.well-known/openid-configuration"
@@ -109,7 +112,7 @@ func fetchDiscovery(ctx context.Context, issuer string) (*providerConfig, error)
 		return nil, fmt.Errorf("%w: %v", ErrDiscovery, err)
 	}
 
-	resp, err := oidcHTTPClient.Do(req)
+	resp, err := HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%w: %v", ErrDiscovery, err)
 	}
@@ -128,11 +131,11 @@ func fetchDiscovery(ctx context.Context, issuer string) (*providerConfig, error)
 		return nil, fmt.Errorf("%w: discovery response is too large", ErrDiscovery)
 	}
 
-	var cfg providerConfig
+	var cfg ProviderConfig
 	if err := json.Unmarshal(body, &cfg); err != nil {
 		return nil, fmt.Errorf("%w: invalid discovery JSON: %v", ErrDiscovery, err)
 	}
-	if normalizeIssuer(cfg.Issuer) != normalizeIssuer(issuer) {
+	if NormalizeIssuer(cfg.Issuer) != NormalizeIssuer(issuer) {
 		return nil, fmt.Errorf("%w: discovery issuer does not match configured issuer", ErrDiscovery)
 	}
 
@@ -149,7 +152,7 @@ func fetchDiscovery(ctx context.Context, issuer string) (*providerConfig, error)
 		"device_authorization_endpoint": cfg.DeviceAuthorizationEndpoint,
 	} {
 		if endpoint != "" {
-			if err := validateSecureURL(name, endpoint); err != nil {
+			if err := ValidateSecureURL(name, endpoint); err != nil {
 				return nil, err
 			}
 		}
@@ -158,7 +161,9 @@ func fetchDiscovery(ctx context.Context, issuer string) (*providerConfig, error)
 	return &cfg, nil
 }
 
-func validateSecureURL(name, raw string) error {
+// ValidateSecureURL checks that raw is an absolute URL without userinfo or a
+// fragment, and that it uses HTTPS, or HTTP for a loopback host.
+func ValidateSecureURL(name, raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || u.Host == "" {
 		return fmt.Errorf("%w: invalid %s URL", ErrDiscovery, name)

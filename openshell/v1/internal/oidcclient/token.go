@@ -1,7 +1,7 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package oidc
+package oidcclient
 
 import (
 	"encoding/json"
@@ -16,11 +16,11 @@ import (
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
-// writeToken persists an OIDC token bundle to disk as oidc_token.json in
+// WriteToken persists an OIDC token bundle to disk as oidc_token.json in
 // the given directory, in the CLI's format. The file is written with 0600
-// permissions (owner-only) to protect credentials, and on Windows the final
+// permissions (owner-only on Unix) to protect credentials, and on Windows the final
 // replace is retried briefly while another process has the file open.
-func writeToken(dir string, b oidctoken.Bundle) error {
+func WriteToken(dir string, b oidctoken.Bundle) error {
 	data, err := json.Marshal(b)
 	if err != nil {
 		return fmt.Errorf("%w: failed to marshal token: %v", ErrTokenPersist, err)
@@ -101,12 +101,12 @@ func isTransientReplaceError(goos string, err error) bool {
 		(errno == errorAccessDenied || errno == errorSharingViolation)
 }
 
-// readToken reads an existing oidc_token.json from the given
+// ReadToken reads an existing oidc_token.json from the given
 // directory. It returns:
 //   - (bundle, nil) if the file exists and parses
 //   - (nil, nil) if the file does not exist
 //   - (nil, error) if the file exists but cannot be read or parsed
-func readToken(dir string) (*oidctoken.Bundle, error) {
+func ReadToken(dir string) (*oidctoken.Bundle, error) {
 	path := filepath.Join(dir, oidctoken.FileName)
 
 	data, err := os.ReadFile(path)
