@@ -23,5 +23,8 @@ type Config struct {
 	RetryPolicy *RetryPolicy
 	// Logger receives sanitized unary completion/retry diagnostics. Nil disables
 	// these diagnostics. Implementations must support concurrent calls.
+	// Completions log at Error only for Unavailable, Internal, Unknown,
+	// DeadlineExceeded and DataLoss; statuses that mean the gateway answered the
+	// request, such as NotFound from a WaitDeleted poll, log at Debug.
 	Logger Logger
 }

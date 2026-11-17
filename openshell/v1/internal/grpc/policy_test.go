@@ -384,6 +384,29 @@ func TestClientPolicy_Logging(t *testing.T) {
 	require.NoError(t, p.unary(context.Background(), "method", nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error { return nil }))
 	require.Len(t, logger.entries, 1)
 }
+func TestClientPolicy_LogLevels(t *testing.T) {
+	errorCodes := map[codes.Code]bool{codes.Unavailable: true, codes.Internal: true, codes.Unknown: true, codes.DeadlineExceeded: true, codes.DataLoss: true}
+	for code := codes.OK; code <= codes.Unauthenticated; code++ {
+		t.Run(code.String(), func(t *testing.T) {
+			logger := &policyLogger{}
+			p, _ := newClientPolicy(0, nil, logger)
+			_ = p.unary(context.Background(), pb.OpenShell_GetSandbox_FullMethodName, nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error {
+				return status.Error(code, "message")
+			})
+			require.Len(t, logger.entries, 1)
+			entry := logger.entries[0]
+			assert.Equal(t, code.String(), logField(entry, "status"))
+			if errorCodes[code] {
+				assert.Equal(t, "error", entry.level)
+				assert.Equal(t, code, status.Code(entry.err))
+			} else {
+				assert.Equal(t, "debug", entry.level)
+				assert.NoError(t, entry.err)
+			}
+		})
+	}
+}
+
 func TestClientPolicy_LogSanitization(t *testing.T) {
 	for _, failure := range []bool{false, true} {
 		for _, canceled := range []bool{false, true} {
@@ -414,7 +437,8 @@ func TestClientPolicy_LogSanitization(t *testing.T) {
 				}
 				if canceled {
 					assert.Equal(t, uint64(0), logField(logger.entries[0], "attempts"))
-					assert.Equal(t, codes.Canceled, status.Code(logger.entries[0].err))
+					assert.Equal(t, "debug", logger.entries[0].level)
+					assert.Equal(t, codes.Canceled.String(), logField(logger.entries[0], "status"))
 				}
 			})
 		}

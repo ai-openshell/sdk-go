@@ -111,10 +111,19 @@ before the remote application processes a request.
 ## Diagnostics
 
 A configured `Logger` receives one completion per logical unary RPC with method,
-total duration, final status and attempt count. Successful completions and
-scheduled retries use Debug; failures use Error with a status-only error. Retry
-fields include the upcoming attempt number and delay. The logger must support
-concurrent calls and works without a retry policy.
+total duration, final status and attempt count. Scheduled retries use Debug, and
+retry fields include the upcoming attempt number and the actual wait. The logger
+must support concurrent calls and works without a retry policy.
+
+The completion level depends on the final status:
+
+| Level | Statuses |
+|-------|----------|
+| Error, with a status-only error | `Unavailable`, `Internal`, `Unknown`, `DeadlineExceeded`, `DataLoss` |
+| Debug | `OK` and every status that means the gateway answered the request, such as `NotFound`, `AlreadyExists`, `FailedPrecondition` and `Canceled` |
+
+Expected outcomes therefore stay out of error alerting. For example, `WaitDeleted`
+polls until `GetSandbox` returns `NotFound`.
 
 Diagnostics exclude bodies, authentication metadata, credentials and raw server
 error text. Nil logger disables this facility. Stream lifecycle diagnostics and

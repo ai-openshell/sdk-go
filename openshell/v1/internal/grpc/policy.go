@@ -70,10 +70,10 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 		}
 		code := status.Code(result)
 		fields := []any{"method", method, "duration", time.Since(started), "status", code.String(), "attempts", attempts}
-		if result == nil {
-			p.logger.Debug("RPC completed", fields...)
-		} else {
+		if failureCodes[code] {
 			p.logger.Error(status.Error(code, ""), "RPC completed", fields...)
+		} else {
+			p.logger.Debug("RPC completed", fields...)
 		}
 	}()
 	if _, ok := ctx.Deadline(); !ok && p.timeout > 0 {
@@ -133,6 +133,17 @@ func nextDelay(current, maximum time.Duration) time.Duration {
 		return maximum
 	}
 	return current * 2
+}
+
+// failureCodes are the statuses logged at Error: the RPC failed in transport or
+// on the server. Every other status means the gateway answered the request (for
+// example NotFound while WaitDeleted polls), so it is logged at Debug.
+var failureCodes = map[codes.Code]bool{
+	codes.Unavailable:      true,
+	codes.Internal:         true,
+	codes.Unknown:          true,
+	codes.DeadlineExceeded: true,
+	codes.DataLoss:         true,
 }
 
 // Only methods verified to have no application side effects may be replayed.
