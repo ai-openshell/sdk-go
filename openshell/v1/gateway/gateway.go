@@ -166,8 +166,9 @@ func resolveAuthProvider(cfg *Config) (types.AuthProvider, error) {
 	case AuthModeCloudflareJWT:
 		// Token loading is deferred to GetRequestMetadata so that
 		// NewClient succeeds even when the token file is missing.
-		// The error surfaces on first authentication attempt (FR-007).
-		return &lazyEdgeAuth{loader: &edgeTokenLoader{dir: cfg.Dir}}, nil
+		// Each authentication attempt reads the file; token load errors
+		// surface on the RPC that needs the token (FR-007).
+		return &lazyEdgeAuth{dir: cfg.Dir}, nil
 
 	case AuthModeOIDC:
 		src := newDiskTokenSource(cfg.Dir, cfg.Name)
