@@ -24,7 +24,9 @@ type clientConfig struct {
 // underlying SDK client is created.
 type ClientOption func(*clientConfig)
 
-// WithLogger sets the logger on the SDK client configuration.
+// WithLogger sets the logger on the SDK client configuration. For OIDC
+// gateways it also receives failed token renewals, including those that
+// do not fail an RPC.
 func WithLogger(l types.Logger) ClientOption {
 	return func(c *clientConfig) {
 		c.logger = l

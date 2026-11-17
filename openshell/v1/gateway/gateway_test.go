@@ -190,7 +190,7 @@ func TestNewClient_NoCredentialLeaks(t *testing.T) {
 		AuthMode: AuthModeCloudflareJWT,
 		Dir:      filepath.Join(os.Getenv("XDG_CONFIG_HOME"), "openshell", "gateways", "no-edge-gw"),
 	}
-	auth, authErr := resolveAuthProvider(cfg)
+	auth, authErr := resolveAuthProvider(cfg, nil)
 	require.NoError(t, authErr)
 	_, err = auth.GetRequestMetadata(context.Background())
 	require.Error(t, err)
@@ -209,7 +209,7 @@ func TestNewClient_NoCredentialLeaks(t *testing.T) {
 		AuthMode: AuthModeCloudflareJWT,
 		Dir:      filepath.Join(os.Getenv("XDG_CONFIG_HOME"), "openshell", "gateways", "leak-gw"),
 	}
-	auth, err = resolveAuthProvider(cfg)
+	auth, err = resolveAuthProvider(cfg, nil)
 	require.NoError(t, err)
 
 	// The provider should not expose the token in its string form.
@@ -236,7 +236,7 @@ func TestResolveAuthProvider_NoTokenLeaks(t *testing.T) {
 		Dir:      gwDir,
 	}
 
-	auth, err := resolveAuthProvider(cfg)
+	auth, err := resolveAuthProvider(cfg, nil)
 	require.NoError(t, err)
 
 	// The auth provider should work but the token value should not
@@ -314,7 +314,7 @@ func TestLoadConfig_FrozenSnapshot(t *testing.T) {
 
 func TestResolveAuthProvider_None(t *testing.T) {
 	cfg := &Config{AuthMode: AuthModeNone}
-	auth, err := resolveAuthProvider(cfg)
+	auth, err := resolveAuthProvider(cfg, nil)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 	assert.False(t, auth.RequireTransportSecurity())
@@ -322,7 +322,7 @@ func TestResolveAuthProvider_None(t *testing.T) {
 
 func TestResolveAuthProvider_Plaintext(t *testing.T) {
 	cfg := &Config{AuthMode: AuthModePlaintext}
-	auth, err := resolveAuthProvider(cfg)
+	auth, err := resolveAuthProvider(cfg, nil)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 	assert.False(t, auth.RequireTransportSecurity())
@@ -333,7 +333,7 @@ func TestResolveAuthProvider_CloudflareJWT(t *testing.T) {
 	writeFile(t, dir, edgeTokenFile, "cf-jwt-token")
 
 	cfg := &Config{AuthMode: AuthModeCloudflareJWT, Dir: dir}
-	auth, err := resolveAuthProvider(cfg)
+	auth, err := resolveAuthProvider(cfg, nil)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 
@@ -347,7 +347,7 @@ func TestResolveAuthProvider_OIDC(t *testing.T) {
 	writeFile(t, dir, oidctoken.FileName, oidcBundleJSON("oidc-access-token", ""))
 
 	cfg := &Config{AuthMode: AuthModeOIDC, Dir: dir, Name: "prod"}
-	auth, err := resolveAuthProvider(cfg)
+	auth, err := resolveAuthProvider(cfg, nil)
 	require.NoError(t, err)
 	require.NotNil(t, auth)
 
@@ -358,10 +358,10 @@ func TestResolveAuthProvider_OIDC(t *testing.T) {
 
 func TestResolveAuthProvider_OIDCPicksUpReplacedTokenNearExpiry(t *testing.T) {
 	dir := t.TempDir()
-	// Within the default 10s refresh leeway, so the next call re-reads the file.
+	// Within the 30 s refresh leeway, so the next call re-reads the file.
 	writeFile(t, dir, oidctoken.FileName, oidcBundleJSON("token-a", fmt.Sprint(time.Now().Add(5*time.Second).Unix())))
 
-	auth, err := resolveAuthProvider(&Config{AuthMode: AuthModeOIDC, Dir: dir, Name: "prod"})
+	auth, err := resolveAuthProvider(&Config{AuthMode: AuthModeOIDC, Dir: dir, Name: "prod"}, nil)
 	require.NoError(t, err)
 
 	md, err := auth.GetRequestMetadata(context.Background())
@@ -379,7 +379,7 @@ func TestResolveAuthProvider_OIDCLegacyFileReturnsLoginHint(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, oidctoken.FileName, `{"access_token": "legacy-token", "expiry": "2099-01-01T00:00:00Z"}`)
 
-	auth, err := resolveAuthProvider(&Config{AuthMode: AuthModeOIDC, Dir: dir, Name: "prod"})
+	auth, err := resolveAuthProvider(&Config{AuthMode: AuthModeOIDC, Dir: dir, Name: "prod"}, nil)
 	require.NoError(t, err)
 
 	// The second call is answered from the refresh backoff.
@@ -392,7 +392,7 @@ func TestResolveAuthProvider_OIDCLegacyFileReturnsLoginHint(t *testing.T) {
 
 func TestResolveAuthProvider_MTLS(t *testing.T) {
 	cfg := &Config{AuthMode: AuthModeMTLS}
-	_, err := resolveAuthProvider(cfg)
+	_, err := resolveAuthProvider(cfg, nil)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnsupportedAuthMode)
 	assert.Contains(t, err.Error(), "mtls")
@@ -401,7 +401,7 @@ func TestResolveAuthProvider_MTLS(t *testing.T) {
 
 func TestResolveAuthProvider_UnknownMode(t *testing.T) {
 	cfg := &Config{AuthMode: "alien_auth"}
-	_, err := resolveAuthProvider(cfg)
+	_, err := resolveAuthProvider(cfg, nil)
 	require.Error(t, err)
 	assert.ErrorIs(t, err, ErrUnsupportedAuthMode)
 }

@@ -33,7 +33,7 @@ func NewClient(name string, opts ...ClientOption) (*v1.Client, error) {
 	// Resolve auth provider: caller override takes precedence.
 	auth := cc.auth
 	if auth == nil {
-		auth, err = resolveAuthProvider(cfg)
+		auth, err = resolveAuthProvider(cfg, cc.logger)
 		if err != nil {
 			return nil, err
 		}
@@ -154,8 +154,9 @@ func ListGateways() ([]Info, error) {
 }
 
 // resolveAuthProvider maps a Config's AuthMode to an SDK AuthProvider.
-// Tokens are loaded lazily where possible.
-func resolveAuthProvider(cfg *Config) (types.AuthProvider, error) {
+// Tokens are loaded lazily where possible. logger, which may be nil,
+// receives OIDC refresh failures that do not fail an RPC.
+func resolveAuthProvider(cfg *Config, logger types.Logger) (types.AuthProvider, error) {
 	switch cfg.AuthMode {
 	case AuthModeNone:
 		return v1.NoAuth(), nil
@@ -171,8 +172,13 @@ func resolveAuthProvider(cfg *Config) (types.AuthProvider, error) {
 		return &lazyEdgeAuth{dir: cfg.Dir}, nil
 
 	case AuthModeOIDC:
-		src := newDiskTokenSource(cfg.Dir, cfg.Name)
-		return v1.RefreshableToken(src)
+		// The cache leeway is the window in which the source refreshes,
+		// so the source is asked for a token as soon as it is due.
+		opts := []v1.RefreshOption{v1.WithLeeway(refreshWindow)}
+		if logger != nil {
+			opts = append(opts, v1.WithLogger(logger))
+		}
+		return v1.RefreshableToken(newOIDCTokenSource(cfg, logger), opts...)
 
 	case AuthModeMTLS:
 		return nil, fmt.Errorf("%w: mtls is not yet supported; use WithAuth() to provide a custom auth provider", ErrUnsupportedAuthMode)
