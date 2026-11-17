@@ -34,6 +34,9 @@ import (
 // exchanges the refresh token for a new one and rewrites the file. If the
 // context ends, discovery fails, or the file cannot be written, Login
 // returns the error; if the refresh fails for any other reason, it runs
+// the interactive flow. If ctx ends after the token request reached the
+// provider, a provider that rotates refresh tokens may already have
+// revoked the stored one; the next Login then gets invalid_grant and runs
 // the interactive flow. [WithInMemory] skips the refresh, because a
 // rotated refresh token would not be written back.
 //

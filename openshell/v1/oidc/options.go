@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // scopeOpenID is the scope that turns an OAuth2 authorization request into
@@ -90,14 +91,7 @@ func (c *loginConfig) applyGatewayScopes(gw *gateway.Config) {
 //
 // This mirrors build_scopes in crates/openshell-cli/src/oidc_auth.rs.
 func (c *loginConfig) requireOpenIDScope() {
-	normalized := make([]string, 0, len(c.scopes)+1)
-	normalized = append(normalized, scopeOpenID)
-	for _, scope := range c.scopes {
-		if scope != scopeOpenID {
-			normalized = append(normalized, scope)
-		}
-	}
-	c.scopes = normalized
+	c.scopes = oidcclient.ScopesWithOpenID(c.scopes)
 }
 
 // LoginOption configures a login attempt. Use the With* functions to

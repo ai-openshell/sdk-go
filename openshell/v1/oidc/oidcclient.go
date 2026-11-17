@@ -28,8 +28,6 @@ func discover(ctx context.Context, issuer string) (*providerConfig, error) {
 
 func resetDiscoveryCache() { oidcclient.ResetDiscoveryCache() }
 
-func normalizeIssuer(issuer string) string { return oidcclient.NormalizeIssuer(issuer) }
-
 func readToken(dir string) (*oidctoken.Bundle, error) { return oidcclient.ReadToken(dir) }
 
 func writeToken(dir string, b oidctoken.Bundle) error { return oidcclient.WriteToken(dir, b) }
@@ -57,7 +55,7 @@ func refreshStoredToken(ctx context.Context, cfg *loginConfig, tokenDir string, 
 		scopes = cfg.scopes
 	}
 
-	tok, err := oidcclient.Refresh(ctx, oidcclient.Request{
+	res, err := oidcclient.Refresh(ctx, oidcclient.Request{
 		Dir:      tokenDir,
 		Issuer:   cfg.issuer,
 		ClientID: cfg.clientID,
@@ -67,7 +65,7 @@ func refreshStoredToken(ctx context.Context, cfg *loginConfig, tokenDir string, 
 	if err != nil {
 		return nil, loginRefreshError(ctx, err)
 	}
-	return tok, nil
+	return res.Token, nil
 }
 
 // loginRefreshError decides what Login does with a failed refresh. It
@@ -94,5 +92,5 @@ func loginRefreshError(ctx context.Context, err error) error {
 // sameClient reports whether a stored bundle was issued for the configured
 // issuer (ignoring a trailing slash) and client ID.
 func sameClient(b *oidctoken.Bundle, cfg *loginConfig) bool {
-	return normalizeIssuer(b.Issuer) == normalizeIssuer(cfg.issuer) && b.ClientID == cfg.clientID
+	return oidcclient.SameClient(b, cfg.issuer, cfg.clientID)
 }

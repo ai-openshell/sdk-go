@@ -345,6 +345,7 @@ func TestLogin_RefreshPersistFailure(t *testing.T) {
 	tok, _, err := loginNoPrompt(t, provider.URL, dir)
 	require.ErrorIs(t, err, ErrTokenPersist)
 	assert.Nil(t, tok)
+	assert.Empty(t, provider.grants(), "the refresh token is not spent when it cannot be stored")
 	assert.Equal(t, "still-good", readStoredBundle(t, dir).RefreshToken)
 }
 
@@ -873,9 +874,13 @@ func TestLoginRefreshError(t *testing.T) {
 // read under the refresh lock or after invalid_grant, although a failed
 // read is a token persistence error.
 func TestRefreshStoredToken_UnreadableFileRunsFlow(t *testing.T) {
+	// corrupt runs in the provider's handler too, so it reports with
+	// t.Errorf instead of stopping the test from another goroutine.
 	corrupt := func(t *testing.T, dir string) {
 		t.Helper()
-		require.NoError(t, os.WriteFile(filepath.Join(dir, oidctoken.FileName), []byte("{not json"), 0o600))
+		if err := os.WriteFile(filepath.Join(dir, oidctoken.FileName), []byte("{not json"), 0o600); err != nil {
+			t.Errorf("corrupt %s: %v", oidctoken.FileName, err)
+		}
 	}
 
 	t.Run("under the lock", func(t *testing.T) {
@@ -908,4 +913,50 @@ func TestRefreshStoredToken_UnreadableFileRunsFlow(t *testing.T) {
 		assert.Nil(t, tok)
 		assert.Equal(t, []string{"refresh_token"}, provider.grants())
 	})
+}
+
+// TestLogin_RefreshFileRemovedDuringRefreshRunsFlow verifies that a token
+// file removed while the refresh request is in flight, as a logout does,
+// is not written back: Login runs the interactive flow instead.
+func TestLogin_RefreshFileRemovedDuringRefreshRunsFlow(t *testing.T) {
+	resetDiscoveryCache()
+	dir := t.TempDir()
+	provider := newRefreshProvider(t, func(form url.Values) (int, string) {
+		if form.Get("grant_type") == "refresh_token" {
+			if err := os.Remove(filepath.Join(dir, oidctoken.FileName)); err != nil {
+				t.Errorf("remove: %v", err)
+			}
+		}
+		return refreshed(form)
+	})
+	writeStoredToken(t, dir, provider.URL, expiredToken("still-good"))
+
+	tok, prompt, err := loginNoPrompt(t, provider.URL, dir)
+	require.Error(t, err, "the interactive flow cannot finish in the test")
+	assert.Nil(t, tok)
+	assert.NotEmpty(t, prompt, "Login ran the interactive flow")
+	_, statErr := os.Stat(filepath.Join(dir, oidctoken.FileName))
+	assert.True(t, os.IsNotExist(statErr), "the refreshed token was written back")
+}
+
+// TestLogin_RefreshNullExpiresIn verifies that a refresh response with a
+// null expires_in gives a token without an expiry, stored without
+// expires_at, as the CLI's oauth2 crate reads it.
+func TestLogin_RefreshNullExpiresIn(t *testing.T) {
+	resetDiscoveryCache()
+	provider := newRefreshProvider(t, func(form url.Values) (int, string) {
+		if form.Get("grant_type") == "refresh_token" {
+			return http.StatusOK, `{"access_token":"refreshed-access-token","refresh_token":"rotated","token_type":"Bearer","expires_in":null}`
+		}
+		return refreshed(form)
+	})
+	dir := t.TempDir()
+	writeStoredToken(t, dir, provider.URL, expiredToken("still-good"))
+
+	tok, prompt, err := loginNoPrompt(t, provider.URL, dir)
+	require.NoError(t, err)
+	assert.Empty(t, prompt)
+	assert.Equal(t, "refreshed-access-token", tok.AccessToken)
+	assert.True(t, tok.Expiry.IsZero())
+	assert.Nil(t, readStoredBundle(t, dir).ExpiresAt)
 }

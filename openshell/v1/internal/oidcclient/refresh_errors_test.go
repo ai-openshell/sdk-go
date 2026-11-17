@@ -11,6 +11,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -152,9 +153,9 @@ func TestRefresh_NotRefreshable(t *testing.T) {
 				require.NoError(t, WriteToken(dir, expired(issuer, "client", "old-refresh")))
 			}
 
-			tok, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
 			require.Error(t, err)
-			assert.Nil(t, tok)
+			assert.Equal(t, Result{}, res)
 			assert.Contains(t, err.Error(), tc.want)
 			assert.Equal(t, tc.notRefreshable, errors.Is(err, ErrNotRefreshable), "ErrNotRefreshable in %v", err)
 			assert.NotErrorIs(t, err, ErrTokenPersist)
@@ -164,4 +165,184 @@ func TestRefresh_NotRefreshable(t *testing.T) {
 			assert.Equal(t, tc.calls, calls.Load())
 		})
 	}
+}
+
+// TestRefresh_FileChangedDuringGrant verifies that Refresh does not write
+// the new token over a file that changed while the token request was in
+// flight: removed by a logout, or replaced by a login elsewhere. A file it
+// cannot read at that point is written over.
+func TestRefresh_FileChangedDuringGrant(t *testing.T) {
+	expired := func(issuer, refresh string) oidctoken.Bundle {
+		return oidctoken.FromToken(&oauth2.Token{
+			AccessToken: "old-access", RefreshToken: refresh, Expiry: time.Now().Add(-time.Minute),
+		}, issuer, "client")
+	}
+	rotated := func() (int, string) {
+		return http.StatusOK, `{"access_token":"new-access","refresh_token":"rotated","expires_in":3600}`
+	}
+
+	for name, tc := range map[string]struct {
+		change    func(t *testing.T, dir, issuer string)
+		wantToken string // empty: ErrNotRefreshable
+		wantFile  string // refresh token left in the file; empty: no file
+		granted   bool
+		unix      bool // needs file modes that keep the owner out
+	}{
+		"logout removed the file": {
+			change: func(t *testing.T, dir, _ string) {
+				if err := os.Remove(filepath.Join(dir, oidctoken.FileName)); err != nil {
+					t.Errorf("remove: %v", err)
+				}
+			},
+		},
+		"a login wrote a fresh token": {
+			change: func(t *testing.T, dir, issuer string) {
+				if err := WriteToken(dir, oidctoken.FromToken(&oauth2.Token{
+					AccessToken: "login-access", RefreshToken: "login-refresh", Expiry: time.Now().Add(time.Hour),
+				}, issuer, "client")); err != nil {
+					t.Errorf("write: %v", err)
+				}
+			},
+			wantToken: "login-access",
+			wantFile:  "login-refresh",
+		},
+		"another refresh token, expired": {
+			change: func(t *testing.T, dir, issuer string) {
+				if err := WriteToken(dir, expired(issuer, "other-refresh")); err != nil {
+					t.Errorf("write: %v", err)
+				}
+			},
+			wantFile: "other-refresh",
+		},
+		"unreadable while the request runs": {
+			// For example the CLI rewriting the file in place. The new
+			// token is the only one known to work, so it is written.
+			unix: true,
+			change: func(t *testing.T, dir, _ string) {
+				if err := os.Chmod(filepath.Join(dir, oidctoken.FileName), 0o000); err != nil {
+					t.Errorf("chmod: %v", err)
+				}
+			},
+			wantToken: "new-access",
+			wantFile:  "rotated",
+			granted:   true,
+		},
+		"a token for another client with the same refresh token": {
+			change: func(t *testing.T, dir, issuer string) {
+				if err := WriteToken(dir, oidctoken.FromToken(&oauth2.Token{
+					AccessToken: "other-access", RefreshToken: "old-refresh", Expiry: time.Now().Add(-time.Minute),
+				}, issuer, "other-client")); err != nil {
+					t.Errorf("write: %v", err)
+				}
+			},
+			wantFile: "old-refresh",
+		},
+		"a token for another client": {
+			change: func(t *testing.T, dir, issuer string) {
+				if err := WriteToken(dir, oidctoken.FromToken(&oauth2.Token{
+					AccessToken: "other-access", RefreshToken: "other-refresh", Expiry: time.Now().Add(time.Hour),
+				}, issuer, "other-client")); err != nil {
+					t.Errorf("write: %v", err)
+				}
+			},
+			wantFile: "other-refresh",
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if tc.unix && (runtime.GOOS == "windows" || os.Geteuid() == 0) {
+				t.Skip("needs a file the process cannot read")
+			}
+			dir := t.TempDir()
+			var issuer string
+			issuer, calls := newRefreshServer(t, func() { tc.change(t, dir, issuer) }, rotated)
+			require.NoError(t, WriteToken(dir, expired(issuer, "old-refresh")))
+
+			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+			assert.Equal(t, int32(1), calls.Load())
+			assert.Equal(t, tc.granted, res.Granted)
+			if tc.wantToken == "" {
+				require.ErrorIs(t, err, ErrNotRefreshable)
+				assert.Contains(t, err.Error(), "changed during the refresh")
+				assert.Nil(t, res.Token)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, tc.wantToken, res.Token.AccessToken)
+			}
+			got, readErr := ReadToken(dir)
+			require.NoError(t, readErr)
+			if tc.wantFile == "" {
+				assert.Nil(t, got, "the removed file came back")
+			} else {
+				require.NotNil(t, got)
+				assert.Equal(t, tc.wantFile, got.RefreshToken)
+			}
+		})
+	}
+}
+
+// TestRefresh_WriteFailure verifies that a directory Refresh cannot write
+// to is reported before the token request, so the refresh token is not
+// spent, and that a write failing after the request still returns the
+// new token.
+func TestRefresh_WriteFailure(t *testing.T) {
+	if runtime.GOOS == "windows" || os.Geteuid() == 0 {
+		t.Skip("needs a directory the process cannot write to")
+	}
+	stored := func(issuer string) oidctoken.Bundle {
+		return oidctoken.FromToken(&oauth2.Token{
+			AccessToken: "old-access", RefreshToken: "old-refresh", Expiry: time.Now().Add(-time.Minute),
+		}, issuer, "client")
+	}
+	rotated := func() (int, string) {
+		return http.StatusOK, `{"access_token":"new-access","refresh_token":"rotated","expires_in":3600}`
+	}
+
+	t.Run("before the token request", func(t *testing.T) {
+		dir := t.TempDir()
+		issuer, calls := newRefreshServer(t, func() {}, rotated)
+		require.NoError(t, WriteToken(dir, stored(issuer)))
+		require.NoError(t, os.Chmod(dir, 0o500))
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+
+		res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+		require.ErrorIs(t, err, ErrTokenPersist)
+		assert.Equal(t, Result{}, res)
+		assert.Equal(t, int32(0), calls.Load(), "the refresh token was spent")
+	})
+	t.Run("after the token request", func(t *testing.T) {
+		dir := t.TempDir()
+		issuer, calls := newRefreshServer(t, func() {
+			if err := os.Chmod(dir, 0o500); err != nil {
+				t.Errorf("chmod: %v", err)
+			}
+		}, rotated)
+		require.NoError(t, WriteToken(dir, stored(issuer)))
+		t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+
+		res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+		require.ErrorIs(t, err, ErrTokenPersist)
+		assert.True(t, res.Granted)
+		require.NotNil(t, res.Token)
+		assert.Equal(t, "new-access", res.Token.AccessToken)
+		assert.Equal(t, "rotated", res.Token.RefreshToken)
+		assert.Equal(t, int32(1), calls.Load())
+		got, readErr := ReadToken(dir)
+		require.NoError(t, readErr)
+		assert.Equal(t, "old-refresh", got.RefreshToken)
+	})
+}
+
+// TestRefresh_LockWaitError verifies that a lock wait cut off by ctx says
+// what it was waiting for and wraps ctx's error.
+func TestRefresh_LockWaitError(t *testing.T) {
+	dir := t.TempDir()
+	unlock, err := LockDir(context.Background(), dir)
+	require.NoError(t, err)
+	defer unlock()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+	_, err = Refresh(ctx, Request{Dir: dir, Issuer: "https://idp.example.com", ClientID: "client", Window: RefreshWindow})
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Contains(t, err.Error(), "waiting for another refresh of "+oidctoken.FileName)
 }

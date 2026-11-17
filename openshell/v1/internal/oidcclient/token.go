@@ -101,6 +101,20 @@ func isTransientReplaceError(goos string, err error) bool {
 		(errno == errorAccessDenied || errno == errorSharingViolation)
 }
 
+// checkWritable returns ErrTokenPersist if a file cannot be created in dir.
+// It catches a missing write permission, not every later write failure,
+// such as a full disk.
+func checkWritable(dir string) error {
+	f, err := os.CreateTemp(dir, ".oidc-token-*")
+	if err != nil {
+		return fmt.Errorf("%w: cannot write to the token directory: %v", ErrTokenPersist, err)
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	return nil
+}
+
 // ReadToken reads an existing oidc_token.json from the given
 // directory. It returns:
 //   - (bundle, nil) if the file exists and parses
@@ -119,7 +133,8 @@ func ReadToken(dir string) (*oidctoken.Bundle, error) {
 
 	var bundle oidctoken.Bundle
 	if err := json.Unmarshal(data, &bundle); err != nil {
-		return nil, fmt.Errorf("%w: invalid JSON in %s: %v", ErrTokenPersist, oidctoken.FileName, err)
+		// Decoder errors can quote values from the token file.
+		return nil, fmt.Errorf("%w: invalid JSON in %s", ErrTokenPersist, oidctoken.FileName)
 	}
 
 	return &bundle, nil

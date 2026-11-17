@@ -32,7 +32,9 @@ var (
 	// ErrTimeout is returned when an interactive login flow
 	// (browser, keyboard, or device code) exceeds its deadline, or when
 	// the context ends while Login refreshes a stored token. In the
-	// refresh case the error also wraps the context's error.
+	// refresh case the error also wraps the context's error, and if the
+	// token request had reached a provider that rotates refresh tokens,
+	// the stored refresh token may no longer work.
 	ErrTimeout = errors.New("oidc: login timed out")
 
 	// ErrCallbackServer is returned when the localhost HTTP server

@@ -105,4 +105,15 @@ func TestTokenFile_Errors(t *testing.T) {
 		require.NoError(t, err)
 		assert.Nil(t, got)
 	})
+	t.Run("malformed expiry hides its value", func(t *testing.T) {
+		dir := t.TempDir()
+		const invalidExpiry = "123456789012345678901234567890"
+		data := []byte(`{"access_token":"access","expires_at":` + invalidExpiry + `}`)
+		require.NoError(t, os.WriteFile(filepath.Join(dir, oidctoken.FileName), data, 0o600))
+
+		_, err := ReadToken(dir)
+		require.ErrorIs(t, err, ErrTokenPersist)
+		assert.ErrorContains(t, err, "invalid JSON in "+oidctoken.FileName)
+		assert.NotContains(t, err.Error(), invalidExpiry)
+	})
 }
