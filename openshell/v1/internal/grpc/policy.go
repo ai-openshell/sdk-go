@@ -86,6 +86,11 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 		if err := ctx.Err(); err != nil {
 			return status.FromContextError(err).Err()
 		}
+		// ctx.Err stays nil until the context's own deadline timer has run, so a
+		// backoff timer that fires at the deadline must not start another attempt.
+		if deadline, ok := ctx.Deadline(); ok && !time.Now().Before(deadline) {
+			return status.Error(codes.DeadlineExceeded, context.DeadlineExceeded.Error())
+		}
 		attempts++
 		err := invoke(ctx, method, req, reply, cc, opts...)
 		// attempts-1 retries have been made; MaxRetries is validated non-negative.

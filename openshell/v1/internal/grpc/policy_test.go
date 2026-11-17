@@ -403,6 +403,25 @@ func TestClientPolicy_RetryBudgetAcrossAttempts(t *testing.T) {
 	assert.Less(t, time.Since(start), time.Second)
 }
 
+// expiredDeadlineContext reports a deadline in the past while Err is still nil,
+// the state a context is in between its deadline and its own timer firing.
+type expiredDeadlineContext struct{ context.Context }
+
+func (expiredDeadlineContext) Deadline() (time.Time, bool) {
+	return time.Now().Add(-time.Millisecond), true
+}
+
+func TestClientPolicy_DeadlineClock(t *testing.T) {
+	p, _ := newClientPolicy(0, &types.RetryPolicy{MaxRetries: 3, InitialWait: time.Millisecond}, nil)
+	calls := 0
+	err := p.unary(expiredDeadlineContext{context.Background()}, pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error {
+		calls++
+		return nil
+	})
+	assert.Equal(t, codes.DeadlineExceeded, status.Code(err))
+	assert.Zero(t, calls)
+}
+
 func TestClientPolicy_BackoffScheduledDelays(t *testing.T) {
 	logger := &policyLogger{}
 	p, _ := newClientPolicy(0, &types.RetryPolicy{MaxRetries: 4, InitialWait: 10 * time.Millisecond, MaxWait: 25 * time.Millisecond}, logger)
