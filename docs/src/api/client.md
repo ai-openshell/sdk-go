@@ -70,6 +70,11 @@ All attempts and backoff for one RPC share that deadline; cancellation interrupt
 requests and retry waits. Zero supplies no default, and a negative timeout makes
 construction fail with an SDK invalid-argument error.
 
+`Timeout` also bounds mutations. A mutation cut off by it may still have been
+applied on the gateway: a `CreateSandbox` that fails with `DeadlineExceeded` may
+have created the sandbox, and repeating the call then returns `AlreadyExists`.
+Check the gateway state before you repeat a mutation that timed out.
+
 Streams, watches, exec streams (including `Exec.Run`), sessions and tunnels keep
 their caller-controlled lifetimes. Unary setup calls still follow the default.
 Polling helpers such as `WaitReady` may run longer than `Timeout`; each individual
@@ -128,6 +133,14 @@ polls until `GetSandbox` returns `NotFound`.
 Diagnostics exclude bodies, authentication metadata, credentials and raw server
 error text. Nil logger disables this facility. Stream lifecycle diagnostics and
 global gRPC logging are outside this contract.
+
+`Config.Logger` does not reach token refresh. `RefreshableToken` logs its
+stale-token warnings only through its own `WithLogger` option, so pass the logger
+there as well:
+
+```go
+auth, err := v1.RefreshableToken(tokenSource, v1.WithLogger(logger))
+```
 
 ## Testing
 

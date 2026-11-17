@@ -25,7 +25,9 @@ type clientConfig struct {
 type ClientOption func(*clientConfig)
 
 // WithLogger sets the concurrent-safe logger for sanitized unary completion and
-// retry diagnostics. Nil disables these diagnostics; see types.Logger.
+// retry diagnostics. Nil disables these diagnostics; see types.Logger. It does
+// not reach the token refresher of an auto-resolved OAuth2 provider; pass
+// WithAuth with v1.RefreshableToken and v1.WithLogger to log refresh warnings.
 func WithLogger(l types.Logger) ClientOption {
 	return func(c *clientConfig) {
 		c.logger = l
