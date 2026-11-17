@@ -192,6 +192,44 @@ func TestClientPolicy_Backoff(t *testing.T) {
 	assert.Equal(t, []time.Duration{10 * time.Millisecond, 20 * time.Millisecond, 25 * time.Millisecond, 25 * time.Millisecond}, delays)
 	assert.Equal(t, time.Duration(math.MaxInt64), nextDelay(math.MaxInt64/2+1, math.MaxInt64))
 }
+
+// noJitter makes retry waits equal to the backoff delays.
+func noJitter(delay time.Duration) time.Duration { return delay }
+
+func TestClientPolicy_EqualJitter(t *testing.T) {
+	for _, delay := range []time.Duration{1, 2, 3, 10 * time.Millisecond, time.Duration(math.MaxInt64)} {
+		seen := map[time.Duration]bool{}
+		for range 1000 {
+			wait := equalJitter(delay)
+			require.GreaterOrEqual(t, wait, delay-delay/2, "delay %v", delay)
+			require.LessOrEqual(t, wait, delay, "delay %v", delay)
+			seen[wait] = true
+		}
+		if delay >= 10*time.Millisecond {
+			assert.Greater(t, len(seen), 1, "waits for %v are randomized", delay)
+		}
+	}
+}
+
+func TestClientPolicy_BackoffJitter(t *testing.T) {
+	logger := &policyLogger{}
+	p, _ := newClientPolicy(0, &types.RetryPolicy{MaxRetries: 3, InitialWait: 10 * time.Millisecond, MaxWait: 40 * time.Millisecond}, logger)
+	started := time.Now()
+	err := p.unary(context.Background(), pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error {
+		return status.Error(codes.Unavailable, "transient")
+	})
+	assert.Equal(t, codes.Unavailable, status.Code(err))
+	require.Len(t, logger.entries, 4)
+	var total time.Duration
+	for i, base := range []time.Duration{10 * time.Millisecond, 20 * time.Millisecond, 40 * time.Millisecond} {
+		wait := logField(logger.entries[i], "delay").(time.Duration)
+		assert.GreaterOrEqual(t, wait, base/2)
+		assert.LessOrEqual(t, wait, base)
+		total += wait
+	}
+	assert.GreaterOrEqual(t, time.Since(started), total)
+}
+
 func TestClientPolicy_RetryBudget(t *testing.T) {
 	for _, cancelInstead := range []bool{false, true} {
 		t.Run(fmt.Sprint(cancelInstead), func(t *testing.T) {
@@ -305,6 +343,7 @@ func TestClientPolicy_Logging(t *testing.T) {
 		t.Run(fmt.Sprint(failure), func(t *testing.T) {
 			logger := &policyLogger{}
 			p, _ := newClientPolicy(0, &types.RetryPolicy{MaxRetries: 2, InitialWait: time.Millisecond}, logger)
+			p.jitter = noJitter
 			calls := 0
 			started := time.Now()
 			err := p.unary(context.Background(), pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error {
@@ -396,6 +435,7 @@ func TestClientPolicy_RetryBudgetAcrossAttempts(t *testing.T) {
 	// Waits of 50 and 100 ms fit into the 350 ms budget; the third wait of
 	// 200 ms would end at or after the deadline, so it is skipped.
 	p, _ := newClientPolicy(350*time.Millisecond, &types.RetryPolicy{MaxRetries: 10, InitialWait: 50 * time.Millisecond, MaxWait: 200 * time.Millisecond}, nil)
+	p.jitter = noJitter
 	var deadlines []time.Time
 	start := time.Now()
 	err := p.unary(context.Background(), pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(ctx context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {
@@ -450,6 +490,7 @@ func TestClientPolicy_DeadlineClock(t *testing.T) {
 func TestClientPolicy_BackoffScheduledDelays(t *testing.T) {
 	logger := &policyLogger{}
 	p, _ := newClientPolicy(0, &types.RetryPolicy{MaxRetries: 4, InitialWait: 10 * time.Millisecond, MaxWait: 25 * time.Millisecond}, logger)
+	p.jitter = noJitter
 	started := time.Now()
 	err := p.unary(context.Background(), pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error {
 		return status.Error(codes.Unavailable, "transient")

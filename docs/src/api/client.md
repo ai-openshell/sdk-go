@@ -79,8 +79,10 @@ poll follows the unary rule, and the caller context bounds the overall wait.
 
 `RetryPolicy.MaxRetries` counts additional attempts after the first. Nil policy
 or zero retries disables configured replay. Zero `InitialWait` defaults to 100 ms;
-zero `MaxWait` defaults to 5 s. Delays double from the initial wait, saturate at
-the maximum, and have no jitter or server retry hints. Negative fields or a
+zero `MaxWait` defaults to 5 s. Delays double from the initial wait and saturate
+at the maximum. Each wait uses equal jitter: half of the delay is fixed and the
+other half random, so clients that failed together (for example after a gateway
+restart) do not retry in lockstep. Server retry hints are not used. Negative fields or a
 maximum below the initial wait after defaults fail construction with an SDK
 invalid-argument error. Clients copy the policy at construction.
 

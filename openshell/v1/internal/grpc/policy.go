@@ -5,6 +5,7 @@ package grpc
 
 import (
 	"context"
+	"math/rand/v2"
 	"time"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/types"
@@ -18,6 +19,8 @@ type clientPolicy struct {
 	timeout time.Duration
 	retry   *types.RetryPolicy
 	logger  types.Logger
+	// jitter turns a backoff delay into the actual wait; tests replace it.
+	jitter func(time.Duration) time.Duration
 }
 
 func newClientPolicy(timeout time.Duration, retry *types.RetryPolicy, logger types.Logger) (*clientPolicy, error) {
@@ -27,7 +30,7 @@ func newClientPolicy(timeout time.Duration, retry *types.RetryPolicy, logger typ
 	if timeout < 0 {
 		return invalid("timeout must not be negative")
 	}
-	p := &clientPolicy{timeout: timeout, logger: logger}
+	p := &clientPolicy{timeout: timeout, logger: logger, jitter: equalJitter}
 	if retry != nil {
 		copied := *retry
 		if copied.MaxRetries < 0 || copied.InitialWait < 0 || copied.MaxWait < 0 {
@@ -97,15 +100,16 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 		if p.retry == nil || attempts > uint64(p.retry.MaxRetries) || !safeReadMethods[method] || status.Code(err) != codes.Unavailable {
 			return err
 		}
+		wait := p.jitter(delay)
 		// A wait that ends at or after the deadline leaves no time for another
 		// attempt, so return the last Unavailable instead of sleeping until then.
-		if deadline, ok := ctx.Deadline(); ok && delay >= time.Until(deadline) {
+		if deadline, ok := ctx.Deadline(); ok && wait >= time.Until(deadline) {
 			return err
 		}
 		if p.logger != nil {
-			p.logger.Debug("RPC retry", "method", method, "attempt", attempts+1, "delay", delay)
+			p.logger.Debug("RPC retry", "method", method, "attempt", attempts+1, "delay", wait)
 		}
-		timer := time.NewTimer(delay)
+		timer := time.NewTimer(wait)
 		select {
 		case <-ctx.Done():
 			timer.Stop()
@@ -114,6 +118,14 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 		}
 		delay = nextDelay(delay, p.retry.MaxWait)
 	}
+}
+
+// equalJitter keeps half of the delay and randomizes the other half. Clients
+// that failed together, for example after a gateway restart, then spread their
+// retries, while every wait keeps a lower bound of half the delay.
+func equalJitter(delay time.Duration) time.Duration {
+	half := delay / 2
+	return delay - half + rand.N(half+1)
 }
 
 func nextDelay(current, maximum time.Duration) time.Duration {
