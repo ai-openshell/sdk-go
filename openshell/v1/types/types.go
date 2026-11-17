@@ -72,7 +72,8 @@ type RetryPolicy struct {
 	// InitialWait defaults to 100 ms when zero. Backoff doubles before each later
 	// retry, saturating at MaxWait without jitter or server retry hints.
 	InitialWait time.Duration
-	// MaxWait defaults to 5 s when zero. Cancellation and the shared unary deadline
-	// interrupt backoff and prevent further attempts.
+	// MaxWait defaults to 5 s when zero. Cancellation interrupts backoff. When a
+	// wait would end at or after the shared unary deadline, the call returns the
+	// last Unavailable at once instead of waiting.
 	MaxWait time.Duration
 }

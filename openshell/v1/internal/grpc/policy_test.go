@@ -195,7 +195,13 @@ func TestClientPolicy_Backoff(t *testing.T) {
 func TestClientPolicy_RetryBudget(t *testing.T) {
 	for _, cancelInstead := range []bool{false, true} {
 		t.Run(fmt.Sprint(cancelInstead), func(t *testing.T) {
-			p, _ := newClientPolicy(40*time.Millisecond, &types.RetryPolicy{MaxRetries: math.MaxInt, InitialWait: time.Duration(math.MaxInt64), MaxWait: time.Duration(math.MaxInt64)}, nil)
+			// A wait past the deadline is skipped, so cancellation can only
+			// interrupt a wait when the context has no deadline.
+			timeout := 40 * time.Millisecond
+			if cancelInstead {
+				timeout = 0
+			}
+			p, _ := newClientPolicy(timeout, &types.RetryPolicy{MaxRetries: math.MaxInt, InitialWait: time.Duration(math.MaxInt64), MaxWait: time.Duration(math.MaxInt64)}, nil)
 			ctx, cancel := context.WithCancel(context.Background())
 			defer cancel()
 			calls := 0
@@ -207,7 +213,7 @@ func TestClientPolicy_RetryBudget(t *testing.T) {
 				}
 				return status.Error(codes.Unavailable, "transient")
 			})
-			expected := codes.DeadlineExceeded
+			expected := codes.Unavailable
 			if cancelInstead {
 				expected = codes.Canceled
 			}
@@ -387,7 +393,9 @@ func TestClientPolicy_LogSanitization(t *testing.T) {
 }
 
 func TestClientPolicy_RetryBudgetAcrossAttempts(t *testing.T) {
-	p, _ := newClientPolicy(70*time.Millisecond, &types.RetryPolicy{MaxRetries: 10, InitialWait: 10 * time.Millisecond, MaxWait: 40 * time.Millisecond}, nil)
+	// Waits of 50 and 100 ms fit into the 350 ms budget; the third wait of
+	// 200 ms would end at or after the deadline, so it is skipped.
+	p, _ := newClientPolicy(350*time.Millisecond, &types.RetryPolicy{MaxRetries: 10, InitialWait: 50 * time.Millisecond, MaxWait: 200 * time.Millisecond}, nil)
 	var deadlines []time.Time
 	start := time.Now()
 	err := p.unary(context.Background(), pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(ctx context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {
@@ -395,12 +403,29 @@ func TestClientPolicy_RetryBudgetAcrossAttempts(t *testing.T) {
 		deadlines = append(deadlines, deadline)
 		return status.Error(codes.Unavailable, "transient")
 	})
-	assert.Equal(t, codes.DeadlineExceeded, status.Code(err))
+	assert.Equal(t, codes.Unavailable, status.Code(err))
 	assert.Len(t, deadlines, 3)
 	for _, deadline := range deadlines {
 		assert.Equal(t, deadlines[0], deadline)
 	}
 	assert.Less(t, time.Since(start), time.Second)
+}
+
+func TestClientPolicy_SkipWaitPastDeadline(t *testing.T) {
+	logger := &policyLogger{}
+	p, _ := newClientPolicy(time.Second, &types.RetryPolicy{MaxRetries: 3, InitialWait: 2 * time.Second}, logger)
+	calls := 0
+	start := time.Now()
+	err := p.unary(context.Background(), pb.OpenShell_Health_FullMethodName, nil, nil, nil, func(context.Context, string, any, any, *grpc.ClientConn, ...grpc.CallOption) error {
+		calls++
+		return status.Error(codes.Unavailable, "transient")
+	})
+	assert.Equal(t, codes.Unavailable, status.Code(err))
+	assert.Equal(t, 1, calls)
+	assert.Less(t, time.Since(start), 500*time.Millisecond)
+	require.Len(t, logger.entries, 1, "no retry is logged for a wait that is skipped")
+	assert.Equal(t, "RPC completed", logger.entries[0].message)
+	assert.Equal(t, uint64(1), logField(logger.entries[0], "attempts"))
 }
 
 // expiredDeadlineContext reports a deadline in the past while Err is still nil,

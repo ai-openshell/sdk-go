@@ -84,6 +84,10 @@ the maximum, and have no jitter or server retry hints. Negative fields or a
 maximum below the initial wait after defaults fail construction with an SDK
 invalid-argument error. Clients copy the policy at construction.
 
+When the next wait would end at or after the RPC deadline, the call returns the
+last `Unavailable` at once instead of sleeping until the deadline, so the error
+names the real cause. Cancellation interrupts a wait in progress.
+
 Only original gRPC `Unavailable` responses from these safe unary reads retry:
 
 | Domain | Eligible RPCs |

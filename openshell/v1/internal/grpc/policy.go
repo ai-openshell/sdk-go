@@ -97,6 +97,11 @@ func (p *clientPolicy) unary(ctx context.Context, method string, req, reply any,
 		if p.retry == nil || attempts > uint64(p.retry.MaxRetries) || !safeReadMethods[method] || status.Code(err) != codes.Unavailable {
 			return err
 		}
+		// A wait that ends at or after the deadline leaves no time for another
+		// attempt, so return the last Unavailable instead of sleeping until then.
+		if deadline, ok := ctx.Deadline(); ok && delay >= time.Until(deadline) {
+			return err
+		}
 		if p.logger != nil {
 			p.logger.Debug("RPC retry", "method", method, "attempt", attempts+1, "delay", delay)
 		}
