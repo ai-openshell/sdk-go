@@ -11,6 +11,7 @@ import (
 
 	"golang.org/x/oauth2"
 	"golang.org/x/sync/singleflight"
+	"google.golang.org/grpc/status"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 	"github.com/ai-openshell/sdk-go/openshell/v1/types"
@@ -69,6 +70,33 @@ type refreshableAuth struct {
 	lastErr   error
 }
 
+// refreshWaitError is returned when a call's context ends while it waits for
+// a refresh and no cached token is usable. It wraps the context's error
+// and carries the matching gRPC status, so the call fails with
+// DeadlineExceeded or Canceled rather than Unauthenticated.
+type refreshWaitError struct{ err error }
+
+func (e refreshWaitError) Error() string {
+	return "openshell: waiting for a token refresh: " + e.err.Error()
+}
+
+func (e refreshWaitError) Unwrap() error { return e.err }
+
+func (e refreshWaitError) GRPCStatus() *status.Status {
+	return status.New(status.FromContextError(e.err).Code(), e.Error())
+}
+
+// cached returns the authorization metadata for the cached token if it
+// has not expired.
+func (r *refreshableAuth) cached() (map[string]string, bool) {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if !r.usableCached() {
+		return nil, false
+	}
+	return map[string]string{"authorization": "Bearer " + r.tok.AccessToken}, true
+}
+
 // usableCached reports whether the cached token has not yet expired.
 // Callers must hold r.mu.
 func (r *refreshableAuth) usableCached() bool {
@@ -103,58 +131,97 @@ func (r *refreshableAuth) GetRequestMetadata(ctx context.Context, _ ...string) (
 		r.mu.Unlock()
 		return nil, err
 	}
+	usable := r.usableCached()
 	r.mu.Unlock()
 
 	resultCh := r.group.DoChan("refresh", func() (any, error) {
-		return r.source.Token()
+		tok, err := r.source.Token()
+		if err == nil && tok == nil {
+			err = errNilToken
+		}
+		// Record the outcome here rather than in the callers: with a
+		// deadline, every caller may have stopped waiting for it.
+		r.record(tok, err)
+		return tok, err
 	})
+
+	// A cached token that has not expired is still good for this call, so
+	// a call with a deadline waits for the refresh for at most half the
+	// time it has left and keeps the rest for the call itself. The refresh
+	// keeps running, and its outcome is recorded for later calls.
+	var giveUp <-chan time.Time
+	if deadline, ok := ctx.Deadline(); ok && usable {
+		timer := time.NewTimer(time.Until(deadline) / 2)
+		defer timer.Stop()
+		giveUp = timer.C
+	}
 	var val any
 	var err error
-	select {
-	case <-ctx.Done():
-		return nil, ctx.Err()
-	case result := <-resultCh:
-		val = result.Val
-		err = result.Err
+wait:
+	for {
+		select {
+		case <-ctx.Done():
+			if md, ok := r.cached(); ok {
+				return md, nil
+			}
+			return nil, refreshWaitError{ctx.Err()}
+		case <-giveUp:
+			if md, ok := r.cached(); ok {
+				return md, nil
+			}
+			giveUp = nil
+		case result := <-resultCh:
+			val = result.Val
+			err = result.Err
+			break wait
+		}
 	}
 
-	r.mu.Lock()
-	defer r.mu.Unlock()
-
 	if err != nil {
-		if r.nextRetry.IsZero() || !time.Now().Before(r.nextRetry) {
-			bo := r.backoff
-			if bo == 0 {
-				bo = initialBackoff
-			} else {
-				bo *= 2
-				if bo > maxBackoff {
-					bo = maxBackoff
-				}
-			}
-			r.backoff = bo
-			r.nextRetry = time.Now().Add(bo)
-		}
-		r.lastErr = err
-
-		if r.usableCached() {
-			if r.logger != nil {
-				r.logger.Error(err, "token refresh failed, using cached token")
-			}
-			return map[string]string{"authorization": "Bearer " + r.tok.AccessToken}, nil
+		if md, ok := r.cached(); ok {
+			return md, nil
 		}
 		return nil, err
 	}
+	return map[string]string{"authorization": "Bearer " + val.(*oauth2.Token).AccessToken}, nil
+}
 
-	tok, ok := val.(*oauth2.Token)
-	if !ok || tok == nil {
-		return nil, errors.New("openshell: token source returned nil token without error")
+// errNilToken is recorded when the source returns neither a token nor an
+// error.
+var errNilToken = errors.New("openshell: token source returned nil token without error")
+
+// record stores the outcome of a refresh: the new token, or the error with
+// the next backoff step. A failure while the cached token has not expired
+// is logged once.
+func (r *refreshableAuth) record(tok *oauth2.Token, err error) {
+	r.mu.Lock()
+	if err == nil {
+		r.tok = tok
+		r.backoff = 0
+		r.nextRetry = time.Time{}
+		r.lastErr = nil
+		r.mu.Unlock()
+		return
 	}
-	r.tok = tok
-	r.backoff = 0
-	r.nextRetry = time.Time{}
-	r.lastErr = nil
-	return map[string]string{"authorization": "Bearer " + r.tok.AccessToken}, nil
+	if r.nextRetry.IsZero() || !time.Now().Before(r.nextRetry) {
+		bo := r.backoff
+		if bo == 0 {
+			bo = initialBackoff
+		} else {
+			bo *= 2
+			if bo > maxBackoff {
+				bo = maxBackoff
+			}
+		}
+		r.backoff = bo
+		r.nextRetry = time.Now().Add(bo)
+	}
+	r.lastErr = err
+	logIt := r.logger != nil && r.usableCached()
+	r.mu.Unlock()
+	if logIt {
+		r.logger.Error(err, "token refresh failed, using cached token")
+	}
 }
 
 func (r *refreshableAuth) RequireTransportSecurity() bool {
@@ -166,7 +233,13 @@ func (r *refreshableAuth) RequireTransportSecurity() bool {
 // in-flight refresh via singleflight. Failed refreshes trigger exponential
 // backoff (1s, 2s, 4s, ..., 30s cap) to avoid amplifying token endpoint outages.
 // After a failed refresh, the cached token is used only until it expires;
-// after that, requests fail with the last refresh error.
+// after that, requests fail with the last refresh error. While a refresh
+// runs and the cached token has not expired, a request with a deadline
+// waits for the refresh for at most half the time it has left, then uses
+// the cached token. A request whose context ends while it waits uses the
+// cached token if it has not expired, and otherwise fails with an error
+// that wraps the context's error and that gRPC reports as DeadlineExceeded
+// or Canceled.
 func RefreshableToken(src oauth2.TokenSource, opts ...RefreshOption) (AuthProvider, error) {
 	if src == nil {
 		return nil, errNilTokenSource
