@@ -115,6 +115,25 @@ def label_changes($current; $ready):
      fields: ((if ($add | length) > 0 then {add_labels: $add} else {} end)
               + (if ($remove | length) > 0 then {remove_labels: $remove} else {} end))};
 
+# Why a tracked method needs no issue any more: covered, removed (not in
+# the image at the tag), excepted, not-user-facing, or tracked-elsewhere
+# (another issue with an overlapping marker owns it).
+def close_reason($r):
+  if $r == null then {reason: "removed"}
+  elif ($r.user_facing | not) then {reason: "not-user-facing", auth_mode: $r.auth_mode}
+  elif $r.excepted then {reason: "excepted", text: $r.exception_reason}
+  elif $r.is_covered then {reason: "covered"}
+  else {reason: "tracked-elsewhere"} end;
+
+def close_line($tag):
+  "- `\(.key)`: "
+  + if .reason == "covered" then "covered, the SDK calls it under `openshell/v1`."
+    elif .reason == "removed" then "removed, core `\($tag)` no longer has it."
+    elif .reason == "excepted" then "excepted, listed in `hack/automation/rpc-exceptions.txt`: \"\(.text)\""
+    elif .reason == "not-user-facing" then
+      "not-user-facing, its auth mode at core `\($tag)` is `\(.auth_mode // "none")`, so it is not part of the client API."
+    else "tracked-elsewhere, another coverage issue tracks it." end;
+
 def code_list: map("`" + . + "`") | if length <= 2 then join(" and ") else (.[:-1] | join(", ")) + ", and " + .[-1] end;
 
 def streaming_kind:
@@ -338,6 +357,31 @@ def plan:
              + (if $changed then {body: $body} else {} end)
              + $lc.fields
            else empty end
+       elif $g.issue.status == "open" then
+         # FR-010, FR-011: no applicable method left; close with a reason per
+         # tracked method. A human reopen blocks a close as covered.
+         [$g.issue.marker.methods[] | ($g.group.service + "." + .) as $k
+          | {key: $k} + close_reason($by_key[$k])] as $reasons
+         | if $g.issue.last_event == "reopened" and $g.issue.last_actor_is_bot == false
+              and any($reasons[]; .reason == "covered") then empty
+           else
+             {action: "close", number: $g.issue.number, group: $g.group.id,
+              comment: ("Nothing left to track at core `\($in.tag)`:\n\n"
+                        + ([$reasons[] | close_line($in.tag)] | join("\n"))
+                        + "\n\nIf this is wrong, reopen the issue; the automation then keeps it open while the SDK covers its methods.")}
+           end
+       elif $g.issue.status == "bot-closed" and ($g.rows | length) > 0
+            and (any($human_closed[]; .marker.kind == "service" and .marker.service == $g.group.service) | not) then
+         # FR-011: the automation closed it and it applies again. A service
+         # issue closed by a human suppresses every issue of the service.
+         label_changes($g.issue.labels; $g.rows | readiness) as $lc
+         | {action: "reopen", number: $g.issue.number, group: $g.group.id,
+            body: render_body($g.ctx),
+            comment: ("Reopening: at core `\($in.tag)`, "
+                      + ([$g.rows[].key] | code_list)
+                      + (if ($g.rows | length) == 1 then " is user-facing again and the Go SDK does not wrap it."
+                         else " are user-facing again and the Go SDK does not wrap them." end))}
+           + $lc.fields
        else empty end]
   | sort_by(.group, .action);
 
