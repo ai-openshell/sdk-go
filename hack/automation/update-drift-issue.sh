@@ -14,6 +14,8 @@
 set -euo pipefail
 # shellcheck source=hack/automation/drift-issue.sh
 . "$(dirname "${BASH_SOURCE[0]}")/drift-issue.sh"
+# shellcheck source=hack/automation/rpc-issues-lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/rpc-issues-lib.sh"
 
 report=
 dry=0
@@ -37,7 +39,7 @@ issues_file=$(mktemp)
 trap 'rm -f "$issues_file"' EXIT
 if gh api --paginate "repos/$sdk_repo/issues?labels=rpc-coverage&state=open&per_page=100" \
   --jq '.[] | select(.pull_request == null) | {number, body, author: .user.login}' |
-  jq -s --arg bot "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" 'map(select(.author == $bot))' >"$issues_file" &&
+  rpc_bot_issues "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" >"$issues_file" &&
   linked=$(link_uncovered_rpcs "$issues_file" "$text"); then
   text=$linked
 else

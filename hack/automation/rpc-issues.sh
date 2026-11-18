@@ -242,7 +242,7 @@ gather() {
           | {number, state: (.state | ascii_upcase), title, body: (.body // ""),
              labels: [.labels[].name], author: .user.login}' ||
     die "cannot list the rpc-coverage issues of $sdk_repo"
-  jq -s --arg bot "$bot_login" 'map(select(.author == $bot) | del(.author))' "$work/issues.ndjson" >"$work/issues.json"
+  rpc_bot_issues "$bot_login" "$work/issues.ndjson" >"$work/issues.json"
 
   jq -n --arg repo "$sdk_repo" --arg core_repo "$core_repo" --arg tag "$tag" \
     --argjson max_new "$max_new" --argjson bump "$bump" \
@@ -331,6 +331,13 @@ if [ "$n" -eq 0 ]; then
   exit 0
 fi
 echo "Applying: $summary"
+
+# Only the bot applies the plan: later runs manage only the issues it opened,
+# so issues opened under another login would be duplicated. An App
+# installation token cannot read /user, a person's token can.
+if login=$(gh api user --jq .login 2>/dev/null) && [ "$login" != "$bot_login" ]; then
+  die "gh is logged in as $login, but only $bot_login applies the plan; use --dry-run"
+fi
 
 # Create the labels the plan applies and the repository lacks.
 label_desc() {

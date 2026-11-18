@@ -4,6 +4,15 @@
 # rpc-issues.sh and rpc-issues-test.sh; defines functions only.
 # shellcheck shell=bash
 
+# rpc_bot_issues <bot-login> [file]: the issues in file (or stdin), JSON
+# values with an "author" login as `gh api --paginate --jq` prints them, that
+# bot-login opened, as one JSON array without the author field. Coverage
+# issues are managed only when the bot opened them, so a marker in anyone
+# else's issue is ignored.
+rpc_bot_issues() {
+  jq -s --arg bot "${1:?rpc_bot_issues needs the bot login}" 'map(select(.author == $bot) | del(.author))' ${2:+"$2"}
+}
+
 # rpc_parse_exceptions <file>: print the entries of an exceptions list
 # (hack/automation/rpc-exceptions.txt) as a JSON array of {key, reason}.
 # Lines whose first non-blank character is "#" and blank lines are ignored.

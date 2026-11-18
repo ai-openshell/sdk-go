@@ -48,3 +48,4 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 - **Limit**: a run that would open more than 10 issues fails before any write and lists them.
   If they are expected, run core-watch by hand with the input `max_new_issues`, or locally `mise run core:rpc-issues -- --max-new <n>`.
 - **Preview**: `mise run core:rpc-issues -- --dry-run` prints every planned action with its body and changes nothing (it reads GitHub, so `gh` must be logged in).
+  Without `--dry-run`, the script applies the plan only under the bot's identity; under a person's `gh` login it stops before any write, because later runs would not manage the issues it opened.

@@ -134,6 +134,15 @@ for c in missing-reason:3:has.no.reason bad-key:3:is.not.Service.Method; do
   fi
 done
 
+# Only bot-opened issues are managed.
+if rpc_bot_issues 'ai-openshell-sdk-go[bot]' "$data/bot-issues/issues.ndjson" >"$work/bot.json" 2>"$work/err" &&
+  jq -e '[.[].number] == [1, 3] and all(.[]; has("author") | not)' "$work/bot.json" >/dev/null &&
+  [ "$(rpc_bot_issues 'ai-openshell-sdk-go[bot]' </dev/null)" = "[]" ]; then
+  echo "ok bot-issues"
+else
+  fail "bot-issues $(cat "$work/bot.json" "$work/err")"
+fi
+
 # Drift issue links to coverage issues.
 if link_uncovered_rpcs "$data/drift-links/issues.json" "$(cat "$data/drift-links/report.md")" >"$work/linked.md" 2>"$work/err" &&
   diff -u "$data/drift-links/expected.md" "$work/linked.md"; then
