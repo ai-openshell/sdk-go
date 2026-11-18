@@ -14,6 +14,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report; uncovered RPCs link to their open RPC coverage issues. |
 | `rpc-issues.sh [--dry-run] [--max-new <n>] [--tag <tag>]` | `core:rpc-issues` | Open, update, close, and reopen one issue per user-facing core RPC (or service) the SDK does not wrap, for the newest core tag. `BOT_LOGIN` names the bot (default `ai-openshell-sdk-go[bot]`); `--plan-input <file>` plans a saved input document, `--dump-input <file>` saves one. |
 | `rpc-issues.jq` | | The planner for `rpc-issues.sh`: input document in, actions and rendered bodies out; no network. |
+| `rpc-rows.jq` | | Turns core's buf image and proto sources into the planner's input rows (signatures, comments, messages, links). |
 | `rpc-marker.jq` | | The hidden issue marker, parsed by `rpc-issues.jq` and `update-drift-issue.sh` (jq module). |
 | `rpc-issue-body.md` | | Issue body template for `rpc-issues.jq`. |
 | `rpc-coverage.sh` | | The coverage rule shared by `rpc-issues.sh` and `drift-check.sh` (sourced, not run). |
@@ -48,4 +49,4 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 - **Limit**: a run that would open more than 10 issues fails before any write and lists them.
   If they are expected, run core-watch by hand with the input `max_new_issues`, or locally `mise run core:rpc-issues -- --max-new <n>`.
 - **Preview**: `mise run core:rpc-issues -- --dry-run` prints every planned action with its body and changes nothing (it reads GitHub, so `gh` must be logged in).
-  Without `--dry-run`, the script applies the plan only under the bot's identity; under a person's `gh` login it stops before any write, because later runs would not manage the issues it opened.
+  Without `--dry-run`, the script applies the plan only with an explicit `BOT_LOGIN` and the bot's token (core-watch passes both); under a person's `gh` login it stops before any write, because later runs would not manage the issues it opened.

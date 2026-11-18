@@ -175,45 +175,8 @@ gather() {
       .[$r[0]][$r[1]] += [{path: $r[2], url: ($base + $r[2])}])' "$work/refs.tsv" >"$work/refs.json"
 
   # 4. One row per method of every non-google file.
-  jq -n --slurpfile img "$work/image.json" --slurpfile src "$work/sources.json" \
-    --slurpfile refs "$work/refs.json" --arg core_repo "$core_repo" --arg tag "$tag" '
-    def dedent: (map(select(test("\\S")) | match("^ *").length) | min // 0) as $n
-      | map(if length >= $n then .[$n:] else . end);
-    def comment: (. // "") | split("\n") | map(sub("^ "; "") | sub("\\s+$"; "")) | join("\n") | sub("^\\s+"; "") | sub("\\s+$"; "");
-    def last_line: if length == 4 then .[2] else .[0] end;
-    $img[0] as $img | $src[0] as $src | $refs[0] as $refs
-    | ([$img.file[] | .package as $p | .name as $f | (.messageType // []) | to_entries[]
-        | {key: ("." + (if $p then $p + "." else "" end) + .value.name), value: {file: $f, index: .key}}]
-       | from_entries) as $msgs
-    | ([$img.file[] | {key: .name, value: ([.sourceCodeInfo.location[]?
-          | select((.path | length) == 2 and .path[0] == 4 or ((.path | length) == 4 and .path[0] == 6 and .path[2] == 2))
-          | {key: (.path | map(tostring) | join(".")), value: .}] | from_entries)}] | from_entries) as $locs
-    | def cut($f; $span): ($src[$f] // "" | split("\n"))[$span[0]:($span | last_line) + 1] | dedent | join("\n");
-    def message($t): ($t | ltrimstr(".")) as $name
-      | $msgs[$t] as $m
-      | if $m == null then {name: $name, source: ""}
-        else {name: $name, source: (($locs[$m.file][("4." + ($m.index | tostring))].span) as $sp
-                                    | if $sp == null then "" else cut($m.file; $sp) end)} end;
-    [$img.file[] | select(.name | startswith("google/") | not) | .name as $f
-     | (.service // []) | to_entries[] | .key as $si | .value.name as $s
-     | .value.method | to_entries[] | .key as $mi | .value as $m
-     | $locs[$f]["6.\($si).2.\($mi)"] as $loc
-     | ($m.options["[openshell.options.v1.authorization]"] // {}) as $auth
-     | {
-         file: $f, service: $s, method: $m.name,
-         auth_mode: $auth.authMode, scope: $auth.scope,
-         workspace_role: $auth.workspaceRole, global_role: $auth.globalRole,
-         client_streaming: ($m.clientStreaming // false), server_streaming: ($m.serverStreaming // false),
-         request: ($m.inputType | ltrimstr(".")), response: ($m.outputType | ltrimstr(".")),
-         comment: ($loc.leadingComments | comment),
-         signature: (if $loc == null then "" else cut($f; $loc.span) end),
-         messages: ([$m.inputType, $m.outputType] | unique | map(message(.))),
-         proto_url: (if $loc == null then ""
-                     else "https://github.com/\($core_repo)/blob/\($tag)/proto/\($f)#L\($loc.span[0] + 1)-L\(($loc.span | last_line) + 1)" end),
-         server_refs: ($refs["\($s).\($m.name)"].server_refs // []),
-         rust_sdk_refs: ($refs["\($s).\($m.name)"].rust_sdk_refs // []),
-         ts_sdk_refs: ($refs["\($s).\($m.name)"].ts_sdk_refs // [])
-       }]' >"$work/rpcs.json"
+  jq -n -f "$here/rpc-rows.jq" --slurpfile img "$work/image.json" --slurpfile src "$work/sources.json" \
+    --slurpfile refs "$work/refs.json" --arg core_repo "$core_repo" --arg tag "$tag" >"$work/rpcs.json"
   jq -e 'length > 0 and all(.[]; .signature != "" and .proto_url != "")' "$work/rpcs.json" >/dev/null ||
     die "cannot locate every rpc declaration of $tag in its proto source"
 
@@ -332,10 +295,15 @@ fi
 echo "Applying: $summary"
 
 # Only the bot applies the plan: later runs manage only the issues it opened,
-# so issues opened under another login would be duplicated. An App
-# installation token cannot read /user, a person's token can.
-if login=$(gh api user --jq .login 2>/dev/null) && [ "$login" != "$bot_login" ]; then
-  die "gh is logged in as $login, but only $bot_login applies the plan; use --dry-run"
+# so issues opened under another login would be duplicated. Applying needs
+# an explicit BOT_LOGIN (core-watch derives it from the app token it passes
+# as GH_TOKEN). A person's token resolves /user, so it must match; an App
+# installation token gets 403 there. Any other outcome stops the run.
+[ -n "${BOT_LOGIN:-}" ] || die "applying the plan needs BOT_LOGIN, the login of the bot whose token gh uses; use --dry-run to preview"
+if login=$(gh api user --jq .login 2>"$work/user.err"); then
+  [ "$login" = "$bot_login" ] || die "gh is logged in as $login, but only $bot_login applies the plan; use --dry-run"
+elif ! grep -q 'HTTP 403' "$work/user.err"; then
+  die "cannot tell which account gh uses: $(cat "$work/user.err")"
 fi
 
 # Create the labels the plan applies and the repository lacks.
