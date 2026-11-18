@@ -27,7 +27,7 @@ _rpc_bindings() {
     xargs -0 grep -HoE '(^|[^A-Za-z0-9_])New[A-Za-z0-9_]+Client\(' /dev/null |
     awk '{
       i = index($0, ":"); path = substr($0, 1, i - 1); m = substr($0, i + 1)
-      sub(/^.*New/, "", m); sub(/Client\($/, "", m)
+      sub(/^[^A-Za-z0-9_]?New/, "", m); sub(/Client\($/, "", m)
       dir = path; sub(/\/[^\/]*$/, "", dir)
       print dir, m
     }' | sort -u) || true

@@ -193,17 +193,16 @@ def plan:
   | sort_by(.group, .action);
 
 if ($ARGS.named.mode // "plan") == "needs-actors" then
-  # Closed issues whose identity has applicable methods, and open issues the
-  # plan would close: their last close or reopen actor decides the plan.
+  # Closed issues of every service with applicable methods (their closer
+  # decides ownership, suppression, and grouping rules 1 and 2), and open
+  # issues the plan would close (a human reopen blocks a close as covered).
   . as $in
   | rpc_rows as $rows
-  | ([$rows[] | select(.applicable) | .key]) as $app
+  | ([$rows[] | select(.applicable) | .service] | unique) as $app_services
   | (plan) as $actions
   | ([$in.issues[]? | . + {marker: (.body | parse_marker)} | select(.marker != null)
       | select(.state != "OPEN")
-      | select(.marker as $mk
-               | any($mk.methods[]; ($mk.service + "." + .) | IN($app[]))
-                 or ($mk.kind == "service" and any($app[]; startswith($mk.service + "."))))
+      | select(.marker.service | IN($app_services[]))
       | .number]
      + [if ($actions | type) == "array" then $actions[] | select(.action == "close") | .number else empty end])
   | unique

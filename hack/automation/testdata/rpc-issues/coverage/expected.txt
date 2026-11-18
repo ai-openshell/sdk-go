@@ -1,1 +1,2 @@
 OpenShell.Watch
+NewsFeed.Get
