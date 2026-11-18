@@ -61,9 +61,21 @@ type TLSConfig struct {
 	Insecure bool
 }
 
-// RetryPolicy configures automatic retry behavior for failed RPCs.
+// RetryPolicy configures retries of explicitly classified safe unary reads,
+// only for original gRPC Unavailable status. Mutations, execution, session
+// creation, streams, and unclassified methods are never replayed by this policy.
+// Negative fields or effective MaxWait below InitialWait fail client construction
+// with ErrorInvalidArgument. Each client snapshots the policy.
 type RetryPolicy struct {
-	MaxRetries  int
+	// MaxRetries counts additional attempts after the initial call; zero disables retries.
+	MaxRetries int
+	// InitialWait defaults to 100 ms when zero. Backoff doubles before each later
+	// retry, saturating at MaxWait. Each wait uses equal jitter: half of the
+	// backoff delay is fixed and the other half random. Server retry hints are
+	// not used.
 	InitialWait time.Duration
-	MaxWait     time.Duration
+	// MaxWait defaults to 5 s when zero. Cancellation interrupts backoff. When a
+	// wait would end at or after the shared unary deadline, the call returns the
+	// last Unavailable at once instead of waiting.
+	MaxWait time.Duration
 }

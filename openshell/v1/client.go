@@ -76,6 +76,11 @@ func NewClient(cfg Config) (*Client, error) {
 		return nil, &StatusError{Code: ErrorInvalidArgument, Message: "address must not be empty"}
 	}
 
+	options, err := internalgrpc.ClientOptions(cfg.Timeout, cfg.RetryPolicy, cfg.Logger)
+	if err != nil {
+		return nil, err
+	}
+
 	if cfg.Auth == nil {
 		cfg.Auth = NoAuth()
 	}
@@ -90,7 +95,7 @@ func NewClient(cfg Config) (*Client, error) {
 		}
 	}
 
-	conn, err := internalgrpc.NewConnection(cfg.Address, tlsParams, cfg.Auth)
+	conn, err := internalgrpc.NewConnection(cfg.Address, tlsParams, cfg.Auth, options...)
 	if err != nil {
 		return nil, err
 	}

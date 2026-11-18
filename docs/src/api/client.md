@@ -52,15 +52,95 @@ type Config struct {
     Address     string         // Gateway address (host:port)
     TLS         *TLSConfig     // TLS settings (nil uses system defaults)
     Auth        AuthProvider   // Authentication provider
-    Timeout     time.Duration  // Default timeout for all operations (0 = no timeout)
-    RetryPolicy *RetryPolicy   // Retry configuration (nil = no automatic retries)
-    Logger      Logger         // Custom logger (nil = no logging)
+    Timeout     time.Duration  // Default unary deadline without caller deadline
+    RetryPolicy *RetryPolicy   // Safe-read retries (nil = no configured retries)
+    Logger      Logger         // Unary diagnostics (nil = no configured logging)
 }
 ```
 
 Authentication providers:
 - `v1.StaticToken(token)` provides a fixed bearer token
 - `v1.NoAuth()` skips authentication (for local development)
+
+## Request deadlines
+
+A positive `Timeout` supplies a deadline to each unary RPC that has no caller
+deadline. An explicit caller deadline takes precedence, whether shorter or longer.
+All attempts and backoff for one RPC share that deadline; cancellation interrupts
+requests and retry waits. Zero supplies no default, and a negative timeout makes
+construction fail with an SDK invalid-argument error.
+
+`Timeout` also bounds mutations. A mutation cut off by it may still have been
+applied on the gateway: a `CreateSandbox` that fails with `DeadlineExceeded` may
+have created the sandbox, and repeating the call then returns `AlreadyExists`.
+Check the gateway state before you repeat a mutation that timed out.
+
+Streams, watches, exec streams (including `Exec.Run`), sessions and tunnels keep
+their caller-controlled lifetimes. Unary setup calls still follow the default.
+Polling helpers such as `WaitReady` may run longer than `Timeout`; each individual
+poll follows the unary rule, and the caller context bounds the overall wait.
+
+## Retries
+
+`RetryPolicy.MaxRetries` counts additional attempts after the first. Nil policy
+or zero retries disables configured replay. Zero `InitialWait` defaults to 100 ms;
+zero `MaxWait` defaults to 5 s. Delays double from the initial wait and saturate
+at the maximum. Each wait uses equal jitter: half of the delay is fixed and the
+other half random, so clients that failed together (for example after a gateway
+restart) do not retry in lockstep. Server retry hints are not used. Negative fields or a
+maximum below the initial wait after defaults fail construction with an SDK
+invalid-argument error. Clients copy the policy at construction.
+
+When the next wait would end at or after the RPC deadline, the call returns the
+last `Unavailable` at once instead of sleeping until the deadline, so the error
+names the real cause. Cancellation interrupts a wait in progress.
+
+Only original gRPC `Unavailable` responses from these safe unary reads retry:
+
+| Domain | Eligible RPCs |
+|--------|---------------|
+| Gateway | `Health`, `GetCurrentUser`, `GetGatewayInfo`, `GetGatewayConfig` |
+| Sandboxes | `GetSandbox`, `ListSandboxes`, `GetSandboxTemplate`, `ListSandboxTemplates`, `ListSandboxProviders` |
+| Services | `GetService`, `ListServices` |
+| Providers | `GetProvider`, `ListProviders`, `GetProviderRefreshStatus` |
+| Policy | `GetSandboxPolicyStatus`, `ListSandboxPolicies`, `GetSandboxLogs`, `GetDraftPolicy`, `GetDraftHistory` |
+| Workspaces | `GetWorkspace`, `ListWorkspaces`, `ListWorkspaceMembers` |
+
+Mutations, execution, session creation, streams and unclassified methods do not
+receive configured retries. In particular, provider credential resolution and
+`GetSandboxProviderStatus` are excluded. `ResourceExhausted` does not retry, even
+though the SDK classifies that error as unavailable. Service-config retries are
+disabled so they cannot broaden this list. gRPC may still retry transparently
+before the remote application processes a request.
+
+## Diagnostics
+
+A configured `Logger` receives one completion per logical unary RPC with method,
+total duration, final status and attempt count. Scheduled retries use Debug, and
+retry fields include the upcoming attempt number and the actual wait. The logger
+must support concurrent calls and works without a retry policy.
+
+The completion level depends on the final status:
+
+| Level | Statuses |
+|-------|----------|
+| Error, with a status-only error | `Unavailable`, `Internal`, `Unknown`, `DeadlineExceeded`, `DataLoss` |
+| Debug | `OK` and every status that means the gateway answered the request, such as `NotFound`, `AlreadyExists`, `FailedPrecondition` and `Canceled` |
+
+Expected outcomes therefore stay out of error alerting. For example, `WaitDeleted`
+polls until `GetSandbox` returns `NotFound`.
+
+Diagnostics exclude bodies, authentication metadata, credentials and raw server
+error text. Nil logger disables this facility. Stream lifecycle diagnostics and
+global gRPC logging are outside this contract.
+
+`Config.Logger` does not reach token refresh. `RefreshableToken` logs its
+stale-token warnings only through its own `WithLogger` option, so pass the logger
+there as well:
+
+```go
+auth, err := v1.RefreshableToken(tokenSource, v1.WithLogger(logger))
+```
 
 ## Testing
 
