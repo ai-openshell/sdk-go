@@ -12,13 +12,14 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `tag-release.sh [--dry-run]` | `release:tag` | After a stable pin lands on `main`: create the lockstep tag `vX.Y.Z` and the GitHub release, then ask the Go module proxy for the version. |
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report; uncovered RPCs link to their open RPC coverage issues. |
-| `rpc-issues.sh [--dry-run] [--max-new <n>] [--tag <tag>]` | `core:rpc-issues` | Open, update, close, and reopen one issue per user-facing core RPC (or service) the SDK does not wrap, for the newest core tag. Needs `BOT_LOGIN`; `--plan-input <file>` plans a saved input document, `--dump-input <file>` saves one. |
+| `rpc-issues.sh [--dry-run] [--max-new <n>] [--tag <tag>]` | `core:rpc-issues` | Open, update, close, and reopen one issue per user-facing core RPC (or service) the SDK does not wrap, for the newest core tag. `BOT_LOGIN` names the bot (default `ai-openshell-sdk-go[bot]`); `--plan-input <file>` plans a saved input document, `--dump-input <file>` saves one. |
 | `rpc-issues.jq` | | The planner for `rpc-issues.sh`: input document in, actions and rendered bodies out; no network. |
+| `rpc-marker.jq` | | The hidden issue marker, parsed by `rpc-issues.jq` and `update-drift-issue.sh` (jq module). |
 | `rpc-issue-body.md` | | Issue body template for `rpc-issues.jq`. |
 | `rpc-coverage.sh` | | The coverage rule shared by `rpc-issues.sh` and `drift-check.sh` (sourced, not run). |
 | `rpc-issues-lib.sh` | | Exceptions list parser (sourced, not run). |
 | `rpc-exceptions.txt` | | RPCs the SDK deliberately does not wrap, one `Service.Method  reason` per line. |
-| `rpc-issues-test.sh [--update]` | | Offline planner, coverage, and exceptions tests on `testdata/rpc-issues/`; part of `workflows:check`. |
+| `rpc-issues-test.sh [--update]` | | Offline planner, `rpc-issues.sh --plan-input`, coverage, exceptions, and drift link tests on `testdata/rpc-issues/`; part of `workflows:check`. |
 | `report-failure.sh <job> <run-url>` | | Append a dated failure line to the drift issue. Called from `if: failure()` steps. |
 | `drift-issue.sh` | | Shared helpers for the two drift issue scripts (sourced, not run). |
 | `start-gateway.sh <core-semver>`, `stop-gateway.sh` | | Run the published gateway container for a core version with the Docker driver and a plaintext endpoint for the E2E lane, and collect its log. |
@@ -40,9 +41,10 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 - **Coverage**: an RPC is covered when a package under `openshell/v1` (tests and `fake/` excluded) that calls `New<Service>Client(` also calls `.<Method>(` (`rpc-coverage.sh`, also used by `drift-check.sh`).
 - **Grouping**: when the SDK wraps none of a service's user-facing methods, one issue tracks the whole service; otherwise each method gets its own issue.
   The hidden marker on the first body line (`<!-- rpc-coverage: kind=... -->`) is the issue's identity; an issue keeps the methods its marker lists, and new methods of a service join its open service issue.
-- **Lifecycle**: each run opens missing issues, rewrites a body or the `rpc:ready` / `rpc:blocked` label when they change, closes an issue with a reason per method (`covered`, `removed`, `excepted`, `not-user-facing`), and reopens an issue it closed itself when the methods apply again.
+  Only issues the bot opened and that keep the `rpc-coverage` label count; a marker in any other issue is ignored.
+- **Lifecycle**: each run opens missing issues, rewrites a body or the `rpc:ready` / `rpc:blocked` label when they change, closes an issue with a reason per method (`covered`, `removed`, `excepted`, `not-user-facing`, or `tracked-elsewhere` when another issue's marker lists the method), and reopens an issue it closed itself when the methods apply again.
   An issue a maintainer closes stays closed (a closed service issue silences the whole service); an issue a maintainer reopens is never closed as `covered` again.
 - **Excluding an RPC**: add `Service.Method  reason` to `rpc-exceptions.txt`; the next run closes its issue with the reason.
 - **Limit**: a run that would open more than 10 issues fails before any write and lists them.
   If they are expected, run core-watch by hand with the input `max_new_issues`, or locally `mise run core:rpc-issues -- --max-new <n>`.
-- **Preview**: `BOT_LOGIN='ai-openshell-sdk-go[bot]' mise run core:rpc-issues -- --dry-run` prints every planned action with its body and changes nothing.
+- **Preview**: `mise run core:rpc-issues -- --dry-run` prints every planned action with its body and changes nothing (it reads GitHub, so `gh` must be logged in).

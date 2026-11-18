@@ -260,5 +260,5 @@ description = "Run the E2E suite against the gateway named in OPENSHELL_GATEWAY 
 run = "go vet -tags=e2e ./e2e/... && go test -tags=e2e -timeout 8m -parallel ${E2E_PARALLEL:-5} ./e2e/..."
 
 [tasks."core:rpc-issues"]
-description = "Open, update, and close RPC coverage issues (--dry-run, --max-new <n>, --tag <tag>)"
+description = "Open, update, close, and reopen RPC coverage issues (--dry-run, --max-new <n>, --tag <tag>)"
 run = "hack/automation/rpc-issues.sh"
