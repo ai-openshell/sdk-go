@@ -6,7 +6,8 @@
 # Usage: update-drift-issue.sh <report.md> [--dry-run]
 #
 # The report comes from drift-check.sh. The issue body is the report plus the
-# "## Automation failures" section, which is carried over unchanged. With
+# "## Automation failures" section, which is carried over unchanged; each
+# uncovered RPC line links to its open RPC coverage issue (rpc-issues.sh). With
 # "Result: fail" or pending failures, the issue is created or its body
 # replaced. With "Result: pass" and no pending failures, an open issue is
 # closed with a comment, and nothing is created.
@@ -27,6 +28,29 @@ done
 
 text=$(cat "$report")
 header=$(head -1 <<<"$text")
+
+# Link each "- Service.Method" line of the report to the open RPC coverage
+# issue (rpc-issues.sh) whose marker lists the method; the lowest number wins.
+links=$(gh issue list -R "$sdk_repo" --label rpc-coverage --state open --limit 500 --json number,body |
+  jq -r '.[] | .number as $n
+    | ((.body // "") | split("\n")[0] | sub("\r$"; "")) as $line
+    | [$line | capture("^<!-- rpc-coverage: (?<f>.*) -->$")] | .[0] // empty
+    | ([.f | splits(" +") | select(length > 0) | capture("^(?<k>[a-z-]+)=(?<v>.*)$") | {key: .k, value: .v}]
+       | from_entries) as $kv
+    | select(($kv.service // "") != "")
+    | ($kv.methods // "" | split(",")[] | select(length > 0))
+    | "\($kv.service).\(.) \($n)"' | sort -k2,2n) ||
+  { echo "ERROR: cannot list the rpc-coverage issues of $sdk_repo" >&2; exit 1; }
+if [ -n "$links" ]; then
+  text=$(awk -v repo="$sdk_repo" '
+    FILENAME == ARGV[1] { if (!($1 in issue)) issue[$1] = $2; next }
+    /^- [A-Za-z0-9_]+\.[A-Za-z0-9_]+$/ && (substr($0, 3) in issue) {
+      n = issue[substr($0, 3)]
+      print $0 " ([#" n "](https://github.com/" repo "/issues/" n "))"
+      next
+    }
+    { print }' <(printf '%s\n' "$links") <(printf '%s\n' "$text"))
+fi
 case $header in
 *"Result: pass"*) result=pass ;;
 *"Result: fail"*) result=fail ;;
