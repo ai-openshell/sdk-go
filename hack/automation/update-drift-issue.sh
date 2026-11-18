@@ -29,28 +29,21 @@ done
 text=$(cat "$report")
 header=$(head -1 <<<"$text")
 
-# Link each "- Service.Method" line of the report to the open RPC coverage
-# issue (rpc-issues.sh) whose marker lists the method; the lowest number wins.
-links=$(gh issue list -R "$sdk_repo" --label rpc-coverage --state open --limit 500 --json number,body |
-  jq -r '.[] | .number as $n
-    | ((.body // "") | split("\n")[0] | sub("\r$"; "")) as $line
-    | [$line | capture("^<!-- rpc-coverage: (?<f>.*) -->$")] | .[0] // empty
-    | ([.f | splits(" +") | select(length > 0) | capture("^(?<k>[a-z-]+)=(?<v>.*)$") | {key: .k, value: .v}]
-       | from_entries) as $kv
-    | select(($kv.service // "") != "")
-    | ($kv.methods // "" | split(",")[] | select(length > 0))
-    | "\($kv.service).\(.) \($n)"' | sort -k2,2n) ||
-  { echo "ERROR: cannot list the rpc-coverage issues of $sdk_repo" >&2; exit 1; }
-if [ -n "$links" ]; then
-  text=$(awk -v repo="$sdk_repo" '
-    FILENAME == ARGV[1] { if (!($1 in issue)) issue[$1] = $2; next }
-    /^- [A-Za-z0-9_]+\.[A-Za-z0-9_]+$/ && (substr($0, 3) in issue) {
-      n = issue[substr($0, 3)]
-      print $0 " ([#" n "](https://github.com/" repo "/issues/" n "))"
-      next
-    }
-    { print }' <(printf '%s\n' "$links") <(printf '%s\n' "$text"))
+# Link each "- Service.Method" line of the report to its open RPC coverage
+# issue (rpc-issues.sh), counting only issues the bot opened (BOT_LOGIN,
+# default "ai-openshell-sdk-go[bot]"). The links are a convenience: when the
+# issues cannot be listed, the report goes out without them.
+issues_file=$(mktemp)
+trap 'rm -f "$issues_file"' EXIT
+if gh api --paginate "repos/$sdk_repo/issues?labels=rpc-coverage&state=open&per_page=100" \
+  --jq '.[] | select(.pull_request == null) | {number, body, author: .user.login}' |
+  jq -s --arg bot "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" 'map(select(.author == $bot))' >"$issues_file" &&
+  linked=$(link_uncovered_rpcs "$issues_file" "$text"); then
+  text=$linked
+else
+  echo "WARNING: cannot list the rpc-coverage issues of $sdk_repo; uncovered RPCs stay unlinked" >&2
 fi
+
 case $header in
 *"Result: pass"*) result=pass ;;
 *"Result: fail"*) result=fail ;;

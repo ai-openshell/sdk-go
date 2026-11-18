@@ -21,15 +21,17 @@
 #                        --dry-run)
 #   --dump-input <file>  write the assembled input document, then continue
 #
-# Environment: GH_TOKEN, BOT_LOGIN (the bot's login, for example
-# "ai-openshell-sdk-go[bot]"; required unless --plan-input), CORE_REPO
-# (default NVIDIA/OpenShell), SDK_REPO (default ai-openshell/sdk-go),
-# RPC_EXCEPTIONS (default hack/automation/rpc-exceptions.txt).
+# Environment: GH_TOKEN, BOT_LOGIN (the login of the bot that opens the
+# issues, default "ai-openshell-sdk-go[bot]"; only issues it opened are
+# managed), CORE_REPO (default NVIDIA/OpenShell), SDK_REPO (default
+# ai-openshell/sdk-go), RPC_EXCEPTIONS (default
+# hack/automation/rpc-exceptions.txt).
 # Exit codes: 0 success, 1 failure, 2 usage error.
 set -euo pipefail
 
 core_repo=${CORE_REPO:-NVIDIA/OpenShell}
 sdk_repo=${SDK_REPO:-ai-openshell/sdk-go}
+bot_login=${BOT_LOGIN:-ai-openshell-sdk-go[bot]}
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=hack/automation/rpc-issues-lib.sh
 . "$here/rpc-issues-lib.sh"
@@ -42,6 +44,26 @@ usage() {
   exit 2
 }
 die() { echo "ERROR: $*" >&2; exit 1; }
+
+# retry <cmd...>: run an idempotent read up to three times, 10 and 20
+# seconds apart. Never wrap a GitHub write: the next run converges instead.
+retry() {
+  local i name=$1
+  [ "$name" != _to ] || name=$3
+  for i in 1 2 3; do
+    "$@" && return 0
+    [ "$i" -eq 3 ] || { echo "WARNING: '$name' failed (attempt $i of 3), retrying" >&2; sleep $((i * 10)); }
+  done
+  return 1
+}
+# retry_to <file> <cmd...>: retry with stdout written to file, so a failed
+# attempt leaves no partial output behind.
+retry_to() {
+  local out=$1
+  shift
+  retry _to "$out" "$@"
+}
+_to() { local out=$1; shift; "$@" >"$out"; }
 
 dry=0
 max_new=10
@@ -64,7 +86,6 @@ done
 if [ -n "$plan_input" ]; then
   [ -f "$plan_input" ] || usage "$plan_input: no such file"
 else
-  [ -n "${BOT_LOGIN:-}" ] || usage "BOT_LOGIN must name the bot's login, for example 'ai-openshell-sdk-go[bot]'"
   [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run this from the root of the sdk-go clone"
 fi
 # --plan-input needs only jq.
@@ -78,7 +99,7 @@ work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 
 plan() { # plan <input> [mode]
-  jq -f "$here/rpc-issues.jq" --rawfile template "$here/rpc-issue-body.md" --arg mode "${2:-plan}" "$1"
+  jq -L "$here" -f "$here/rpc-issues.jq" --rawfile template "$here/rpc-issue-body.md" --arg mode "${2:-plan}" "$1"
 }
 
 # snake <PascalName>, camel <PascalName>
@@ -94,16 +115,26 @@ refs() {
   [ -z "$list" ] || head -3 <<<"$list"
 }
 
+# clone_core: a sparse checkout of core's sources at the tag in $work/core.
+clone_core() {
+  rm -rf "$work/core"
+  git clone --quiet --depth=1 --filter=blob:none --no-checkout --branch "$tag" \
+    "https://github.com/$core_repo.git" "$work/core" &&
+    git -C "$work/core" sparse-checkout set crates/openshell-server/src crates/openshell-sdk/src sdk/typescript/src &&
+    git -C "$work/core" checkout --quiet
+}
+
 gather() {
   local out=$1 f n raw_n
   if [ -z "$tag" ]; then
-    tag=$("$here/core-tags.sh" --all --pin v0.0.0 | tail -1) || die "cannot list core tags"
+    retry_to "$work/tags.txt" "$here/core-tags.sh" --all --pin v0.0.0 || die "cannot list core tags"
+    tag=$(tail -1 "$work/tags.txt")
     [ -n "$tag" ] || die "core $core_repo has no release tags"
   fi
   echo "Core tag: $tag" >&2
 
   # 1. Core's protos at the tag as a descriptor image.
-  buf build "https://github.com/$core_repo.git#tag=$tag,depth=1" \
+  retry buf build "https://github.com/$core_repo.git#tag=$tag,depth=1" \
     --config '{"version":"v2","modules":[{"path":"proto"}]}' -o "$work/image.json" ||
     die "buf build of $core_repo at $tag failed"
 
@@ -113,10 +144,11 @@ gather() {
   echo '{}' >"$work/sources.json"
   for f in $(jq -r '.file[].name | select(startswith("google/") | not)' "$work/image.json"); do
     mkdir -p "$work/raw/$(dirname "$f")"
-    curl -sSf --retry 3 -o "$work/raw/$f" "https://raw.githubusercontent.com/$core_repo/$tag/proto/$f" ||
+    curl -sSf --retry 3 --connect-timeout 20 --max-time 120 -o "$work/raw/$f" "https://raw.githubusercontent.com/$core_repo/$tag/proto/$f" ||
       die "cannot fetch proto/$f at $tag"
     n=$(jq --arg f "$f" '[.file[] | select(.name == $f) | .service[]?.method[]?] | length' "$work/image.json")
-    raw_n=$(grep -cE '^[[:space:]]*rpc[[:space:]]+[A-Za-z_]' "$work/raw/$f" || true)
+    # rpc declarations outside // comments, also several on one line.
+    raw_n=$(sed 's#//.*##' "$work/raw/$f" | { grep -oE '(^|[;{}[:space:]])rpc[[:space:]]+[A-Za-z_]' || true; } | wc -l | tr -d ' ')
     [ "$n" = "$raw_n" ] || die "proto/$f at $tag declares $raw_n rpcs, but the buf image has $n"
     jq --arg f "$f" --rawfile text "$work/raw/$f" '.[$f] = $text' "$work/sources.json" >"$work/sources.tmp"
     mv "$work/sources.tmp" "$work/sources.json"
@@ -129,10 +161,7 @@ gather() {
     die "openshell.proto at $tag has no annotated methods; the authorization option was not parsed"
 
   # 3. Where core mentions each method: server, Rust SDK, TypeScript SDK.
-  git clone --quiet --depth=1 --filter=blob:none --no-checkout --branch "$tag" \
-    "https://github.com/$core_repo.git" "$work/core" || die "cannot clone $core_repo at $tag"
-  git -C "$work/core" sparse-checkout set crates/openshell-server/src crates/openshell-sdk/src sdk/typescript/src
-  git -C "$work/core" checkout --quiet || die "cannot check out $core_repo at $tag"
+  retry clone_core || die "cannot clone $core_repo at $tag"
   jq -r '.file[] | select(.name | startswith("google/") | not) | .service[]? | .name as $s | .method[] | "\($s).\(.name) \(.name)"' \
     "$work/image.json" | sort -u >"$work/methods.txt"
   local key method sn cm p
@@ -198,16 +227,22 @@ gather() {
   [ -s "$work/built.txt" ] || die "no FullMethodName constants in proto/*/*_grpc.pb.go"
   yq -r '.plugins[0].opt[] | select(test("^M")) | sub("^M"; "") | sub("=.*"; "")' buf.gen.yaml >"$work/generated.txt" ||
     die "cannot read the M options of buf.gen.yaml"
-  local branch_refs bump=false
-  branch_refs=$(gh api "repos/$sdk_repo/git/matching-refs/heads/core/$tag" --jq '.[].ref') ||
+  local bump=false
+  retry_to "$work/branches.txt" gh api "repos/$sdk_repo/git/matching-refs/heads/core/$tag" --jq '.[].ref' ||
     die "cannot list branches of $sdk_repo"
-  if grep -qxF "refs/heads/core/$tag" <<<"$branch_refs"; then bump=true; fi
+  if grep -qxF "refs/heads/core/$tag" "$work/branches.txt"; then bump=true; fi
 
   # 6. Exceptions and existing issues.
   rpc_parse_exceptions "${RPC_EXCEPTIONS:-hack/automation/rpc-exceptions.txt}" >"$work/exceptions.json" || exit 1
-  gh issue list -R "$sdk_repo" --label rpc-coverage --state all --limit 500 \
-    --json number,state,title,body,labels --jq 'map(.labels |= map(.name))' >"$work/issues.json" ||
+  # The REST issue list, not gh issue list --label (the search index lags
+  # behind writes). Only issues the bot opened count, so a marker in
+  # someone else's issue cannot steer the automation.
+  retry_to "$work/issues.ndjson" gh api --paginate "repos/$sdk_repo/issues?labels=rpc-coverage&state=all&per_page=100" \
+    --jq '.[] | select(.pull_request == null)
+          | {number, state: (.state | ascii_upcase), title, body: (.body // ""),
+             labels: [.labels[].name], author: .user.login}' ||
     die "cannot list the rpc-coverage issues of $sdk_repo"
+  jq -s --arg bot "$bot_login" 'map(select(.author == $bot) | del(.author))' "$work/issues.ndjson" >"$work/issues.json"
 
   jq -n --arg repo "$sdk_repo" --arg core_repo "$core_repo" --arg tag "$tag" \
     --argjson max_new "$max_new" --argjson bump "$bump" \
@@ -225,7 +260,7 @@ gather() {
 
 # Fill last_event and last_actor_is_bot for the issues the plan depends on.
 resolve_actors() {
-  local in=$1 fetched=" " need n ev last event login
+  local in=$1 fetched=" " need n last event login
   while :; do
     need=$(plan "$in" needs-actors | jq -r '.[]') || die "planning failed"
     local new=
@@ -234,12 +269,13 @@ resolve_actors() {
     done
     [ -n "$new" ] || break
     for n in $new; do
-      ev=$(gh api --paginate "repos/$sdk_repo/issues/$n/events" \
-        --jq '.[] | select(.event == "closed" or .event == "reopened") | "\(.event) \(.actor.login // "")"') ||
+      retry_to "$work/events.txt" gh api --paginate "repos/$sdk_repo/issues/$n/events" \
+        --jq '.[] | select(.event == "closed" or .event == "reopened") | "\(.event) \(.actor.login // "")"' ||
         die "cannot read the events of #$n"
-      last=$(tail -1 <<<"$ev")
+      last=$(tail -1 "$work/events.txt")
       event=${last%% *}; login=${last#* }
-      jq --argjson n "$n" --arg event "$event" --arg login "$login" --arg bot "$BOT_LOGIN" '
+      [ -z "$event" ] || echo "#$n: last $event by $login" >&2
+      jq --argjson n "$n" --arg event "$event" --arg login "$login" --arg bot "$bot_login" '
         .issues |= map(if .number == $n then
           .last_event = (if $event == "" then null else $event end)
           | .last_actor_is_bot = (if $event == "" then null else $login == $bot end)
@@ -307,7 +343,8 @@ label_desc() {
 }
 needed=$(jq -r '[.[] | (.labels // []) + (.add_labels // []) | .[]] | unique | .[]' "$work/plan.json")
 if [ -n "$needed" ]; then
-  existing=$(gh label list -R "$sdk_repo" --limit 500 --json name --jq '.[].name') || die "cannot list labels"
+  retry_to "$work/labels.txt" gh label list -R "$sdk_repo" --limit 500 --json name --jq '.[].name' || die "cannot list labels"
+  existing=$(cat "$work/labels.txt")
   while IFS= read -r l; do
     grep -qxF "$l" <<<"$existing" && continue
     d=$(label_desc "$l")
@@ -337,16 +374,16 @@ for i in $(seq 0 $((n - 1))); do
     edit_args=("${label_args[@]}")
     [ ! -s "$work/body.md" ] || edit_args+=(--body-file "$work/body.md")
     gh issue edit "$num" -R "$sdk_repo" "${edit_args[@]}" >/dev/null
-    echo "updated #$num"
+    echo "updated #$num $(jq -r .group "$work/action.json")"
     ;;
   close)
     gh issue close "$num" -R "$sdk_repo" --comment "$(jq -r .comment "$work/action.json")" >/dev/null
-    echo "closed #$num"
+    echo "closed #$num $(jq -r .group "$work/action.json")"
     ;;
   reopen)
     gh issue reopen "$num" -R "$sdk_repo" --comment "$(jq -r .comment "$work/action.json")" >/dev/null
     gh issue edit "$num" -R "$sdk_repo" --body-file "$work/body.md" "${label_args[@]}" >/dev/null
-    echo "reopened #$num"
+    echo "reopened #$num $(jq -r .group "$work/action.json")"
     ;;
   *) die "unknown action $action" ;;
   esac

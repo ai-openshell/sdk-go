@@ -1,0 +1,8 @@
+[
+  {"number": 42, "body": "<!-- rpc-coverage: kind=service service=ServiceDiscovery first-seen=v0.1.9 methods=GetServiceRouteSnapshot,WatchServiceRoutes -->\n\nbody"},
+  {"number": 7, "body": "<!-- rpc-coverage: kind=method service=OpenShell method=ForwardTcp first-seen=v0.1.9 methods=ForwardTcp -->\r\n\r\nbody"},
+  {"number": 9, "body": "<!-- rpc-coverage: kind=method service=OpenShell method=ForwardTcp first-seen=v0.1.9 methods=ForwardTcp -->"},
+  {"number": 11, "body": ""},
+  {"number": 12, "body": null},
+  {"number": 13, "body": "<!-- rpc-coverage: kind=bogus service=OpenShell methods=GetSandboxProviderStatus -->"}
+]

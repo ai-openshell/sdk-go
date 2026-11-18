@@ -7,9 +7,12 @@
 #
 # Run from the root of an sdk-go clone. Runs the planner (rpc-issues.jq) on
 # every hack/automation/testdata/rpc-issues/planner/<case>/input.json and
-# compares the result with expected.json, checks the coverage helper on the
-# miniature SDK tree in coverage/, and the exceptions parser on exceptions/.
-# --update rewrites the planner expected.json files instead of comparing.
+# compares the result with expected.json (and, where present, its
+# needs-actors mode with expected-actors.json), runs rpc-issues.sh offline
+# with --plan-input, checks the coverage helper on the miniature SDK tree in
+# coverage/, the exceptions parser on exceptions/, and the drift issue links
+# on drift-links/. --update rewrites the planner expected files instead of
+# comparing.
 # Exits 1 on any mismatch.
 set -euo pipefail
 
@@ -19,6 +22,8 @@ data=$here/testdata/rpc-issues
 . "$here/rpc-issues-lib.sh"
 # shellcheck source=hack/automation/rpc-coverage.sh
 . "$here/rpc-coverage.sh"
+# shellcheck source=hack/automation/drift-issue.sh
+. "$here/drift-issue.sh"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
@@ -41,24 +46,57 @@ for dir in "$data"/planner/*/; do
   [ -d "$dir" ] || continue
   name=$(basename "$dir")
   [ -f "$dir/input.json" ] || { fail "$name: no input.json"; continue; }
-  if ! jq -S -f "$here/rpc-issues.jq" --rawfile template "$here/rpc-issue-body.md" \
-    "$dir/input.json" >"$work/actual.json" 2>"$work/err"; then
-    fail "$name: planner failed: $(cat "$work/err")"
-    continue
-  fi
-  if [ "$update" -eq 1 ]; then
-    cp "$work/actual.json" "$dir/expected.json"
-    [ -f "$dir/expected.json.license" ] || cp "$dir/input.json.license" "$dir/expected.json.license" 2>/dev/null || true
-    echo "updated $name"
-    continue
-  fi
-  [ -f "$dir/expected.json" ] || { fail "$name: no expected.json (run with --update)"; continue; }
-  jq -S . "$dir/expected.json" >"$work/expected.json"
-  if diff -u "$work/expected.json" "$work/actual.json" >"$work/diff"; then
-    echo "ok $name"
+  for mode in plan needs-actors; do
+    exp=expected.json label=$name
+    if [ "$mode" = needs-actors ]; then
+      exp=expected-actors.json label="$name (needs-actors)"
+      [ -f "$dir/$exp" ] || continue
+    fi
+    if ! jq -S -L "$here" -f "$here/rpc-issues.jq" --rawfile template "$here/rpc-issue-body.md" \
+      --arg mode "$mode" "$dir/input.json" >"$work/actual.json" 2>"$work/err"; then
+      fail "$label: planner failed: $(cat "$work/err")"
+      continue
+    fi
+    if [ "$update" -eq 1 ]; then
+      cp "$work/actual.json" "$dir/$exp"
+      [ -f "$dir/$exp.license" ] || cp "$dir/input.json.license" "$dir/$exp.license" 2>/dev/null || true
+      echo "updated $label"
+      continue
+    fi
+    [ -f "$dir/$exp" ] || { fail "$label: no $exp (run with --update)"; continue; }
+    jq -S . "$dir/$exp" >"$work/expected.json"
+    if diff -u "$work/expected.json" "$work/actual.json" >"$work/diff"; then
+      echo "ok $label"
+    else
+      fail "$label"
+      cat "$work/diff"
+    fi
+  done
+done
+
+# rpc-issues.sh offline: the issue limit, its override, and the dry-run output.
+rpc_issues() { "$here/rpc-issues.sh" --plan-input "$@" >"$work/out" 2>"$work/err"; }
+if rpc_issues "$data/planner/too-many-new/input.json"; then
+  fail "script too-many-new: exit 0"
+elif [ "$(grep -c '^  - feat(sdk): wrap ' "$work/err")" = 11 ] && grep -q 'nothing was changed' "$work/err"; then
+  echo "ok script too-many-new"
+else
+  fail "script too-many-new: $(cat "$work/err")"
+fi
+if rpc_issues "$data/planner/too-many-new/input.json" --max-new 11 &&
+  grep -q '^dry-run: core v0.2.0: 11 to open, 0 to update, 0 to close, 0 to reopen$' "$work/out"; then
+  echo "ok script max-new"
+else
+  fail "script max-new: $(cat "$work/out" "$work/err")"
+fi
+for c in "backfill-v0.1.9:^dry-run: open \"feat\\(sdk\\): wrap the ServiceDiscovery service \\(core v0\\.1\\.9\\)\" \\(labels help wanted, rpc-coverage, rpc:blocked\\)$" \
+  "message-changed:^dry-run: update #20 method:OpenShell\\.ForwardTcp$" \
+  "reopen-swaps-label:^dry-run: reopen #20 method:OpenShell\\.ForwardTcp \\(labels \\+rpc:ready -rpc:blocked\\) with comment:$" \
+  "covered:^dry-run: close #[0-9]+ method:OpenShell\.[A-Za-z]+ with comment:$"; do
+  if rpc_issues "$data/planner/${c%%:*}/input.json" && grep -qE "${c#*:}" "$work/out" && grep -q '^  | ' "$work/out"; then
+    echo "ok script dry-run ${c%%:*}"
   else
-    fail "$name"
-    cat "$work/diff"
+    fail "script dry-run ${c%%:*}: $(cat "$work/out" "$work/err")"
   fi
 done
 
@@ -78,12 +116,30 @@ if rpc_parse_exceptions "$data/exceptions/valid.txt" >"$work/exc.json" 2>"$work/
 else
   fail "exceptions/valid $(cat "$work/err")"
 fi
-if rpc_parse_exceptions "$data/exceptions/missing-reason.txt" >/dev/null 2>"$work/err"; then
-  fail "exceptions/missing-reason: parsed without error"
-elif grep -q '^ERROR: .*missing-reason.txt:3: ' "$work/err"; then
-  echo "ok exceptions/missing-reason"
+if jq -e '. == [{key: "OpenShell.ForwardTcp", reason: "The TCP client already forwards ports over SSH."},
+               {key: "ServiceDiscovery.WatchServiceRoutes", reason: "Only ingress controllers consume routes."}]' \
+  "$work/exc.json" >/dev/null; then
+  echo "ok exceptions/valid entries"
 else
-  fail "exceptions/missing-reason: unexpected error: $(cat "$work/err")"
+  fail "exceptions/valid entries: $(cat "$work/exc.json")"
+fi
+for c in missing-reason:3:has.no.reason bad-key:3:is.not.Service.Method; do
+  f=${c%%:*} rest=${c#*:}
+  if rpc_parse_exceptions "$data/exceptions/$f.txt" >/dev/null 2>"$work/err"; then
+    fail "exceptions/$f: parsed without error"
+  elif grep -qE "^ERROR: .*$f.txt:${rest%%:*}: .*${rest#*:}" "$work/err"; then
+    echo "ok exceptions/$f"
+  else
+    fail "exceptions/$f: unexpected error: $(cat "$work/err")"
+  fi
+done
+
+# Drift issue links to coverage issues.
+if link_uncovered_rpcs "$data/drift-links/issues.json" "$(cat "$data/drift-links/report.md")" >"$work/linked.md" 2>"$work/err" &&
+  diff -u "$data/drift-links/expected.md" "$work/linked.md"; then
+  echo "ok drift-links"
+else
+  fail "drift-links $(cat "$work/err")"
 fi
 
 [ "$failed" -eq 0 ] || { echo "rpc-issues tests failed" >&2; exit 1; }

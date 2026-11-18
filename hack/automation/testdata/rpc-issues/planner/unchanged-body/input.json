@@ -1,0 +1,108 @@
+{
+  "built": [
+    "OpenShell.GetSandbox"
+  ],
+  "bump_branch_exists": true,
+  "core_repo": "NVIDIA/OpenShell",
+  "covered": [
+    "OpenShell.GetSandbox"
+  ],
+  "exceptions": [],
+  "generated_files": [
+    "openshell.proto",
+    "datamodel.proto",
+    "sandbox.proto",
+    "options.proto"
+  ],
+  "issues": [
+    {
+      "number": 20,
+      "state": "OPEN",
+      "title": "t",
+      "body": "<!-- rpc-coverage: kind=method service=OpenShell method=ForwardTcp first-seen=v0.2.0 methods=ForwardTcp -->\n\nCore `v0.2.0` has `OpenShell.ForwardTcp`, a user-facing RPC that the Go SDK does not wrap yet. First seen in core `v0.2.0`.\n\n**Blocked on the core bump**: the generated bindings on the SDK's `main` do not contain every method listed here yet. Work on the bump branch [`core/v0.2.0`](https://github.com/ai-openshell/sdk-go/tree/core/v0.2.0), or on `main` once that proposal is merged.\n\n## `OpenShell.ForwardTcp`\n\nForwardTcp does something useful.\n\n- Streaming: unary\n- Authorization: `bearer`, scope `sandbox:read`, workspace role `user`\n- Definition: [`proto/openshell.proto`](https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12) at core `v0.2.0`\n- Generated bindings on the SDK's `main`: no\n\n```proto\nrpc ForwardTcp(ForwardTcpRequest) returns (ForwardTcpResponse) {}\n```\n\nRequest and response messages:\n\n```proto\nmessage ForwardTcpRequest {\n  string name = 1;\n}\n```\n\n```proto\nmessage ForwardTcpResponse {}\n```\n\n## Where core implements it\n\n### `OpenShell.ForwardTcp`\n\n- Server (`crates/openshell-server/src`): [`crates/openshell-server/src/grpc/mod.rs`](https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs)\n- Rust SDK (`crates/openshell-sdk/src`): not found\n- TypeScript SDK (`sdk/typescript/src`): not found\n\n## Implementation brief\n\nCopy this block as the task description when you start the work.\n\n````text\nWrap the OpenShell.ForwardTcp RPC of OpenShell core in the OpenShell Go SDK (https://github.com/ai-openshell/sdk-go).\n\nCore version: NVIDIA/OpenShell at tag v0.2.0.\nBranch: start from core/v0.2.0, the core bump proposal for v0.2.0; the bindings on main do not contain the methods yet.\n\nRead first:\n- AGENTS.md and CONTRIBUTING.md in the SDK repository: conventions, commands, and commit rules.\n- OpenShell.ForwardTcp: proto definition https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12; core server: https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs\n- The pattern to follow: the sub-client in openshell/v1/service_client.go, its types in openshell/v1/types/service.go, its converter in openshell/v1/internal/converter/service.go, and its fake in openshell/v1/fake/service.go.\n\nDeliverables:\n- The method in openshell/v1, on the sub-client that fits it, behind its interface like the other sub-client methods.\n- Domain types in openshell/v1/types/ without proto imports.\n- Converters in openshell/v1/internal/converter/ that deep-copy slices and maps.\n- The fake implementation in openshell/v1/fake/.\n- Unit tests with bufconn and testify.\n- Documentation: a page under docs/src/api/ (like docs/src/api/services.md) with its entry in docs/src/SUMMARY.md, or an update of the existing page.\n\nDone when `mise run ci` passes. Use Conventional Commits and sign off every commit.\n````\n\n## About this issue\n\nThe RPC coverage automation (`hack/automation/rpc-issues.sh`, run by the hourly core-watch workflow) opened this issue and keeps it in sync with the newest core release tag.\nIt rewrites this description when the definition or the buildability changes, and closes the issue when the SDK covers every method listed here under `openshell/v1`, when core removes them or makes them internal, or when they are listed with a reason in [`hack/automation/rpc-exceptions.txt`](https://github.com/ai-openshell/sdk-go/blob/main/hack/automation/rpc-exceptions.txt).\nAn issue closed by hand stays closed. Reopen it by hand to keep it open while the automation considers the methods covered.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:blocked"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null
+    }
+  ],
+  "max_new": 10,
+  "repo": "ai-openshell/sdk-go",
+  "rpcs": [
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "GetSandbox does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxRequest",
+          "source": "message GetSandboxRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.GetSandboxResponse",
+          "source": "message GetSandboxResponse {}"
+        }
+      ],
+      "method": "GetSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.GetSandboxRequest",
+      "response": "openshell.v1.GetSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc GetSandbox(GetSandboxRequest) returns (GetSandboxResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "ForwardTcp does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ForwardTcpRequest",
+          "source": "message ForwardTcpRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.ForwardTcpResponse",
+          "source": "message ForwardTcpResponse {}"
+        }
+      ],
+      "method": "ForwardTcp",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.ForwardTcpRequest",
+      "response": "openshell.v1.ForwardTcpResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc ForwardTcp(ForwardTcpRequest) returns (ForwardTcpResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    }
+  ],
+  "services_bound": [
+    "OpenShell"
+  ],
+  "tag": "v0.2.0"
+}

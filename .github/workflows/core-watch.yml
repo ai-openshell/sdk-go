@@ -90,6 +90,7 @@ jobs:
       # proposal is pending; it needs only the bot token.
       - name: Reconcile RPC coverage issues
         if: ${{ !cancelled() && steps.app-token.outcome == 'success' }}
+        timeout-minutes: 10
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}

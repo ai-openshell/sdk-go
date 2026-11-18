@@ -1,0 +1,3 @@
+# The key on line 3 is not Service.Method.
+OpenShell.ForwardTcp  The TCP client already forwards ports over SSH.
+OpenShell ExecSandboxInteractive  The exec client covers it.

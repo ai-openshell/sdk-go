@@ -4,8 +4,10 @@
 # document in, one action list out; rpc-issues.sh gathers the input and
 # applies the actions, rpc-issues-test.sh runs this on fixtures.
 #
-#   jq -f rpc-issues.jq --rawfile template rpc-issue-body.md input.json
-#   jq -f rpc-issues.jq --rawfile template rpc-issue-body.md --arg mode needs-actors input.json
+#   jq -L hack/automation -f rpc-issues.jq --rawfile template rpc-issue-body.md input.json
+#   jq -L hack/automation -f rpc-issues.jq --rawfile template rpc-issue-body.md --arg mode needs-actors input.json
+#
+# The issue marker (parse_marker, render_marker) lives in rpc-marker.jq.
 #
 # Input: repo, core_repo, tag, max_new, rpcs (one row per method of every
 # non-google proto file), services_bound, covered, built, generated_files,
@@ -21,9 +23,10 @@
 # would be opened. With mode needs-actors, the sorted numbers of the issues
 # whose last close or reopen actor the plan depends on.
 
+include "rpc-marker";
+
 def base_labels: ["help wanted", "rpc-coverage"];
 def readiness_labels: ["rpc:blocked", "rpc:ready"];
-def ident: test("^[A-Za-z0-9_]+$");
 
 # Per-RPC flags.
 def rpc_rows:
@@ -50,33 +53,6 @@ def rpc_rows:
        }
      | .applicable = (.user_facing and (.is_covered | not) and (.excepted | not))];
 
-# Marker on the first body line:
-#   <!-- rpc-coverage: kind=service service=S first-seen=T methods=A,B -->
-#   <!-- rpc-coverage: kind=method service=S method=M first-seen=T methods=M -->
-# Returns null when the line is not a valid marker.
-def parse_marker:
-  ((. // "") | split("\n")[0] | sub("\r$"; "")) as $line
-  | [$line | capture("^<!-- rpc-coverage: (?<f>.*) -->$")] | .[0]
-  | if . == null then null else
-      ([.f | splits(" +") | select(length > 0) | capture("^(?<k>[a-z-]+)=(?<v>.*)$") | {key: .k, value: .v}]
-       | from_entries) as $kv
-      | ($kv.service // "") as $s
-      | (($kv.methods // "") | split(",") | map(select(length > 0 and ident)) | unique) as $ms
-      | if $kv.kind == "service" and ($s | ident) then
-          {kind: "service", service: $s, id: ("service:" + $s), first_seen: $kv["first-seen"], methods: $ms}
-        elif $kv.kind == "method" and ($s | ident) and (($kv.method // "") | ident) then
-          {kind: "method", service: $s, method: $kv.method, id: ("method:" + $s + "." + $kv.method),
-           first_seen: $kv["first-seen"], methods: [$kv.method]}
-        else null end
-    end;
-
-def render_marker:
-  if .kind == "service" then
-    "<!-- rpc-coverage: kind=service service=\(.service) first-seen=\(.first_seen) methods=\(.methods | join(",")) -->"
-  else
-    "<!-- rpc-coverage: kind=method service=\(.service) method=\(.method) first-seen=\(.first_seen) methods=\(.methods | join(",")) -->"
-  end;
-
 def title:
   if .kind == "service" then "feat(sdk): wrap the \(.service) service (core \(.first_seen))"
   else "feat(sdk): wrap \(.service).\(.method) (core \(.first_seen))" end;
@@ -88,9 +64,10 @@ def issue_status:
   elif .last_actor_is_bot == true then "bot-closed"
   else "human-closed" end;
 
-# Replace {{KEY}} placeholders of a template with the values of an object.
+# Replace the {{KEY}} placeholders of a template with the values of an
+# object in one pass, so text from core that contains "{{...}}" stays as is.
 def fill($vals):
-  reduce ($vals | to_entries[]) as $e (.; split("{{" + $e.key + "}}") | join($e.value));
+  gsub("\\{\\{(?<k>[A-Z_]+)\\}\\}"; $vals[.k] // "{{\(.k)}}");
 
 def normalize: gsub("\r"; "") | sub("\\s+$"; "");
 
@@ -132,7 +109,7 @@ def close_line($tag):
     elif .reason == "excepted" then "excepted, listed in `hack/automation/rpc-exceptions.txt`: \"\(.text)\""
     elif .reason == "not-user-facing" then
       "not-user-facing, its auth mode at core `\($tag)` is `\(.auth_mode // "none")`, so it is not part of the client API."
-    else "tracked-elsewhere, another coverage issue tracks it." end;
+    else "tracked-elsewhere, another coverage issue lists it in its marker and tracks it." end;
 
 def code_list: map("`" + . + "`") | if length <= 2 then join(" and ") else (.[:-1] | join(", ")) + ", and " + .[-1] end;
 
@@ -192,7 +169,7 @@ def buildability_text($ctx):
       "**Blocked on bindings generation**: the SDK does not generate bindings for "
       + ([$ctx.rows[] | select(.buildability == "needs-bindings") | "proto/" + .file] | unique | code_list)
       + " yet. Add the `M` option for the file to both plugins in `buf.gen.yaml` and run `mise run proto:gen` first. "
-      + "If the core tag pinned on `main` does not contain the file yet, do this on the bump branch "
+      + "If the core tag pinned on `main` does not contain every method listed here yet, do this on the bump branch "
       + (if $ctx.bump_branch_exists then "[`core/\($ctx.tag)`](\($branch_url))."
          else "`core/\($ctx.tag)`, which core-watch opens as the bump proposal for core `\($ctx.tag)`; it does not exist yet." end)
     end;
@@ -215,7 +192,8 @@ def brief($ctx):
      elif $b == "bump-pending" then
        "Branch: core/\($ctx.tag), the core bump proposal for \($ctx.tag), which core-watch has not opened yet; start once it exists."
      else
-       "Branch: start from main if the core tag pinned there (buf.gen.yaml, inputs[0].tag) contains "
+       "Branch: start from main if the core tag pinned there (buf.gen.yaml, inputs[0].tag) already declares "
+       + ([$ctx.rows[].method] | join(", ")) + " in "
        + ([$ctx.rows[] | select(.buildability == "needs-bindings") | "proto/" + .file] | unique | join(" and "))
        + ", otherwise from core/\($ctx.tag), the core bump proposal for \($ctx.tag)"
        + (if $ctx.bump_branch_exists then "" else " (core-watch has not opened it yet)" end)
@@ -397,7 +375,7 @@ if ($ARGS.named.mode // "plan") == "needs-actors" then
       | select(.state != "OPEN")
       | select(.marker.service | IN($app_services[]))
       | .number]
-     + [if ($actions | type) == "array" then $actions[] | select(.action == "close") | .number else empty end])
+     + [$actions[] | select(.action == "close") | .number])
   | unique
 else
   plan as $actions

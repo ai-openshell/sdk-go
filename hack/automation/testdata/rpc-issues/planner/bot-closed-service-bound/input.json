@@ -1,0 +1,216 @@
+{
+  "built": [
+    "OpenShell.GetSandbox",
+    "Disc.A",
+    "Disc.B",
+    "Disc.C"
+  ],
+  "bump_branch_exists": true,
+  "core_repo": "NVIDIA/OpenShell",
+  "covered": [
+    "OpenShell.GetSandbox",
+    "OpenShell.ForwardTcp",
+    "Disc.A"
+  ],
+  "exceptions": [],
+  "generated_files": [
+    "openshell.proto",
+    "datamodel.proto",
+    "sandbox.proto",
+    "options.proto"
+  ],
+  "issues": [
+    {
+      "number": 20,
+      "state": "CLOSED",
+      "title": "t",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:ready"
+      ],
+      "body": "<!-- rpc-coverage: kind=service service=Disc first-seen=v0.1.9 methods=A -->\n\nold body",
+      "last_actor_is_bot": true,
+      "last_event": "closed"
+    }
+  ],
+  "max_new": 10,
+  "repo": "ai-openshell/sdk-go",
+  "rpcs": [
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "GetSandbox does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxRequest",
+          "source": "message GetSandboxRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.GetSandboxResponse",
+          "source": "message GetSandboxResponse {}"
+        }
+      ],
+      "method": "GetSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.GetSandboxRequest",
+      "response": "openshell.v1.GetSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc GetSandbox(GetSandboxRequest) returns (GetSandboxResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "ForwardTcp does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ForwardTcpRequest",
+          "source": "message ForwardTcpRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.ForwardTcpResponse",
+          "source": "message ForwardTcpResponse {}"
+        }
+      ],
+      "method": "ForwardTcp",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.ForwardTcpRequest",
+      "response": "openshell.v1.ForwardTcpResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc ForwardTcp(ForwardTcpRequest) returns (ForwardTcpResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "ForwardTcp does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ForwardTcpRequest",
+          "source": "message ForwardTcpRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.ForwardTcpResponse",
+          "source": "message ForwardTcpResponse {}"
+        }
+      ],
+      "method": "A",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.ForwardTcpRequest",
+      "response": "openshell.v1.ForwardTcpResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "Disc",
+      "signature": "rpc A(X) returns (Y) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "ForwardTcp does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ForwardTcpRequest",
+          "source": "message ForwardTcpRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.ForwardTcpResponse",
+          "source": "message ForwardTcpResponse {}"
+        }
+      ],
+      "method": "B",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.ForwardTcpRequest",
+      "response": "openshell.v1.ForwardTcpResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "Disc",
+      "signature": "rpc B(X) returns (Y) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "ForwardTcp does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ForwardTcpRequest",
+          "source": "message ForwardTcpRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.ForwardTcpResponse",
+          "source": "message ForwardTcpResponse {}"
+        }
+      ],
+      "method": "C",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.ForwardTcpRequest",
+      "response": "openshell.v1.ForwardTcpResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "Disc",
+      "signature": "rpc C(X) returns (Y) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    }
+  ],
+  "services_bound": [
+    "Disc",
+    "OpenShell"
+  ],
+  "tag": "v0.2.0"
+}
