@@ -90,7 +90,7 @@ else
 fi
 # --plan-input needs only jq.
 tools="jq"
-[ -n "$plan_input" ] || tools="jq gh git curl buf yq"
+[ -n "$plan_input" ] || tools="jq gh git curl buf yq perl"
 for tool in $tools; do
   command -v "$tool" >/dev/null || die "$tool not found (run 'mise install')"
 done
@@ -147,8 +147,7 @@ gather() {
     curl -sSf --retry 3 --connect-timeout 20 --max-time 120 -o "$work/raw/$f" "https://raw.githubusercontent.com/$core_repo/$tag/proto/$f" ||
       die "cannot fetch proto/$f at $tag"
     n=$(jq --arg f "$f" '[.file[] | select(.name == $f) | .service[]?.method[]?] | length' "$work/image.json")
-    # rpc declarations outside // comments, also several on one line.
-    raw_n=$(sed 's#//.*##' "$work/raw/$f" | { grep -oE '(^|[;{}[:space:]])rpc[[:space:]]+[A-Za-z_]' || true; } | wc -l | tr -d ' ')
+    raw_n=$(rpc_count_declarations "$work/raw/$f") || die "cannot count the rpcs of proto/$f"
     [ "$n" = "$raw_n" ] || die "proto/$f at $tag declares $raw_n rpcs, but the buf image has $n"
     jq --arg f "$f" --rawfile text "$work/raw/$f" '.[$f] = $text' "$work/sources.json" >"$work/sources.tmp"
     mv "$work/sources.tmp" "$work/sources.json"

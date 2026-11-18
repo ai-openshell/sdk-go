@@ -134,6 +134,13 @@ for c in missing-reason:3:has.no.reason bad-key:3:is.not.Service.Method; do
   fi
 done
 
+# Counting rpc declarations in raw proto sources.
+if [ "$(rpc_count_declarations "$data/protos/count.proto" 2>"$work/err")" = 4 ]; then
+  echo "ok protos/count"
+else
+  fail "protos/count: $(rpc_count_declarations "$data/protos/count.proto" 2>&1)"
+fi
+
 # Only bot-opened issues are managed.
 if rpc_bot_issues 'ai-openshell-sdk-go[bot]' "$data/bot-issues/issues.ndjson" >"$work/bot.json" 2>"$work/err" &&
   jq -e '[.[].number] == [1, 3] and all(.[]; has("author") | not)' "$work/bot.json" >/dev/null &&

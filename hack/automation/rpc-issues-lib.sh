@@ -13,6 +13,16 @@ rpc_bot_issues() {
   jq -s --arg bot "${1:?rpc_bot_issues needs the bot login}" 'map(select(.author == $bot) | del(.author))' ${2:+"$2"}
 }
 
+# rpc_count_declarations <proto-file>: the number of rpc declarations in a
+# proto file. Comments (// and /* */) and string literals are blanked first,
+# and several declarations on one line all count.
+rpc_count_declarations() {
+  perl -0777 -ne '
+    s{"(?:[^"\\\n]|\\.)*"|\x27(?:[^\x27\\\n]|\\.)*\x27|/\*.*?\*/|//[^\n]*}{ }gs;
+    my $n = () = /(?:^|[;{}\s])rpc\s+[A-Za-z_]/g;
+    print "$n\n"' "${1:?rpc_count_declarations needs a file}"
+}
+
 # rpc_parse_exceptions <file>: print the entries of an exceptions list
 # (hack/automation/rpc-exceptions.txt) as a JSON array of {key, reason}.
 # Lines whose first non-blank character is "#" and blank lines are ignored.

@@ -1,0 +1,22 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+// SPDX-License-Identifier: Apache-2.0
+
+// rpc-issues-test.sh: rpc_count_declarations must count 4 here.
+syntax = "proto3";
+
+/* rpc Legacy(Old) returns (Old); was removed.
+   rpc AlsoGone(Old) returns (Old); */
+service Foo { rpc Watch (Req) returns (Resp); rpc Get(Req) returns (Resp) {} }
+
+service Bar {
+  // rpc Commented(Req) returns (Resp);
+  rpc Split
+      (Req) returns (Resp) {
+    option (x.y) = { url: "http://example.com/rpc Fake(" note: 'it is // not a comment' };
+  }
+  rpc Last(Req) returns (Resp); /* trailing */
+}
+
+message Req { string rpc = 1; }
+message Resp {}
+message Old {}
