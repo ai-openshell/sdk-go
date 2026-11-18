@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Opens one update proposal per new core release tag (hack/automation/).
+# Opens one update proposal per new core release tag, then reconciles the RPC
+# coverage issues against the newest core tag (hack/automation/).
 name: core-watch
 
 on:
@@ -11,6 +12,10 @@ on:
     inputs:
       tag:
         description: Core tag to propose (vX.Y.Z or vX.Y.Z-pre.N); empty proposes every new tag
+        required: false
+        default: ""
+      max_new_issues:
+        description: Limit for new RPC coverage issues in this run (default 10)
         required: false
         default: ""
 
@@ -80,6 +85,16 @@ jobs:
           for t in $tags; do
             hack/automation/open-bump-pr.sh "$t"
           done
+
+      # Runs after a failed proposal step too, so issues can say that the
+      # proposal is pending; it needs only the bot token.
+      - name: Reconcile RPC coverage issues
+        if: ${{ !cancelled() && steps.app-token.outcome == 'success' }}
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+          MAX_NEW: ${{ inputs.max_new_issues }}
+        run: BOT_LOGIN="${APP_SLUG}[bot]" hack/automation/rpc-issues.sh ${MAX_NEW:+--max-new "$MAX_NEW"}
 
       - name: Report failure
         if: failure()
