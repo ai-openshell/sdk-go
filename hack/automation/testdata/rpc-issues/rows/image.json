@@ -54,6 +54,9 @@
               "outputType": ".pkg.Resp"
             }
           ]
+        },
+        {
+          "name": "Empty"
         }
       ],
       "sourceCodeInfo": {

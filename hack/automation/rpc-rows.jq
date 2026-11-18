@@ -32,7 +32,7 @@ def message($t): ($t | ltrimstr(".")) as $name
                                 | if $sp == null then "" else cut($m.file; $sp) end)} end;
 [$img.file[] | select(.name | startswith("google/") | not) | .name as $f
  | (.service // []) | to_entries[] | .key as $si | .value.name as $s
- | .value.method | to_entries[] | .key as $mi | .value as $m
+ | (.value.method // []) | to_entries[] | .key as $mi | .value as $m
  | $locs[$f]["6.\($si).2.\($mi)"] as $loc
  | ($m.options["[openshell.options.v1.authorization]"] // {}) as $auth
  | {
