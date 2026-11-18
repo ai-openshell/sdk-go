@@ -67,7 +67,10 @@ else
   [ -n "${BOT_LOGIN:-}" ] || usage "BOT_LOGIN must name the bot's login, for example 'ai-openshell-sdk-go[bot]'"
   [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run this from the root of the sdk-go clone"
 fi
-for tool in jq gh git curl buf yq; do
+# --plan-input needs only jq.
+tools="jq"
+[ -n "$plan_input" ] || tools="jq gh git curl buf yq"
+for tool in $tools; do
   command -v "$tool" >/dev/null || die "$tool not found (run 'mise install')"
 done
 

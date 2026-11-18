@@ -172,7 +172,10 @@ def buildability_text($ctx):
     else
       "**Blocked on bindings generation**: the SDK does not generate bindings for "
       + ([$ctx.rows[] | select(.buildability == "needs-bindings") | "proto/" + .file] | unique | code_list)
-      + " yet. Add the `M` option for the file to both plugins in `buf.gen.yaml` and run `mise run proto:gen` first."
+      + " yet. Add the `M` option for the file to both plugins in `buf.gen.yaml` and run `mise run proto:gen` first. "
+      + "If the core tag pinned on `main` does not contain the file yet, do this on the bump branch "
+      + (if $ctx.bump_branch_exists then "[`core/\($ctx.tag)`](\($branch_url))."
+         else "`core/\($ctx.tag)`, which core-watch opens as the bump proposal for core `\($ctx.tag)`; it does not exist yet." end)
     end;
 
 # The implementation brief: plain text, copied as the task description.
@@ -193,9 +196,11 @@ def brief($ctx):
      elif $b == "bump-pending" then
        "Branch: core/\($ctx.tag), the core bump proposal for \($ctx.tag), which core-watch has not opened yet; start once it exists."
      else
-       "Branch: start from main. First add the M option for "
+       "Branch: start from main if the core tag pinned there (buf.gen.yaml, inputs[0].tag) contains "
        + ([$ctx.rows[] | select(.buildability == "needs-bindings") | "proto/" + .file] | unique | join(" and "))
-       + " to both plugins in buf.gen.yaml and run `mise run proto:gen`."
+       + ", otherwise from core/\($ctx.tag), the core bump proposal for \($ctx.tag)"
+       + (if $ctx.bump_branch_exists then "" else " (core-watch has not opened it yet)" end)
+       + ". First add the M option for the file to both plugins in buf.gen.yaml and run `mise run proto:gen`."
      end)
   + "\n\nRead first:\n"
   + "- AGENTS.md and CONTRIBUTING.md in the SDK repository: conventions, commands, and commit rules.\n"
@@ -207,8 +212,10 @@ def brief($ctx):
      | join("\n")) + "\n"
   + "- The pattern to follow: the sub-client in openshell/v1/service_client.go, its types in openshell/v1/types/service.go, its converter in openshell/v1/internal/converter/service.go, and its fake in openshell/v1/fake/service.go.\n"
   + "\nDeliverables:\n"
-  + (if $g.kind == "service" then
+  + (if $g.kind == "service" and ($ctx.service_used | not) then
        "- A sub-client in openshell/v1 for the \($g.service) service, behind an interface like the other sub-clients, that constructs pb.New\($g.service)Client(conn) and is reachable from Client.\n"
+     elif $g.kind == "service" then
+       "- The methods in openshell/v1, on the sub-client that already uses pb.New\($g.service)Client(conn), behind its interface.\n"
      else
        "- The method in openshell/v1, on the sub-client that fits it, behind its interface like the other sub-client methods.\n"
      end)
@@ -231,7 +238,11 @@ def render_body($ctx):
           "Core `\($ctx.tag)` has "
           + (if ($ctx.rows | length) == 1 then "a user-facing method" else "\($ctx.rows | length) user-facing methods" end)
           + " in the `\($g.service)` service that the Go SDK does not wrap yet: \($m.methods | code_list). "
-          + "The SDK wraps none of the service's user-facing methods, so this issue tracks the service as a whole."
+          + (if $ctx.service_used then
+               "The SDK already uses the service; this issue tracks the methods it does not wrap yet."
+             else
+               "The SDK wraps none of the service's user-facing methods, so this issue tracks the service as a whole."
+             end)
         else
           "Core `\($ctx.tag)` has `\($g.service).\($g.method)`, a user-facing RPC that the Go SDK does not wrap yet."
         end)
@@ -304,6 +315,9 @@ def plan:
      | ($m + {id: $id, first_seen: ($m.first_seen // $in.tag)}) as $group
      | {group: $group, issue: $issue, rows: $grows}
      | . + {ctx: {template: $template, tag: $in.tag, repo: $in.repo, core_repo: $in.core_repo,
+                  bump_branch_exists: ($in.bump_branch_exists == true),
+                  service_used: (($group.service | IN($bound[]))
+                                 or any($rows[]; .service == $group.service and .user_facing and .is_covered)),
                   group: $group, rows: $grows}}]
   | [.[]
      | . as $g
