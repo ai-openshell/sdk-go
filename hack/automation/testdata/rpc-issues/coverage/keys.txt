@@ -1,0 +1,4 @@
+OpenShell.Watch
+OpenShell.Snapshot
+ServiceDiscovery.Watch
+OpenShell.Hidden

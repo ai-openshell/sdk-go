@@ -1,0 +1,3 @@
+# The entry on line 3 has no reason.
+OpenShell.ForwardTcp  The TCP client already forwards ports over SSH.
+OpenShell.ExecSandboxInteractive
