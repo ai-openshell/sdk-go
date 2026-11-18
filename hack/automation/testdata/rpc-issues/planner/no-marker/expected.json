@@ -1,0 +1,13 @@
+[
+  {
+    "action": "open",
+    "body": "<!-- rpc-coverage: kind=method service=OpenShell method=ForwardTcp first-seen=v0.2.0 methods=ForwardTcp -->\n\nCore `v0.2.0` has `OpenShell.ForwardTcp`, a user-facing RPC the Go SDK does not wrap yet.",
+    "group": "method:OpenShell.ForwardTcp",
+    "labels": [
+      "help wanted",
+      "rpc-coverage",
+      "rpc:blocked"
+    ],
+    "title": "feat(sdk): wrap OpenShell.ForwardTcp (core v0.2.0)"
+  }
+]

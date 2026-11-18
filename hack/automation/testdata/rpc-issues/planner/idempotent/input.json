@@ -1,0 +1,3981 @@
+{
+  "built": [
+    "OpenShell.AddWorkspaceMember",
+    "OpenShell.ApproveAllDraftChunks",
+    "OpenShell.ApproveDraftChunk",
+    "OpenShell.AttachSandboxProvider",
+    "OpenShell.BeginRootfsTarStaging",
+    "OpenShell.ClearDraftChunks",
+    "OpenShell.ConfigureProviderRefresh",
+    "OpenShell.ConnectSupervisor",
+    "OpenShell.CreateProvider",
+    "OpenShell.CreateSandbox",
+    "OpenShell.CreateSandboxTemplate",
+    "OpenShell.CreateSshSession",
+    "OpenShell.CreateWorkspace",
+    "OpenShell.DeleteProvider",
+    "OpenShell.DeleteProviderProfile",
+    "OpenShell.DeleteProviderRefresh",
+    "OpenShell.DeleteSandbox",
+    "OpenShell.DeleteSandboxTemplate",
+    "OpenShell.DeleteService",
+    "OpenShell.DeleteWorkspace",
+    "OpenShell.DetachSandboxProvider",
+    "OpenShell.EditDraftChunk",
+    "OpenShell.ExchangeProviderSubjectToken",
+    "OpenShell.ExecSandbox",
+    "OpenShell.ExecSandboxInteractive",
+    "OpenShell.ExposeService",
+    "OpenShell.FinalizeMainProcessExit",
+    "OpenShell.ForwardTcp",
+    "OpenShell.GetCurrentUser",
+    "OpenShell.GetDraftHistory",
+    "OpenShell.GetDraftPolicy",
+    "OpenShell.GetGatewayConfig",
+    "OpenShell.GetGatewayInfo",
+    "OpenShell.GetProvider",
+    "OpenShell.GetProviderCredentials",
+    "OpenShell.GetProviderProfile",
+    "OpenShell.GetProviderRefreshStatus",
+    "OpenShell.GetSandbox",
+    "OpenShell.GetSandboxConfig",
+    "OpenShell.GetSandboxLogs",
+    "OpenShell.GetSandboxPolicyStatus",
+    "OpenShell.GetSandboxProviderEnvironment",
+    "OpenShell.GetSandboxProviderStatus",
+    "OpenShell.GetSandboxTemplate",
+    "OpenShell.GetService",
+    "OpenShell.GetWorkspace",
+    "OpenShell.Health",
+    "OpenShell.ImportProviderProfiles",
+    "OpenShell.IssueSandboxToken",
+    "OpenShell.LintProviderProfiles",
+    "OpenShell.ListProviderProfiles",
+    "OpenShell.ListProviders",
+    "OpenShell.ListSandboxes",
+    "OpenShell.ListSandboxPolicies",
+    "OpenShell.ListSandboxProviders",
+    "OpenShell.ListSandboxTemplates",
+    "OpenShell.ListServices",
+    "OpenShell.ListWorkspaceMembers",
+    "OpenShell.ListWorkspaces",
+    "OpenShell.PeerGetSandboxProviderStatus",
+    "OpenShell.PeerNotifyConfigUpdate",
+    "OpenShell.PeerRelay",
+    "OpenShell.PeerReportEndpointStatus",
+    "OpenShell.PeerReportProviderReadiness",
+    "OpenShell.PushSandboxLogs",
+    "OpenShell.RefreshSandboxToken",
+    "OpenShell.RejectDraftChunk",
+    "OpenShell.RelayStream",
+    "OpenShell.RemoveWorkspaceMember",
+    "OpenShell.ReportEndpointStatus",
+    "OpenShell.ReportMainProcessExit",
+    "OpenShell.ReportPolicyStatus",
+    "OpenShell.ReportProviderReadiness",
+    "OpenShell.ReportSandboxConfiguration",
+    "OpenShell.ResumeSandbox",
+    "OpenShell.RevokeSshSession",
+    "OpenShell.RotateProviderCredential",
+    "OpenShell.StartSandbox",
+    "OpenShell.StopSandbox",
+    "OpenShell.SubmitPolicyAnalysis",
+    "OpenShell.SuspendSandbox",
+    "OpenShell.UndoDraftChunk",
+    "OpenShell.UpdateConfig",
+    "OpenShell.UpdateProvider",
+    "OpenShell.UpdateProviderProfiles",
+    "OpenShell.WatchSandbox",
+    "SandboxUpdates.UpdateSandbox"
+  ],
+  "bump_branch_exists": true,
+  "core_repo": "NVIDIA/OpenShell",
+  "covered": [
+    "OpenShell.AddWorkspaceMember",
+    "OpenShell.ApproveAllDraftChunks",
+    "OpenShell.ApproveDraftChunk",
+    "OpenShell.AttachSandboxProvider",
+    "OpenShell.ClearDraftChunks",
+    "OpenShell.ConfigureProviderRefresh",
+    "OpenShell.CreateProvider",
+    "OpenShell.CreateSandbox",
+    "OpenShell.CreateSandboxTemplate",
+    "OpenShell.CreateSshSession",
+    "OpenShell.CreateWorkspace",
+    "OpenShell.DeleteProvider",
+    "OpenShell.DeleteProviderProfile",
+    "OpenShell.DeleteProviderRefresh",
+    "OpenShell.DeleteSandbox",
+    "OpenShell.DeleteSandboxTemplate",
+    "OpenShell.DeleteService",
+    "OpenShell.DeleteWorkspace",
+    "OpenShell.DetachSandboxProvider",
+    "OpenShell.EditDraftChunk",
+    "OpenShell.ExecSandbox",
+    "OpenShell.ExposeService",
+    "OpenShell.GetCurrentUser",
+    "OpenShell.GetDraftHistory",
+    "OpenShell.GetDraftPolicy",
+    "OpenShell.GetGatewayConfig",
+    "OpenShell.GetGatewayInfo",
+    "OpenShell.GetProvider",
+    "OpenShell.GetProviderProfile",
+    "OpenShell.GetProviderRefreshStatus",
+    "OpenShell.GetSandbox",
+    "OpenShell.GetSandboxConfig",
+    "OpenShell.GetSandboxLogs",
+    "OpenShell.GetSandboxPolicyStatus",
+    "OpenShell.GetSandboxTemplate",
+    "OpenShell.GetService",
+    "OpenShell.GetWorkspace",
+    "OpenShell.Health",
+    "OpenShell.ImportProviderProfiles",
+    "OpenShell.LintProviderProfiles",
+    "OpenShell.ListProviderProfiles",
+    "OpenShell.ListProviders",
+    "OpenShell.ListSandboxes",
+    "OpenShell.ListSandboxPolicies",
+    "OpenShell.ListSandboxProviders",
+    "OpenShell.ListSandboxTemplates",
+    "OpenShell.ListServices",
+    "OpenShell.ListWorkspaceMembers",
+    "OpenShell.ListWorkspaces",
+    "OpenShell.RejectDraftChunk",
+    "OpenShell.RemoveWorkspaceMember",
+    "OpenShell.ResumeSandbox",
+    "OpenShell.RevokeSshSession",
+    "OpenShell.RotateProviderCredential",
+    "OpenShell.StartSandbox",
+    "OpenShell.StopSandbox",
+    "OpenShell.SuspendSandbox",
+    "OpenShell.UndoDraftChunk",
+    "OpenShell.UpdateConfig",
+    "OpenShell.UpdateProvider",
+    "OpenShell.UpdateProviderProfiles",
+    "OpenShell.WatchSandbox"
+  ],
+  "exceptions": [],
+  "generated_files": [
+    "openshell.proto",
+    "datamodel.proto",
+    "sandbox.proto",
+    "options.proto"
+  ],
+  "issues": [
+    {
+      "body": "<!-- rpc-coverage: kind=method service=OpenShell method=BeginRootfsTarStaging first-seen=v0.1.9 methods=BeginRootfsTarStaging -->\n\nCore `v0.1.9` has `OpenShell.BeginRootfsTarStaging`, a user-facing RPC the Go SDK does not wrap yet.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:ready"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null,
+      "number": 100,
+      "state": "OPEN",
+      "title": "feat(sdk): wrap OpenShell.BeginRootfsTarStaging (core v0.1.9)"
+    },
+    {
+      "body": "<!-- rpc-coverage: kind=method service=OpenShell method=ExecSandboxInteractive first-seen=v0.1.9 methods=ExecSandboxInteractive -->\n\nCore `v0.1.9` has `OpenShell.ExecSandboxInteractive`, a user-facing RPC the Go SDK does not wrap yet.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:ready"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null,
+      "number": 101,
+      "state": "OPEN",
+      "title": "feat(sdk): wrap OpenShell.ExecSandboxInteractive (core v0.1.9)"
+    },
+    {
+      "body": "<!-- rpc-coverage: kind=method service=OpenShell method=ForwardTcp first-seen=v0.1.9 methods=ForwardTcp -->\n\nCore `v0.1.9` has `OpenShell.ForwardTcp`, a user-facing RPC the Go SDK does not wrap yet.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:ready"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null,
+      "number": 102,
+      "state": "OPEN",
+      "title": "feat(sdk): wrap OpenShell.ForwardTcp (core v0.1.9)"
+    },
+    {
+      "body": "<!-- rpc-coverage: kind=method service=OpenShell method=GetSandboxProviderStatus first-seen=v0.1.9 methods=GetSandboxProviderStatus -->\n\nCore `v0.1.9` has `OpenShell.GetSandboxProviderStatus`, a user-facing RPC the Go SDK does not wrap yet.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:ready"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null,
+      "number": 103,
+      "state": "OPEN",
+      "title": "feat(sdk): wrap OpenShell.GetSandboxProviderStatus (core v0.1.9)"
+    },
+    {
+      "body": "<!-- rpc-coverage: kind=service service=SandboxUpdates first-seen=v0.1.9 methods=UpdateSandbox -->\n\nCore `v0.1.9` has 1 user-facing method(s) in the `SandboxUpdates` service that the Go SDK does not wrap yet.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:ready"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null,
+      "number": 104,
+      "state": "OPEN",
+      "title": "feat(sdk): wrap the SandboxUpdates service (core v0.1.9)"
+    },
+    {
+      "body": "<!-- rpc-coverage: kind=service service=ServiceDiscovery first-seen=v0.1.9 methods=GetServiceRouteSnapshot,WatchServiceRoutes -->\n\nCore `v0.1.9` has 2 user-facing method(s) in the `ServiceDiscovery` service that the Go SDK does not wrap yet.",
+      "labels": [
+        "help wanted",
+        "rpc-coverage",
+        "rpc:blocked"
+      ],
+      "last_actor_is_bot": null,
+      "last_event": null,
+      "number": 105,
+      "state": "OPEN",
+      "title": "feat(sdk): wrap the ServiceDiscovery service (core v0.1.9)"
+    }
+  ],
+  "max_new": 10,
+  "repo": "ai-openshell/sdk-go",
+  "rpcs": [
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.GetCapabilitiesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.GetCapabilitiesResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetCapabilities",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L27-L27",
+      "request": "openshell.compute.v1.GetCapabilitiesRequest",
+      "response": "openshell.compute.v1.GetCapabilitiesResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.AuthenticateSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.AuthenticateSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "AuthenticateSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L32-L33",
+      "request": "openshell.compute.v1.AuthenticateSandboxRequest",
+      "response": "openshell.compute.v1.AuthenticateSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.ValidateSandboxCreateRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.ValidateSandboxCreateResponse",
+          "source": ""
+        }
+      ],
+      "method": "ValidateSandboxCreate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L36-L37",
+      "request": "openshell.compute.v1.ValidateSandboxCreateRequest",
+      "response": "openshell.compute.v1.ValidateSandboxCreateResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.GetSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.GetSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L40-L40",
+      "request": "openshell.compute.v1.GetSandboxRequest",
+      "response": "openshell.compute.v1.GetSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.ListSandboxesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.ListSandboxesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListSandboxes",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L43-L43",
+      "request": "openshell.compute.v1.ListSandboxesRequest",
+      "response": "openshell.compute.v1.ListSandboxesResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.CreateSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.CreateSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "CreateSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L46-L46",
+      "request": "openshell.compute.v1.CreateSandboxRequest",
+      "response": "openshell.compute.v1.CreateSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.StopSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.StopSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "StopSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L49-L49",
+      "request": "openshell.compute.v1.StopSandboxRequest",
+      "response": "openshell.compute.v1.StopSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.StartSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.StartSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "StartSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L52-L52",
+      "request": "openshell.compute.v1.StartSandboxRequest",
+      "response": "openshell.compute.v1.StartSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.SuspendSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.SuspendSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "SuspendSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L61-L61",
+      "request": "openshell.compute.v1.SuspendSandboxRequest",
+      "response": "openshell.compute.v1.SuspendSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.DeleteSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.DeleteSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L64-L64",
+      "request": "openshell.compute.v1.DeleteSandboxRequest",
+      "response": "openshell.compute.v1.DeleteSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.WatchSandboxesEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.WatchSandboxesRequest",
+          "source": ""
+        }
+      ],
+      "method": "WatchSandboxes",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L67-L67",
+      "request": "openshell.compute.v1.WatchSandboxesRequest",
+      "response": "openshell.compute.v1.WatchSandboxesEvent",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.EnsureWorkspaceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.EnsureWorkspaceResponse",
+          "source": ""
+        }
+      ],
+      "method": "EnsureWorkspace",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L71-L71",
+      "request": "openshell.compute.v1.EnsureWorkspaceRequest",
+      "response": "openshell.compute.v1.EnsureWorkspaceResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.DeleteWorkspaceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.DeleteWorkspaceResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteWorkspace",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L74-L74",
+      "request": "openshell.compute.v1.DeleteWorkspaceRequest",
+      "response": "openshell.compute.v1.DeleteWorkspaceResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.ResolveSupervisorAppEndpointRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.ResolveSupervisorAppEndpointResponse",
+          "source": ""
+        }
+      ],
+      "method": "ResolveSupervisorAppEndpoint",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L83-L84",
+      "request": "openshell.compute.v1.ResolveSupervisorAppEndpointRequest",
+      "response": "openshell.compute.v1.ResolveSupervisorAppEndpointResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriverAppEndpoints",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.compute.v1.UpdateSandboxConfigurationRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.compute.v1.UpdateSandboxConfigurationResponse",
+          "source": ""
+        }
+      ],
+      "method": "UpdateSandboxConfiguration",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/compute_driver.proto#L92-L93",
+      "request": "openshell.compute.v1.UpdateSandboxConfigurationRequest",
+      "response": "openshell.compute.v1.UpdateSandboxConfigurationResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "ComputeDriverConfigurationUpdates",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "credential_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.credentials.v1.GetCredentialDriverCapabilitiesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.credentials.v1.GetCredentialDriverCapabilitiesResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetCapabilities",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/credential_driver.proto#L20-L21",
+      "request": "openshell.credentials.v1.GetCredentialDriverCapabilitiesRequest",
+      "response": "openshell.credentials.v1.GetCredentialDriverCapabilitiesResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "CredentialDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "credential_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.credentials.v1.StoreCredentialRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.credentials.v1.StoreCredentialResponse",
+          "source": ""
+        }
+      ],
+      "method": "StoreCredential",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/credential_driver.proto#L24-L24",
+      "request": "openshell.credentials.v1.StoreCredentialRequest",
+      "response": "openshell.credentials.v1.StoreCredentialResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "CredentialDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "credential_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.credentials.v1.DeleteCredentialRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.credentials.v1.DeleteCredentialResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteCredential",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/credential_driver.proto#L27-L27",
+      "request": "openshell.credentials.v1.DeleteCredentialRequest",
+      "response": "openshell.credentials.v1.DeleteCredentialResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "CredentialDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "credential_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.credentials.v1.ResolveCredentialsRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.credentials.v1.ResolveCredentialsResponse",
+          "source": ""
+        }
+      ],
+      "method": "ResolveCredentials",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/credential_driver.proto#L30-L31",
+      "request": "openshell.credentials.v1.ResolveCredentialsRequest",
+      "response": "openshell.credentials.v1.ResolveCredentialsResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "CredentialDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "credential_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.credentials.v1.ListCredentialsRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.credentials.v1.ListCredentialsResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListCredentials",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/credential_driver.proto#L34-L34",
+      "request": "openshell.credentials.v1.ListCredentialsRequest",
+      "response": "openshell.credentials.v1.ListCredentialsResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "CredentialDriver",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "unauthenticated",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.HealthRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.HealthResponse",
+          "source": ""
+        }
+      ],
+      "method": "Health",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L25-L29",
+      "request": "openshell.v1.HealthRequest",
+      "response": "openshell.v1.HealthResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetCurrentUserRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetCurrentUserResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetCurrentUser",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L32-L36",
+      "request": "openshell.v1.GetCurrentUserRequest",
+      "response": "openshell.v1.GetCurrentUserResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": "platform_admin",
+      "messages": [
+        {
+          "name": "openshell.v1.GetGatewayInfoRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetGatewayInfoResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetGatewayInfo",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L39-L45",
+      "request": "openshell.v1.GetGatewayInfoRequest",
+      "response": "openshell.v1.GetGatewayInfoResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.CreateSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "CreateSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L48-L54",
+      "request": "openshell.v1.CreateSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Allocate a gateway-owned staging slot for a local rootfs tar archive.\n\nThe gateway creates a request-scoped directory inside the compute driver's\nstaging root and returns an opaque single-use token plus the absolute path\nthe client must write the archive to. The token is then passed as\n`template.driver_config.<driver>.rootfs_tar_staging_token` on\nCreateSandbox; callers never name a filesystem path themselves. Only a\nclient sharing the gateway's filesystem can complete the upload.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.BeginRootfsTarStagingRequest",
+          "source": "message BeginRootfsTarStagingRequest {\n  // Workspace scope. Only a named workspace selection is accepted.\n  openshell.datamodel.v1.WorkspaceSelector workspace_scope = 3;\n  // Base file name of the local archive. The gateway uses it only to name the\n  // staged file; path separators and traversal components are rejected.\n  string file_name = 1;\n  // Size of the local archive in bytes, checked against the driver limit\n  // before the gateway allocates a slot.\n  uint64 size_bytes = 2;\n}"
+        },
+        {
+          "name": "openshell.v1.BeginRootfsTarStagingResponse",
+          "source": "message BeginRootfsTarStagingResponse {\n  reserved 4;\n  reserved \"expires_at_ms\";\n  // Opaque single-use token. Pass it as\n  // `template.driver_config.<driver>.rootfs_tar_staging_token` on\n  // CreateSandbox. The first CreateSandbox presenting it consumes it.\n  string staging_token = 1;\n  // Absolute path on the gateway host the client must write the archive to.\n  string upload_path = 2;\n  // Maximum accepted archive size in bytes, enforced again by the driver.\n  uint64 max_bytes = 3;\n  // Wall-clock deadline after which the gateway reclaims the slot.\n  google.protobuf.Timestamp expiration_time = 104;\n}"
+        }
+      ],
+      "method": "BeginRootfsTarStaging",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L64-L71",
+      "request": "openshell.v1.BeginRootfsTarStagingRequest",
+      "response": "openshell.v1.BeginRootfsTarStagingResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc BeginRootfsTarStaging(BeginRootfsTarStagingRequest)\n    returns (BeginRootfsTarStagingResponse) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:write\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L74-L80",
+      "request": "openshell.v1.GetSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListSandboxesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListSandboxesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListSandboxes",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L83-L89",
+      "request": "openshell.v1.ListSandboxesRequest",
+      "response": "openshell.v1.ListSandboxesResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.CreateSandboxTemplateRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SandboxTemplateResponse",
+          "source": ""
+        }
+      ],
+      "method": "CreateSandboxTemplate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L92-L99",
+      "request": "openshell.v1.CreateSandboxTemplateRequest",
+      "response": "openshell.v1.SandboxTemplateResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxTemplateRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SandboxTemplateResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandboxTemplate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L102-L109",
+      "request": "openshell.v1.GetSandboxTemplateRequest",
+      "response": "openshell.v1.SandboxTemplateResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListSandboxTemplatesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListSandboxTemplatesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListSandboxTemplates",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L112-L119",
+      "request": "openshell.v1.ListSandboxTemplatesRequest",
+      "response": "openshell.v1.ListSandboxTemplatesResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteSandboxTemplateRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteSandboxTemplateResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteSandboxTemplate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L122-L129",
+      "request": "openshell.v1.DeleteSandboxTemplateRequest",
+      "response": "openshell.v1.DeleteSandboxTemplateResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListSandboxProvidersRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListSandboxProvidersResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListSandboxProviders",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L132-L139",
+      "request": "openshell.v1.ListSandboxProvidersRequest",
+      "response": "openshell.v1.ListSandboxProvidersResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.AttachSandboxProviderRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.AttachSandboxProviderResponse",
+          "source": ""
+        }
+      ],
+      "method": "AttachSandboxProvider",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L142-L149",
+      "request": "openshell.v1.AttachSandboxProviderRequest",
+      "response": "openshell.v1.AttachSandboxProviderResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DetachSandboxProviderRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DetachSandboxProviderResponse",
+          "source": ""
+        }
+      ],
+      "method": "DetachSandboxProvider",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L152-L159",
+      "request": "openshell.v1.DetachSandboxProviderRequest",
+      "response": "openshell.v1.DetachSandboxProviderResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Inspect the installed authority for one sandbox provider mutation.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxProviderStatusRequest",
+          "source": "message GetSandboxProviderStatusRequest {\n  // Workspace scope. Only a named workspace selection is accepted.\n  openshell.datamodel.v1.WorkspaceSelector workspace_scope = 4;\n  string sandbox = 1;\n  string provider = 2;\n  string receipt_id = 3;\n}"
+        },
+        {
+          "name": "openshell.v1.GetSandboxProviderStatusResponse",
+          "source": "message GetSandboxProviderStatusResponse {\n  ProviderReadinessStatus status = 1;\n}"
+        }
+      ],
+      "method": "GetSandboxProviderStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L162-L169",
+      "request": "openshell.v1.GetSandboxProviderStatusRequest",
+      "response": "openshell.v1.GetSandboxProviderStatusResponse",
+      "rust_sdk_refs": [
+        {
+          "path": "crates/openshell-sdk/src/provider_readiness.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-sdk/src/provider_readiness.rs"
+        }
+      ],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/gateway_metrics.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/gateway_metrics.rs"
+        },
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        },
+        {
+          "path": "crates/openshell-server/src/supervisor_session.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/supervisor_session.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc GetSandboxProviderStatus(GetSandboxProviderStatusRequest)\n    returns (GetSandboxProviderStatusResponse) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:read\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteSandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L172-L178",
+      "request": "openshell.v1.DeleteSandboxRequest",
+      "response": "openshell.v1.DeleteSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.StopSandboxRequest",
+          "source": ""
+        }
+      ],
+      "method": "StopSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L181-L187",
+      "request": "openshell.v1.StopSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.StartSandboxRequest",
+          "source": ""
+        }
+      ],
+      "method": "StartSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L190-L196",
+      "request": "openshell.v1.StartSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SuspendSandboxRequest",
+          "source": ""
+        }
+      ],
+      "method": "SuspendSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L201-L207",
+      "request": "openshell.v1.SuspendSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ResumeSandboxRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": ""
+        }
+      ],
+      "method": "ResumeSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L210-L216",
+      "request": "openshell.v1.ResumeSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.CreateSshSessionRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.CreateSshSessionResponse",
+          "source": ""
+        }
+      ],
+      "method": "CreateSshSession",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L219-L225",
+      "request": "openshell.v1.CreateSshSessionRequest",
+      "response": "openshell.v1.CreateSshSessionResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ExposeServiceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ServiceEndpointResponse",
+          "source": ""
+        }
+      ],
+      "method": "ExposeService",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L228-L234",
+      "request": "openshell.v1.ExposeServiceRequest",
+      "response": "openshell.v1.ServiceEndpointResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetServiceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ServiceEndpointResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetService",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L237-L243",
+      "request": "openshell.v1.GetServiceRequest",
+      "response": "openshell.v1.ServiceEndpointResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListServicesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListServicesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListServices",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L246-L252",
+      "request": "openshell.v1.ListServicesRequest",
+      "response": "openshell.v1.ListServicesResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteServiceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteServiceResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteService",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L255-L261",
+      "request": "openshell.v1.DeleteServiceRequest",
+      "response": "openshell.v1.DeleteServiceResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.RevokeSshSessionRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.RevokeSshSessionResponse",
+          "source": ""
+        }
+      ],
+      "method": "RevokeSshSession",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L264-L270",
+      "request": "openshell.v1.RevokeSshSessionRequest",
+      "response": "openshell.v1.RevokeSshSessionResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ExecSandboxEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ExecSandboxRequest",
+          "source": ""
+        }
+      ],
+      "method": "ExecSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L273-L279",
+      "request": "openshell.v1.ExecSandboxRequest",
+      "response": "openshell.v1.ExecSandboxEvent",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": true,
+      "comment": "Forward one CLI-side TCP connection to a loopback TCP target in a sandbox.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.TcpForwardFrame",
+          "source": "message TcpForwardFrame {\n  oneof payload {\n    TcpForwardInit init = 1;\n    bytes data = 2;\n  }\n}"
+        }
+      ],
+      "method": "ForwardTcp",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L282-L288",
+      "request": "openshell.v1.TcpForwardFrame",
+      "response": "openshell.v1.TcpForwardFrame",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "rpc ForwardTcp(stream TcpForwardFrame) returns (stream TcpForwardFrame) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:write\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [
+        {
+          "path": "sdk/typescript/src/client.test.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/client.test.ts"
+        },
+        {
+          "path": "sdk/typescript/src/client.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/client.ts"
+        },
+        {
+          "path": "sdk/typescript/src/routing.test.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/routing.test.ts"
+        }
+      ],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": true,
+      "comment": "Execute an interactive command with bidirectional stdin/stdout streaming.\nThe first client message MUST carry an ExecSandboxInput with the start\nvariant. Subsequent messages carry stdin bytes or window resize events.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ExecSandboxEvent",
+          "source": "message ExecSandboxEvent {\n  oneof payload {\n    ExecSandboxStdout stdout = 1;\n    ExecSandboxStderr stderr = 2;\n    ExecSandboxExit exit = 3;\n  }\n}"
+        },
+        {
+          "name": "openshell.v1.ExecSandboxInput",
+          "source": "message ExecSandboxInput {\n  oneof payload {\n    // First message: exec request metadata.\n    ExecSandboxRequest start = 1;\n    // Subsequent messages: raw stdin bytes.\n    bytes stdin = 2;\n    // Terminal window size change.\n    ExecSandboxWindowResize resize = 3;\n  }\n}"
+        }
+      ],
+      "method": "ExecSandboxInteractive",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L293-L299",
+      "request": "openshell.v1.ExecSandboxInput",
+      "response": "openshell.v1.ExecSandboxEvent",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        },
+        {
+          "path": "crates/openshell-server/src/grpc/mutation_replay/streaming/tests.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mutation_replay/streaming/tests.rs"
+        }
+      ],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "rpc ExecSandboxInteractive(stream ExecSandboxInput) returns (stream ExecSandboxEvent) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:write\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [
+        {
+          "path": "sdk/typescript/src/client.test.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/client.test.ts"
+        },
+        {
+          "path": "sdk/typescript/src/client.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/client.ts"
+        },
+        {
+          "path": "sdk/typescript/src/routing.test.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/routing.test.ts"
+        }
+      ],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.CreateProviderRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ProviderResponse",
+          "source": ""
+        }
+      ],
+      "method": "CreateProvider",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L302-L308",
+      "request": "openshell.v1.CreateProviderRequest",
+      "response": "openshell.v1.ProviderResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetProviderRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ProviderResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetProvider",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L311-L317",
+      "request": "openshell.v1.GetProviderRequest",
+      "response": "openshell.v1.ProviderResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "operator",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetProviderCredentialsRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetProviderCredentialsResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetProviderCredentials",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L321-L324",
+      "request": "openshell.v1.GetProviderCredentialsRequest",
+      "response": "openshell.v1.GetProviderCredentialsResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListProvidersRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListProvidersResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListProviders",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L327-L333",
+      "request": "openshell.v1.ListProvidersRequest",
+      "response": "openshell.v1.ListProvidersResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListProviderProfilesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListProviderProfilesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListProviderProfiles",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L336-L343",
+      "request": "openshell.v1.ListProviderProfilesRequest",
+      "response": "openshell.v1.ListProviderProfilesResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetProviderProfileRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ProviderProfileResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetProviderProfile",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L346-L353",
+      "request": "openshell.v1.GetProviderProfileRequest",
+      "response": "openshell.v1.ProviderProfileResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ImportProviderProfilesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ImportProviderProfilesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ImportProviderProfiles",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L356-L363",
+      "request": "openshell.v1.ImportProviderProfilesRequest",
+      "response": "openshell.v1.ImportProviderProfilesResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.UpdateProviderProfilesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.UpdateProviderProfilesResponse",
+          "source": ""
+        }
+      ],
+      "method": "UpdateProviderProfiles",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L366-L373",
+      "request": "openshell.v1.UpdateProviderProfilesRequest",
+      "response": "openshell.v1.UpdateProviderProfilesResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.LintProviderProfilesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.LintProviderProfilesResponse",
+          "source": ""
+        }
+      ],
+      "method": "LintProviderProfiles",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L376-L383",
+      "request": "openshell.v1.LintProviderProfilesRequest",
+      "response": "openshell.v1.LintProviderProfilesResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ProviderResponse",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.UpdateProviderRequest",
+          "source": ""
+        }
+      ],
+      "method": "UpdateProvider",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L386-L392",
+      "request": "openshell.v1.UpdateProviderRequest",
+      "response": "openshell.v1.ProviderResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetProviderRefreshStatusRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetProviderRefreshStatusResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetProviderRefreshStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L395-L402",
+      "request": "openshell.v1.GetProviderRefreshStatusRequest",
+      "response": "openshell.v1.GetProviderRefreshStatusResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ConfigureProviderRefreshRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ConfigureProviderRefreshResponse",
+          "source": ""
+        }
+      ],
+      "method": "ConfigureProviderRefresh",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L405-L412",
+      "request": "openshell.v1.ConfigureProviderRefreshRequest",
+      "response": "openshell.v1.ConfigureProviderRefreshResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.RotateProviderCredentialRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.RotateProviderCredentialResponse",
+          "source": ""
+        }
+      ],
+      "method": "RotateProviderCredential",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L415-L422",
+      "request": "openshell.v1.RotateProviderCredentialRequest",
+      "response": "openshell.v1.RotateProviderCredentialResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteProviderRefreshRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteProviderRefreshResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteProviderRefresh",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L425-L432",
+      "request": "openshell.v1.DeleteProviderRefreshRequest",
+      "response": "openshell.v1.DeleteProviderRefreshResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteProviderRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteProviderResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteProvider",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L435-L441",
+      "request": "openshell.v1.DeleteProviderRequest",
+      "response": "openshell.v1.DeleteProviderResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteProviderProfileRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteProviderProfileResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteProviderProfile",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L444-L451",
+      "request": "openshell.v1.DeleteProviderProfileRequest",
+      "response": "openshell.v1.DeleteProviderProfileResponse",
+      "rust_sdk_refs": [],
+      "scope": "provider:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "dual",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.v1.GetSandboxConfigRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.sandbox.v1.GetSandboxConfigResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandboxConfig",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L456-L463",
+      "request": "openshell.sandbox.v1.GetSandboxConfigRequest",
+      "response": "openshell.sandbox.v1.GetSandboxConfigResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.v1.GetGatewayConfigRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.sandbox.v1.GetGatewayConfigResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetGatewayConfig",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L472-L478",
+      "request": "openshell.sandbox.v1.GetGatewayConfigRequest",
+      "response": "openshell.sandbox.v1.GetGatewayConfigResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "dual",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.UpdateConfigRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.UpdateConfigResponse",
+          "source": ""
+        }
+      ],
+      "method": "UpdateConfig",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L481-L488",
+      "request": "openshell.v1.UpdateConfigRequest",
+      "response": "openshell.v1.UpdateConfigResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxPolicyStatusRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetSandboxPolicyStatusResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandboxPolicyStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L491-L498",
+      "request": "openshell.v1.GetSandboxPolicyStatusRequest",
+      "response": "openshell.v1.GetSandboxPolicyStatusResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListSandboxPoliciesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListSandboxPoliciesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListSandboxPolicies",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L501-L508",
+      "request": "openshell.v1.ListSandboxPoliciesRequest",
+      "response": "openshell.v1.ListSandboxPoliciesResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportPolicyStatusRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportPolicyStatusResponse",
+          "source": ""
+        }
+      ],
+      "method": "ReportPolicyStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L511-L516",
+      "request": "openshell.v1.ReportPolicyStatusRequest",
+      "response": "openshell.v1.ReportPolicyStatusResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportEndpointStatusRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportEndpointStatusResponse",
+          "source": ""
+        }
+      ],
+      "method": "ReportEndpointStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L519-L524",
+      "request": "openshell.v1.ReportEndpointStatusRequest",
+      "response": "openshell.v1.ReportEndpointStatusResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportProviderReadinessRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportProviderReadinessResponse",
+          "source": ""
+        }
+      ],
+      "method": "ReportProviderReadiness",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L528-L533",
+      "request": "openshell.v1.ReportProviderReadinessRequest",
+      "response": "openshell.v1.ReportProviderReadinessResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportSandboxConfigurationRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportSandboxConfigurationResponse",
+          "source": ""
+        }
+      ],
+      "method": "ReportSandboxConfiguration",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L536-L539",
+      "request": "openshell.v1.ReportSandboxConfigurationRequest",
+      "response": "openshell.v1.ReportSandboxConfigurationResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxProviderEnvironmentRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetSandboxProviderEnvironmentResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandboxProviderEnvironment",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L544-L549",
+      "request": "openshell.v1.GetSandboxProviderEnvironmentRequest",
+      "response": "openshell.v1.GetSandboxProviderEnvironmentResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ExchangeProviderSubjectTokenRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ExchangeProviderSubjectTokenResponse",
+          "source": ""
+        }
+      ],
+      "method": "ExchangeProviderSubjectToken",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L553-L558",
+      "request": "openshell.v1.ExchangeProviderSubjectTokenRequest",
+      "response": "openshell.v1.ExchangeProviderSubjectTokenResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxLogsRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetSandboxLogsResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetSandboxLogs",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L561-L567",
+      "request": "openshell.v1.GetSandboxLogsRequest",
+      "response": "openshell.v1.GetSandboxLogsResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": true,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.PushSandboxLogsRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.PushSandboxLogsResponse",
+          "source": ""
+        }
+      ],
+      "method": "PushSandboxLogs",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L570-L574",
+      "request": "openshell.v1.PushSandboxLogsRequest",
+      "response": "openshell.v1.PushSandboxLogsResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": true,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GatewayMessage",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SupervisorMessage",
+          "source": ""
+        }
+      ],
+      "method": "ConnectSupervisor",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L585-L589",
+      "request": "openshell.v1.SupervisorMessage",
+      "response": "openshell.v1.GatewayMessage",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportMainProcessExitRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportMainProcessExitResponse",
+          "source": ""
+        }
+      ],
+      "method": "ReportMainProcessExit",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L592-L596",
+      "request": "openshell.v1.ReportMainProcessExitRequest",
+      "response": "openshell.v1.ReportMainProcessExitResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.FinalizeMainProcessExitRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.FinalizeMainProcessExitResponse",
+          "source": ""
+        }
+      ],
+      "method": "FinalizeMainProcessExit",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L599-L604",
+      "request": "openshell.v1.FinalizeMainProcessExitRequest",
+      "response": "openshell.v1.FinalizeMainProcessExitResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": true,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.RelayFrame",
+          "source": ""
+        }
+      ],
+      "method": "RelayStream",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L617-L621",
+      "request": "openshell.v1.RelayFrame",
+      "response": "openshell.v1.RelayFrame",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "peer",
+      "client_streaming": true,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.PeerRelayFrame",
+          "source": ""
+        }
+      ],
+      "method": "PeerRelay",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L630-L634",
+      "request": "openshell.v1.PeerRelayFrame",
+      "response": "openshell.v1.PeerRelayFrame",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "peer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportProviderReadinessRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportProviderReadinessResponse",
+          "source": ""
+        }
+      ],
+      "method": "PeerReportProviderReadiness",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L637-L642",
+      "request": "openshell.v1.ReportProviderReadinessRequest",
+      "response": "openshell.v1.ReportProviderReadinessResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "peer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ReportEndpointStatusRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ReportEndpointStatusResponse",
+          "source": ""
+        }
+      ],
+      "method": "PeerReportEndpointStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L644-L649",
+      "request": "openshell.v1.ReportEndpointStatusRequest",
+      "response": "openshell.v1.ReportEndpointStatusResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "peer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxProviderStatusRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetSandboxProviderStatusResponse",
+          "source": ""
+        }
+      ],
+      "method": "PeerGetSandboxProviderStatus",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L651-L656",
+      "request": "openshell.v1.GetSandboxProviderStatusRequest",
+      "response": "openshell.v1.GetSandboxProviderStatusResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "peer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.PeerNotifyConfigUpdateRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.PeerNotifyConfigUpdateResponse",
+          "source": ""
+        }
+      ],
+      "method": "PeerNotifyConfigUpdate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L660-L665",
+      "request": "openshell.v1.PeerNotifyConfigUpdateRequest",
+      "response": "openshell.v1.PeerNotifyConfigUpdateResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.SandboxStreamEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.WatchSandboxRequest",
+          "source": ""
+        }
+      ],
+      "method": "WatchSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L673-L679",
+      "request": "openshell.v1.WatchSandboxRequest",
+      "response": "openshell.v1.SandboxStreamEvent",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.SubmitPolicyAnalysisRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.SubmitPolicyAnalysisResponse",
+          "source": ""
+        }
+      ],
+      "method": "SubmitPolicyAnalysis",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L686-L691",
+      "request": "openshell.v1.SubmitPolicyAnalysisRequest",
+      "response": "openshell.v1.SubmitPolicyAnalysisResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "dual",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetDraftPolicyRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetDraftPolicyResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetDraftPolicy",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L694-L700",
+      "request": "openshell.v1.GetDraftPolicyRequest",
+      "response": "openshell.v1.GetDraftPolicyResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ApproveDraftChunkRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ApproveDraftChunkResponse",
+          "source": ""
+        }
+      ],
+      "method": "ApproveDraftChunk",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L703-L710",
+      "request": "openshell.v1.ApproveDraftChunkRequest",
+      "response": "openshell.v1.ApproveDraftChunkResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.RejectDraftChunkRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.RejectDraftChunkResponse",
+          "source": ""
+        }
+      ],
+      "method": "RejectDraftChunk",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L713-L720",
+      "request": "openshell.v1.RejectDraftChunkRequest",
+      "response": "openshell.v1.RejectDraftChunkResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ApproveAllDraftChunksRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ApproveAllDraftChunksResponse",
+          "source": ""
+        }
+      ],
+      "method": "ApproveAllDraftChunks",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L723-L730",
+      "request": "openshell.v1.ApproveAllDraftChunksRequest",
+      "response": "openshell.v1.ApproveAllDraftChunksResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.EditDraftChunkRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.EditDraftChunkResponse",
+          "source": ""
+        }
+      ],
+      "method": "EditDraftChunk",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L733-L739",
+      "request": "openshell.v1.EditDraftChunkRequest",
+      "response": "openshell.v1.EditDraftChunkResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.UndoDraftChunkRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.UndoDraftChunkResponse",
+          "source": ""
+        }
+      ],
+      "method": "UndoDraftChunk",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L742-L748",
+      "request": "openshell.v1.UndoDraftChunkRequest",
+      "response": "openshell.v1.UndoDraftChunkResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ClearDraftChunksRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ClearDraftChunksResponse",
+          "source": ""
+        }
+      ],
+      "method": "ClearDraftChunks",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L751-L758",
+      "request": "openshell.v1.ClearDraftChunksRequest",
+      "response": "openshell.v1.ClearDraftChunksResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetDraftHistoryRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetDraftHistoryResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetDraftHistory",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L761-L767",
+      "request": "openshell.v1.GetDraftHistoryRequest",
+      "response": "openshell.v1.GetDraftHistoryResponse",
+      "rust_sdk_refs": [],
+      "scope": "config:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.IssueSandboxTokenRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.IssueSandboxTokenResponse",
+          "source": ""
+        }
+      ],
+      "method": "IssueSandboxToken",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L774-L778",
+      "request": "openshell.v1.IssueSandboxTokenRequest",
+      "response": "openshell.v1.IssueSandboxTokenResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "sandbox",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.RefreshSandboxTokenRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.RefreshSandboxTokenResponse",
+          "source": ""
+        }
+      ],
+      "method": "RefreshSandboxToken",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L786-L791",
+      "request": "openshell.v1.RefreshSandboxTokenRequest",
+      "response": "openshell.v1.RefreshSandboxTokenResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": "platform_admin",
+      "messages": [
+        {
+          "name": "openshell.v1.CreateWorkspaceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.CreateWorkspaceResponse",
+          "source": ""
+        }
+      ],
+      "method": "CreateWorkspace",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L798-L804",
+      "request": "openshell.v1.CreateWorkspaceRequest",
+      "response": "openshell.v1.CreateWorkspaceResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetWorkspaceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.GetWorkspaceResponse",
+          "source": ""
+        }
+      ],
+      "method": "GetWorkspace",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L807-L813",
+      "request": "openshell.v1.GetWorkspaceRequest",
+      "response": "openshell.v1.GetWorkspaceResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListWorkspacesRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListWorkspacesResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListWorkspaces",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L816-L822",
+      "request": "openshell.v1.ListWorkspacesRequest",
+      "response": "openshell.v1.ListWorkspacesResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": "platform_admin",
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteWorkspaceRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.DeleteWorkspaceResponse",
+          "source": ""
+        }
+      ],
+      "method": "DeleteWorkspace",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L825-L831",
+      "request": "openshell.v1.DeleteWorkspaceRequest",
+      "response": "openshell.v1.DeleteWorkspaceResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.AddWorkspaceMemberRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.AddWorkspaceMemberResponse",
+          "source": ""
+        }
+      ],
+      "method": "AddWorkspaceMember",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L834-L840",
+      "request": "openshell.v1.AddWorkspaceMemberRequest",
+      "response": "openshell.v1.AddWorkspaceMemberResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.RemoveWorkspaceMemberRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.RemoveWorkspaceMemberResponse",
+          "source": ""
+        }
+      ],
+      "method": "RemoveWorkspaceMember",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L843-L849",
+      "request": "openshell.v1.RemoveWorkspaceMemberRequest",
+      "response": "openshell.v1.RemoveWorkspaceMemberResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:write",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "admin"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.ListWorkspaceMembersRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.v1.ListWorkspaceMembersResponse",
+          "source": ""
+        }
+      ],
+      "method": "ListWorkspaceMembers",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L852-L858",
+      "request": "openshell.v1.ListWorkspaceMembersRequest",
+      "response": "openshell.v1.ListWorkspaceMembersResponse",
+      "rust_sdk_refs": [],
+      "scope": "workspace:read",
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Read installed, unexpired application routes in one explicit workspace.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetServiceRouteSnapshotRequest",
+          "source": "message GetServiceRouteSnapshotRequest {\n  openshell.datamodel.v1.WorkspaceSelector workspace_scope = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.GetServiceRouteSnapshotResponse",
+          "source": "message GetServiceRouteSnapshotResponse {\n  ServiceRouteSnapshot snapshot = 1;\n}"
+        }
+      ],
+      "method": "GetServiceRouteSnapshot",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L864-L870",
+      "request": "openshell.v1.GetServiceRouteSnapshotRequest",
+      "response": "openshell.v1.GetServiceRouteSnapshotResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        },
+        {
+          "path": "crates/openshell-server/src/grpc/service_discovery.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/service_discovery.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "ServiceDiscovery",
+      "signature": "rpc GetServiceRouteSnapshot(GetServiceRouteSnapshotRequest) returns (GetServiceRouteSnapshotResponse) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:read\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Full replacement views; reauthorize during the bounded watch lifetime.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.WatchServiceRoutesRequest",
+          "source": "message WatchServiceRoutesRequest {\n  openshell.datamodel.v1.WorkspaceSelector workspace_scope = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.WatchServiceRoutesResponse",
+          "source": "message WatchServiceRoutesResponse {\n  ServiceRouteSnapshot snapshot = 1;\n}"
+        }
+      ],
+      "method": "WatchServiceRoutes",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L873-L879",
+      "request": "openshell.v1.WatchServiceRoutesRequest",
+      "response": "openshell.v1.WatchServiceRoutesResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        },
+        {
+          "path": "crates/openshell-server/src/grpc/service_discovery.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/service_discovery.rs"
+        }
+      ],
+      "server_streaming": true,
+      "service": "ServiceDiscovery",
+      "signature": "rpc WatchServiceRoutes(WatchServiceRoutesRequest) returns (stream WatchServiceRoutesResponse) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:read\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Update the workload image, command, environment, labels, or annotations of a\nstopped sandbox while preserving its identity and retained storage. Requires\ncompute-driver support for the selected changes and explicit gateway activation\nof sandbox updates.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.SandboxResponse",
+          "source": "message SandboxResponse {\n  Sandbox sandbox = 1;\n  // Service URLs created by CreateSandbox, keyed by service name. The empty\n  // key identifies the unnamed service. Other sandbox RPCs return an empty map.\n  map<string, string> service_urls = 2;\n}"
+        },
+        {
+          "name": "openshell.v1.UpdateSandboxRequest",
+          "source": "message UpdateSandboxRequest {\n  // Workspace scope. Only a named workspace selection is accepted.\n  openshell.datamodel.v1.WorkspaceSelector workspace_scope = 1;\n  // Canonical name of the existing sandbox; this is not a rename or upsert.\n  string name = 2;\n  // Nonempty OCI workload image reference. This does not change trusted runtime\n  // images or reseed an existing workspace.\n  optional string image = 3;\n  // Replace workload argv; an empty list restores image-resolved default shell behavior.\n  SandboxCommandUpdate command = 6;\n  // Replace sandbox-level overrides. Empty clears overrides; template defaults remain.\n  SandboxMapUpdate environment = 7;\n  // Replace user metadata, preserving gateway-owned keys. These do not set pod metadata.\n  SandboxMapUpdate labels = 8;\n  SandboxMapUpdate annotations = 9;\n  // Required nonzero resource version read by the caller.\n  uint64 expected_resource_version = 4;\n  // Optional nonzero UUID for durable at-most-once admission.\n  string request_id = 5;\n}"
+        }
+      ],
+      "method": "UpdateSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/openshell.proto#L890-L896",
+      "request": "openshell.v1.UpdateSandboxRequest",
+      "response": "openshell.v1.SandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:write",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/mod.rs"
+        },
+        {
+          "path": "crates/openshell-server/src/grpc/sandbox/image_update_tests.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/crates/openshell-server/src/grpc/sandbox/image_update_tests.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "SandboxUpdates",
+      "signature": "rpc UpdateSandbox(UpdateSandboxRequest) returns (SandboxResponse) {\n  option (openshell.options.v1.authorization) = {\n    auth_mode: \"bearer\"\n    scope: \"sandbox:write\"\n    workspace_role: \"user\"\n  };\n}",
+      "ts_sdk_refs": [
+        {
+          "path": "sdk/typescript/src/raw.test.ts",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/sdk/typescript/src/raw.test.ts"
+        }
+      ],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "gateway_interceptor.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.gateway_interceptor.v1.DescribeRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.gateway_interceptor.v1.InterceptorManifest",
+          "source": ""
+        }
+      ],
+      "method": "Describe",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/gateway_interceptor.proto#L17-L17",
+      "request": "openshell.gateway_interceptor.v1.DescribeRequest",
+      "response": "openshell.gateway_interceptor.v1.InterceptorManifest",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "GatewayInterceptor",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "gateway_interceptor.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.gateway_interceptor.v1.ProviderProfileSnapshot",
+          "source": ""
+        },
+        {
+          "name": "openshell.gateway_interceptor.v1.ProviderProfileSnapshotRequest",
+          "source": ""
+        }
+      ],
+      "method": "SnapshotProviderProfiles",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/gateway_interceptor.proto#L21-L22",
+      "request": "openshell.gateway_interceptor.v1.ProviderProfileSnapshotRequest",
+      "response": "openshell.gateway_interceptor.v1.ProviderProfileSnapshot",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "GatewayInterceptor",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "gateway_interceptor.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.gateway_interceptor.v1.InterceptorEvaluation",
+          "source": ""
+        },
+        {
+          "name": "openshell.gateway_interceptor.v1.InterceptorResult",
+          "source": ""
+        }
+      ],
+      "method": "Evaluate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/gateway_interceptor.proto#L26-L26",
+      "request": "openshell.gateway_interceptor.v1.InterceptorEvaluation",
+      "response": "openshell.gateway_interceptor.v1.InterceptorResult",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "GatewayInterceptor",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "isolation_backend.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.backend.v1.DescribeIsolationBackendRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.sandbox.backend.v1.DescribeIsolationBackendResponse",
+          "source": ""
+        }
+      ],
+      "method": "Describe",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/isolation_backend.proto#L38-L38",
+      "request": "openshell.sandbox.backend.v1.DescribeIsolationBackendRequest",
+      "response": "openshell.sandbox.backend.v1.DescribeIsolationBackendResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "IsolationBackend",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "isolation_backend.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.backend.v1.OpenBoundaryRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.sandbox.backend.v1.OpenBoundaryResponse",
+          "source": ""
+        }
+      ],
+      "method": "OpenBoundary",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/isolation_backend.proto#L54-L54",
+      "request": "openshell.sandbox.backend.v1.OpenBoundaryRequest",
+      "response": "openshell.sandbox.backend.v1.OpenBoundaryResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "IsolationBackend",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "isolation_backend.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.backend.v1.SuspendBoundaryRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.sandbox.backend.v1.SuspendBoundaryResponse",
+          "source": ""
+        }
+      ],
+      "method": "SuspendBoundary",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/isolation_backend.proto#L61-L61",
+      "request": "openshell.sandbox.backend.v1.SuspendBoundaryRequest",
+      "response": "openshell.sandbox.backend.v1.SuspendBoundaryResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "IsolationBackend",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "isolation_backend.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.backend.v1.OpenBoundaryResponse",
+          "source": ""
+        },
+        {
+          "name": "openshell.sandbox.backend.v1.ResumeBoundaryRequest",
+          "source": ""
+        }
+      ],
+      "method": "ResumeBoundary",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/isolation_backend.proto#L71-L71",
+      "request": "openshell.sandbox.backend.v1.ResumeBoundaryRequest",
+      "response": "openshell.sandbox.backend.v1.OpenBoundaryResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "IsolationBackend",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": true,
+      "comment": "",
+      "file": "sandbox_protocol.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.protocol.v1.ExchangeFrame",
+          "source": ""
+        }
+      ],
+      "method": "Exchange",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/sandbox_protocol.proto#L25-L25",
+      "request": "openshell.sandbox.protocol.v1.ExchangeFrame",
+      "response": "openshell.sandbox.protocol.v1.ExchangeFrame",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "SandboxProtocol",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": true,
+      "comment": "",
+      "file": "sandbox_protocol.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.sandbox.protocol.v1.MediateFrame",
+          "source": ""
+        }
+      ],
+      "method": "Mediate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/sandbox_protocol.proto#L26-L26",
+      "request": "openshell.sandbox.protocol.v1.MediateFrame",
+      "response": "openshell.sandbox.protocol.v1.MediateFrame",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "SandboxProtocol",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": "supervisor",
+      "client_streaming": true,
+      "comment": "",
+      "file": "supervisor_host.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.supervisor.host.v1.HostGatewayMessage",
+          "source": ""
+        },
+        {
+          "name": "openshell.supervisor.host.v1.HostMessage",
+          "source": ""
+        }
+      ],
+      "method": "Attach",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_host.proto#L30-L34",
+      "request": "openshell.supervisor.host.v1.HostMessage",
+      "response": "openshell.supervisor.host.v1.HostGatewayMessage",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "SupervisorHost",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.MiddlewareDescribeRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.MiddlewareManifest",
+          "source": ""
+        }
+      ],
+      "method": "Describe",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L32-L32",
+      "request": "openshell.middleware.v1.MiddlewareDescribeRequest",
+      "response": "openshell.middleware.v1.MiddlewareManifest",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "SupervisorMiddleware",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.ValidateConfigRequest",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.ValidateConfigResponse",
+          "source": ""
+        }
+      ],
+      "method": "ValidateConfig",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L35-L35",
+      "request": "openshell.middleware.v1.ValidateConfigRequest",
+      "response": "openshell.middleware.v1.ValidateConfigResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "SupervisorMiddleware",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.HttpRequestEvaluation",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.HttpRequestResult",
+          "source": ""
+        }
+      ],
+      "method": "EvaluateHttpRequest",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L42-L44",
+      "request": "openshell.middleware.v1.HttpRequestEvaluation",
+      "response": "openshell.middleware.v1.HttpRequestResult",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": false,
+      "service": "SupervisorMiddleware",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": true,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.WebSocketSessionEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.WebSocketSessionEventResult",
+          "source": ""
+        }
+      ],
+      "method": "EvaluateWebSocketSession",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L53-L54",
+      "request": "openshell.middleware.v1.WebSocketSessionEvent",
+      "response": "openshell.middleware.v1.WebSocketSessionEventResult",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "SupervisorMiddleware",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": true,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.HttpRequestHookEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.HttpRequestHookResult",
+          "source": ""
+        }
+      ],
+      "method": "EvaluateHttpRequestHook",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L67-L68",
+      "request": "openshell.middleware.v1.HttpRequestHookEvent",
+      "response": "openshell.middleware.v1.HttpRequestHookResult",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "HttpHooks",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": true,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.HttpResponseHookEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.HttpResponseHookResult",
+          "source": ""
+        }
+      ],
+      "method": "EvaluateHttpResponseHook",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L74-L75",
+      "request": "openshell.middleware.v1.HttpResponseHookEvent",
+      "response": "openshell.middleware.v1.HttpResponseHookResult",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "HttpHooks",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": true,
+      "comment": "",
+      "file": "supervisor_middleware.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.middleware.v1.HttpResponseEvent",
+          "source": ""
+        },
+        {
+          "name": "openshell.middleware.v1.HttpResponseEventResult",
+          "source": ""
+        }
+      ],
+      "method": "Evaluate",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.1.9/proto/supervisor_middleware.proto#L97-L100",
+      "request": "openshell.middleware.v1.HttpResponseEvent",
+      "response": "openshell.middleware.v1.HttpResponseEventResult",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [],
+      "server_streaming": true,
+      "service": "HttpResponsePreReturn",
+      "signature": "(trimmed)",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    }
+  ],
+  "services_bound": [
+    "OpenShell"
+  ],
+  "tag": "v0.1.9"
+}

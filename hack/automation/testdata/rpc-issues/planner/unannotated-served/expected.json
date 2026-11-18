@@ -1,0 +1,13 @@
+[
+  {
+    "action": "open",
+    "body": "<!-- rpc-coverage: kind=method service=OpenShell method=Ping first-seen=v0.2.0 methods=Ping -->\n\nCore `v0.2.0` has `OpenShell.Ping`, a user-facing RPC the Go SDK does not wrap yet.",
+    "group": "method:OpenShell.Ping",
+    "labels": [
+      "help wanted",
+      "rpc-coverage",
+      "rpc:ready"
+    ],
+    "title": "feat(sdk): wrap OpenShell.Ping (core v0.2.0)"
+  }
+]
