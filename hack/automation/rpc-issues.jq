@@ -104,6 +104,110 @@ def group_buildability:
 
 def readiness: if group_buildability == "built" then "rpc:ready" else "rpc:blocked" end;
 
+def code_list: map("`" + . + "`") | if length <= 2 then join(" and ") else (.[:-1] | join(", ")) + ", and " + .[-1] end;
+
+def streaming_kind:
+  if .client_streaming and .server_streaming then "bidirectional streaming"
+  elif .client_streaming then "client streaming"
+  elif .server_streaming then "server streaming"
+  else "unary" end;
+
+def auth_text:
+  if .auth_mode == null then
+    "no authorization annotation. The gateway treats unannotated methods as user-callable, so this issue includes it; core should add the annotation."
+  else
+    "`\(.auth_mode)`"
+    + (if .scope then ", scope `\(.scope)`" else "" end)
+    + (if .workspace_role then ", workspace role `\(.workspace_role)`" else "" end)
+    + (if .global_role then ", global role `\(.global_role)`" else "" end)
+  end;
+
+def proto_block: "```proto\n" + . + "\n```";
+
+def link_list: map("[`\(.path)`](\(.url))") | join(", ");
+
+# One section per method: signature, comment, streaming kind, auth, messages.
+def method_section($tag):
+  "## `\(.key)`\n\n"
+  + (if (.comment // "") != "" then .comment + "\n\n" else "" end)
+  + "- Streaming: \(streaming_kind)\n"
+  + "- Authorization: \(auth_text)\n"
+  + "- Definition: [`proto/\(.file)`](\(.proto_url)) at core `\($tag)`\n"
+  + "- Generated bindings on the SDK's `main`: \(if .buildability == "built" then "yes" else "no" end)\n\n"
+  + (.signature | proto_block) + "\n\n"
+  + "Request and response messages:\n\n"
+  + ([.messages[] | if (.source // "") != "" then .source | proto_block
+                    else "`\(.name)` (definition not in core's `proto/`, for example a well-known type)" end]
+     | join("\n\n"));
+
+def refs_section:
+  "### `\(.key)`\n\n"
+  + "- Server (`crates/openshell-server/src`): "
+  + (if (.server_refs | length) > 0 then (.server_refs | link_list) else "not found" end) + "\n"
+  + "- Rust SDK (`crates/openshell-sdk/src`): "
+  + (if (.rust_sdk_refs | length) > 0 then "found in " + (.rust_sdk_refs | link_list) else "not found" end) + "\n"
+  + "- TypeScript SDK (`sdk/typescript/src`): "
+  + (if (.ts_sdk_refs | length) > 0 then "found in " + (.ts_sdk_refs | link_list) else "not found" end);
+
+def buildability_text($ctx):
+  ($ctx.rows | group_buildability) as $b
+  | "https://github.com/\($ctx.repo)/tree/core/\($ctx.tag)" as $branch_url
+  | if $b == "built" then
+      "**Buildable on `main`**: the generated bindings on the SDK's `main` already contain every method listed here."
+    elif $b == "bump-branch" then
+      "**Blocked on the core bump**: the generated bindings on the SDK's `main` do not contain every method listed here yet. Work on the bump branch [`core/\($ctx.tag)`](\($branch_url)), or on `main` once that proposal is merged."
+    elif $b == "bump-pending" then
+      "**Blocked on the core bump**: the generated bindings on the SDK's `main` do not contain every method listed here yet, and the bump proposal for core `\($ctx.tag)` (branch `core/\($ctx.tag)`) does not exist yet. core-watch opens it; work on that branch once it exists."
+    else
+      "**Blocked on bindings generation**: the SDK does not generate bindings for "
+      + ([$ctx.rows[] | select(.buildability == "needs-bindings") | "proto/" + .file] | unique | code_list)
+      + " yet. Add the `M` option for the file to both plugins in `buf.gen.yaml` and run `mise run proto:gen` first."
+    end;
+
+# The implementation brief: plain text, copied as the task description.
+def brief($ctx):
+  $ctx.group as $g
+  | ($ctx.rows | group_buildability) as $b
+  | [$ctx.rows[].method] as $methods
+  | (if $g.kind == "service" then
+       "Wrap the \($g.service) service of OpenShell core in the OpenShell Go SDK (https://github.com/\($ctx.repo)): methods \($methods | join(", "))."
+     else
+       "Wrap the \($g.service).\($g.method) RPC of OpenShell core in the OpenShell Go SDK (https://github.com/\($ctx.repo))."
+     end)
+  + "\n\nCore version: \($ctx.core_repo) at tag \($ctx.tag).\n"
+  + (if $b == "built" then
+       "Branch: start from main; its generated bindings already contain the methods."
+     elif $b == "bump-branch" then
+       "Branch: start from core/\($ctx.tag), the core bump proposal for \($ctx.tag); the bindings on main do not contain the methods yet."
+     elif $b == "bump-pending" then
+       "Branch: core/\($ctx.tag), the core bump proposal for \($ctx.tag), which core-watch has not opened yet; start once it exists."
+     else
+       "Branch: start from main. First add the M option for "
+       + ([$ctx.rows[] | select(.buildability == "needs-bindings") | "proto/" + .file] | unique | join(" and "))
+       + " to both plugins in buf.gen.yaml and run `mise run proto:gen`."
+     end)
+  + "\n\nRead first:\n"
+  + "- AGENTS.md and CONTRIBUTING.md in the SDK repository: conventions, commands, and commit rules.\n"
+  + ([$ctx.rows[]
+      | "- \(.key): proto definition \(.proto_url)"
+        + (if (.server_refs | length) > 0 then "; core server: " + ([.server_refs[].url] | join(", ")) else "; core server: not found" end)
+        + (if (.rust_sdk_refs | length) > 0 then "; core Rust SDK: " + ([.rust_sdk_refs[].url] | join(", ")) else "" end)
+        + (if (.ts_sdk_refs | length) > 0 then "; core TypeScript SDK: " + ([.ts_sdk_refs[].url] | join(", ")) else "" end)]
+     | join("\n")) + "\n"
+  + "- The pattern to follow: the sub-client in openshell/v1/service_client.go, its types in openshell/v1/types/service.go, its converter in openshell/v1/internal/converter/service.go, and its fake in openshell/v1/fake/service.go.\n"
+  + "\nDeliverables:\n"
+  + (if $g.kind == "service" then
+       "- A sub-client in openshell/v1 for the \($g.service) service, behind an interface like the other sub-clients, that constructs pb.New\($g.service)Client(conn) and is reachable from Client.\n"
+     else
+       "- The method in openshell/v1, on the sub-client that fits it, behind its interface like the other sub-client methods.\n"
+     end)
+  + "- Domain types in openshell/v1/types/ without proto imports.\n"
+  + "- Converters in openshell/v1/internal/converter/ that deep-copy slices and maps.\n"
+  + "- The fake implementation in openshell/v1/fake/.\n"
+  + "- Unit tests with bufconn and testify.\n"
+  + "- Documentation: a page under docs/src/api/ (like docs/src/api/services.md) with its entry in docs/src/SUMMARY.md, or an update of the existing page.\n"
+  + "\nDone when `mise run ci` passes. Use Conventional Commits and sign off every commit.";
+
 # Body of a group; $ctx carries the input document and the group's rows.
 def render_body($ctx):
   $ctx.group as $g
@@ -112,11 +216,20 @@ def render_body($ctx):
   | fill({
       MARKER: ($m | render_marker),
       SUMMARY: (
-        if $g.kind == "service" then
-          "Core `\($ctx.tag)` has \($ctx.rows | length) user-facing method(s) in the `\($g.service)` service that the Go SDK does not wrap yet."
+        (if $g.kind == "service" then
+          "Core `\($ctx.tag)` has "
+          + (if ($ctx.rows | length) == 1 then "a user-facing method" else "\($ctx.rows | length) user-facing methods" end)
+          + " in the `\($g.service)` service that the Go SDK does not wrap yet: \($m.methods | code_list). "
+          + "The SDK wraps none of the service's user-facing methods, so this issue tracks the service as a whole."
         else
-          "Core `\($ctx.tag)` has `\($g.service).\($g.method)`, a user-facing RPC the Go SDK does not wrap yet."
+          "Core `\($ctx.tag)` has `\($g.service).\($g.method)`, a user-facing RPC that the Go SDK does not wrap yet."
         end)
+        + " First seen in core `\($g.first_seen)`."),
+      BUILDABILITY: buildability_text($ctx),
+      METHODS: ([$ctx.rows[] | method_section($ctx.tag)] | join("\n\n")),
+      REFS: ([$ctx.rows[] | refs_section] | join("\n\n")),
+      BRIEF: brief($ctx),
+      EXCEPTIONS_URL: "https://github.com/\($ctx.repo)/blob/main/hack/automation/rpc-exceptions.txt"
     })
   | normalize;
 
