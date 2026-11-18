@@ -104,6 +104,17 @@ def group_buildability:
 
 def readiness: if group_buildability == "built" then "rpc:ready" else "rpc:blocked" end;
 
+# Label changes for an issue: add the missing base and readiness labels,
+# remove only a wrong readiness label. fields holds add_labels and
+# remove_labels when they are not empty.
+def label_changes($current; $ready):
+  (base_labels + [$ready]) as $want
+  | ([$want[] | select(IN($current[]) | not)] | sort) as $add
+  | ([$current[] | select(IN(readiness_labels[])) | select(. != $ready)] | unique) as $remove
+  | {add: $add, remove: $remove,
+     fields: ((if ($add | length) > 0 then {add_labels: $add} else {} end)
+              + (if ($remove | length) > 0 then {remove_labels: $remove} else {} end))};
+
 def code_list: map("`" + . + "`") | if length <= 2 then join(" and ") else (.[:-1] | join(", ")) + ", and " + .[-1] end;
 
 def streaming_kind:
@@ -170,7 +181,7 @@ def brief($ctx):
   | ($ctx.rows | group_buildability) as $b
   | [$ctx.rows[].method] as $methods
   | (if $g.kind == "service" then
-       "Wrap the \($g.service) service of OpenShell core in the OpenShell Go SDK (https://github.com/\($ctx.repo)): methods \($methods | join(", "))."
+       "Wrap the \($g.service) service of OpenShell core in the OpenShell Go SDK (https://github.com/\($ctx.repo)): \(if ($methods | length) == 1 then "method" else "methods" end) \($methods | join(", "))."
      else
        "Wrap the \($g.service).\($g.method) RPC of OpenShell core in the OpenShell Go SDK (https://github.com/\($ctx.repo))."
      end)
@@ -302,6 +313,17 @@ def plan:
             body: render_body($g.ctx),
             labels: (base_labels + [$g.rows | readiness] | sort)}
          else empty end
+       elif $g.issue.status == "open" and ($g.rows | length) > 0 then
+         # FR-009, FR-023: rewrite a changed body, add or swap the base and
+         # readiness labels; other labels stay.
+         render_body($g.ctx) as $body
+         | label_changes($g.issue.labels; $g.rows | readiness) as $lc
+         | ($body != ($g.issue.body // "" | normalize)) as $changed
+         | if $changed or ($lc.add | length) > 0 or ($lc.remove | length) > 0 then
+             {action: "update", number: $g.issue.number, group: $g.group.id}
+             + (if $changed then {body: $body} else {} end)
+             + $lc.fields
+           else empty end
        else empty end]
   | sort_by(.group, .action);
 
