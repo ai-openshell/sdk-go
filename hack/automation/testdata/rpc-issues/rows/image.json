@@ -1,0 +1,129 @@
+{
+  "file": [
+    {
+      "name": "google/protobuf/empty.proto",
+      "package": "google.protobuf",
+      "messageType": [
+        {
+          "name": "Empty"
+        }
+      ]
+    },
+    {
+      "name": "a.proto",
+      "package": "pkg",
+      "messageType": [
+        {
+          "name": "Req"
+        },
+        {
+          "name": "Resp"
+        }
+      ],
+      "service": [
+        {
+          "name": "Svc",
+          "method": [
+            {
+              "name": "Get",
+              "inputType": ".pkg.Req",
+              "outputType": ".pkg.Resp",
+              "options": {
+                "[openshell.options.v1.authorization]": {
+                  "authMode": "bearer",
+                  "scope": "s:read",
+                  "workspaceRole": "user"
+                }
+              }
+            },
+            {
+              "name": "Ping",
+              "inputType": ".pkg.Req",
+              "outputType": ".google.protobuf.Empty",
+              "clientStreaming": true,
+              "options": {
+                "[openshell.options.v1.authorization]": {
+                  "authMode": "dual",
+                  "globalRole": "admin"
+                }
+              }
+            },
+            {
+              "name": "Bare",
+              "inputType": ".pkg.Req",
+              "outputType": ".pkg.Resp"
+            }
+          ]
+        }
+      ],
+      "sourceCodeInfo": {
+        "location": [
+          {
+            "path": [
+              6,
+              0,
+              2,
+              0
+            ],
+            "span": [
+              7,
+              2,
+              9,
+              3
+            ],
+            "leadingComments": " Get returns one thing.\n   Indented detail stays indented.\n"
+          },
+          {
+            "path": [
+              6,
+              0,
+              2,
+              1
+            ],
+            "span": [
+              10,
+              2,
+              55
+            ]
+          },
+          {
+            "path": [
+              6,
+              0,
+              2,
+              2
+            ],
+            "span": [
+              11,
+              2,
+              31
+            ]
+          },
+          {
+            "path": [
+              4,
+              0
+            ],
+            "span": [
+              14,
+              0,
+              16,
+              1
+            ]
+          },
+          {
+            "path": [
+              4,
+              1
+            ],
+            "span": [
+              17,
+              0,
+              15
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

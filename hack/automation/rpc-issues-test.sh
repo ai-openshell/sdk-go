@@ -134,6 +134,16 @@ for c in missing-reason:3:has.no.reason bad-key:3:is.not.Service.Method; do
   fi
 done
 
+# Input rows from a buf image and its proto sources.
+r=$data/rows
+if jq -n -f "$here/rpc-rows.jq" --slurpfile img "$r/image.json" --slurpfile src "$r/sources.json" \
+  --slurpfile refs "$r/refs.json" --arg core_repo NVIDIA/OpenShell --arg tag v0.3.0 >"$work/rows.json" 2>"$work/err" &&
+  diff -u <(jq -S . "$r/expected.json") <(jq -S . "$work/rows.json"); then
+  echo "ok rows"
+else
+  fail "rows $(cat "$work/err")"
+fi
+
 # Counting rpc declarations in raw proto sources.
 if [ "$(rpc_count_declarations "$data/protos/count.proto" 2>"$work/err")" = 4 ]; then
   echo "ok protos/count"

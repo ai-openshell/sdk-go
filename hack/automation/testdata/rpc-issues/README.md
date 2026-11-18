@@ -10,6 +10,7 @@
 - `coverage/` is a miniature SDK tree for the coverage helper `hack/automation/rpc-coverage.sh`: `rpc_covered_list coverage keys.txt` must print `expected.txt`.
   Its Go files sit under `testdata/`, so `go build` ignores them, but `gofmt` and the SPDX check still read them.
 - `exceptions/` holds exceptions lists for `rpc_parse_exceptions` in `hack/automation/rpc-issues-lib.sh`: `valid.txt` must parse to its two entries, `missing-reason.txt` and `bad-key.txt` must fail with the line number.
+- `rows/` checks `hack/automation/rpc-rows.jq`: a hand-written buf image (`image.json`) with the proto source of `a.proto` (`sources.json`) and source references (`refs.json`) must give the input rows in `expected.json`; it covers multi-line and one-line spans, comments, a well-known message type, and the google file being skipped.
 - `protos/count.proto` checks `rpc_count_declarations`: rpcs in comments and strings do not count, several on one line and one split across lines do.
 - `bot-issues/issues.ndjson` checks `rpc_bot_issues`: only the issues `ai-openshell-sdk-go[bot]` opened are kept.
 - `drift-links/` checks `link_uncovered_rpcs` in `hack/automation/drift-issue.sh`: `report.md` with the coverage issues in `issues.json` must become `expected.md`.
