@@ -1,8 +1,9 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Opens one update proposal per new core release tag, then reconciles the RPC
-# coverage issues against the newest core tag (hack/automation/).
+# Opens one update proposal per new core release tag, reconciles the RPC
+# coverage issues against the newest core tag, and merges stable proposals
+# that change no proto when auto-merge is on (hack/automation/).
 name: core-watch
 
 on:
@@ -96,6 +97,15 @@ jobs:
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
           MAX_NEW: ${{ inputs.max_new_issues }}
         run: BOT_LOGIN="${APP_SLUG}[bot]" hack/automation/rpc-issues.sh ${MAX_NEW:+--max-new "$MAX_NEW"}
+
+      # Merges stable proposals that change no proto and whose checks went
+      # green since the last run. Off unless the CORE_AUTO_MERGE repository
+      # variable is on; see hack/automation/merge-bump-pr.sh.
+      - name: Merge proposals that change no proto
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CORE_AUTO_MERGE: ${{ vars.CORE_AUTO_MERGE }}
+        run: hack/automation/merge-bump-pr.sh
 
       - name: Report failure
         if: failure()

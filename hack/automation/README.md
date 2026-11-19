@@ -10,6 +10,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `open-bump-pr.sh <tag> [--dry-run]` | `core:bump` | Open the update proposal for one core tag: branch `core/<tag>`, pin change, regenerated bindings, proto diff in the body, labels `core-bump` plus `stable` or `prerelease`. Closes older pre-release proposals. |
 | `bump-pr-body.md` | | PR body template for `open-bump-pr.sh`. |
 | `core-registry.sh` | | Sourced by `start-gateway.sh` and `open-bump-pr.sh`: `core_registry <version>` prints the registry that holds a core release's images, `quay.io/ai-openshell` for releases since the move and `ghcr.io/nvidia/openshell` for older ones. |
+| `merge-bump-pr.sh [--dry-run] [--auto-merge on\|off]` | `core:merge` | Merge stable proposals that change no proto: one bot commit touching only the pin and the README (nothing under `proto/`), green checks, no `hold` label. Off unless `CORE_AUTO_MERGE` is `on`. |
 | `tag-release.sh [--dry-run]` | `release:tag` | After a stable pin lands on `main`: create the lockstep tag `vX.Y.Z` and the GitHub release, then ask the Go module proxy for the version. |
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report; uncovered RPCs link to their open RPC coverage issues. |
@@ -28,7 +29,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 
 | Workflow | Script |
 |----------|--------|
-| `core-watch.yml` (hourly) | `core-tags.sh`, then `open-bump-pr.sh` per tag, then `rpc-issues.sh` |
+| `core-watch.yml` (hourly) | `core-tags.sh`, then `open-bump-pr.sh` per tag, then `rpc-issues.sh` and `merge-bump-pr.sh` |
 | `release-tag.yml` (push to `main`) | `tag-release.sh` |
 | `core-drift.yml` (nightly) | `drift-check.sh`, then `update-drift-issue.sh` |
 | `e2e.yml` (reusable) | `start-gateway.sh`, `mise run e2e`, `stop-gateway.sh` |
@@ -52,3 +53,13 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
   If they are expected, run core-watch by hand with the input `max_new_issues`, or locally `mise run core:rpc-issues -- --max-new <n>`.
 - **Preview**: `mise run core:rpc-issues -- --dry-run` prints every planned action with its body and changes nothing (it reads GitHub, so `gh` must be logged in).
   Without `--dry-run`, the script applies the plan only with an explicit `BOT_LOGIN` and the bot's token (core-watch passes both); under a person's `gh` login it stops before any write, because later runs would not manage the issues it opened.
+
+## Auto-merge for stable pins
+
+`merge-bump-pr.sh` is off until the repository variable `CORE_AUTO_MERGE` is `on`.
+It merges a stable proposal only when the release changes no proto: the regenerated bindings under `proto/` are identical, so the SDK needs no work and can be tagged right away.
+A release that changes the protos always waits for review; the SDK release may lag until the new features are wrapped and usable (see the RPC coverage issues).
+
+It merges with the bot token through a ruleset bypass, so an admin has to add the `ai-openshell-sdk-go` App to the `main-integrity` ruleset as a bypass actor with mode "pull requests only".
+A proposal goes back to normal review as soon as anything else is pushed to it, a conformance fixture changes, a check fails, or someone adds the `hold` label.
+Merges happen on the hourly run after the checks turn green, so a stable SDK release follows the core release within about two hours.
