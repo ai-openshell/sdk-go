@@ -31,6 +31,7 @@ func TestNewClient_ValidConfig(t *testing.T) {
 	assert.NotNil(t, client.Files())
 	assert.NotNil(t, client.Health())
 	assert.NotNil(t, client.Services())
+	assert.NotNil(t, client.ServiceRoutes())
 	assert.NotNil(t, client.SSH())
 	assert.NotNil(t, client.TCP())
 	assert.NotNil(t, client.Config())
