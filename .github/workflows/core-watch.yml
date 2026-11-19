@@ -1,7 +1,8 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Opens one update proposal per new core release tag (hack/automation/).
+# Opens one update proposal per new core release tag, then merges stable
+# proposals that change no proto when auto-merge is on (hack/automation/).
 name: core-watch
 
 on:
@@ -80,6 +81,15 @@ jobs:
           for t in $tags; do
             hack/automation/open-bump-pr.sh "$t"
           done
+
+      # Merges stable proposals that change no proto and whose checks went
+      # green since the last run. Off unless the CORE_AUTO_MERGE repository
+      # variable is on; see hack/automation/merge-bump-pr.sh.
+      - name: Merge proposals that change no proto
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CORE_AUTO_MERGE: ${{ vars.CORE_AUTO_MERGE }}
+        run: hack/automation/merge-bump-pr.sh
 
       - name: Report failure
         if: failure()
