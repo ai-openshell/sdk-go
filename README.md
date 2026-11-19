@@ -246,7 +246,7 @@ See the [Getting Started](https://ai-openshell.github.io/sdk-go/getting-started.
 
 ## Supported core versions
 
-The bindings are generated from OpenShell core v0.1.7 (`mise run core:version` prints the pin). SDK releases follow core releases, so SDK `vX.Y.Z` works with core `vX.Y.Z`.
+The bindings are generated from OpenShell core v0.1.9 (`mise run core:version` prints the pin). SDK releases follow core releases, so SDK `vX.Y.Z` works with core `vX.Y.Z`.
 
 ## Migrating from `github.com/NVIDIA/OpenShell/sdk/go`
 
@@ -285,6 +285,7 @@ Client
   ├── Files()       → FileInterface       (upload, download)
   ├── Health()      → HealthInterface     (health check, gateway info, current user)
   ├── Services()    → ServiceInterface    (expose, get, list, delete)
+  ├── ServiceRoutes() → ServiceDiscoveryInterface (snapshot, watch installed routes)
   ├── Providers()   → ProviderInterface   (CRUD + ensure)
   │     ├── Profiles() → ProfileInterface (list, get, import, update, lint, delete)
   │     └── Refresh()  → RefreshInterface (configure, status, rotate, delete)
@@ -318,6 +319,7 @@ stream completion.
 | Provider profiles (list, import, lint, update) | `ProfileInterface` | [Profiles](https://ai-openshell.github.io/sdk-go/api/profiles.html) |
 | Credential refresh (configure, rotate, status) | `RefreshInterface` | [Refresh](https://ai-openshell.github.io/sdk-go/api/refresh.html) |
 | Service exposure (expose, list, delete) | `ServiceInterface` | [Services](https://ai-openshell.github.io/sdk-go/api/services.html) |
+| Service route discovery (snapshot, watch) | `ServiceDiscoveryInterface` | [Service discovery](https://ai-openshell.github.io/sdk-go/api/service-discovery.html) |
 | File transfer API (transport capability-gated) | `FileInterface` | [Files](https://ai-openshell.github.io/sdk-go/api/files.html) |
 | Policy management (draft review, approve, reject, merge, global policy) | `PolicyInterface` | [Policy](https://ai-openshell.github.io/sdk-go/api/policy.html) |
 | Sandbox logs (streaming retrieval) | `SandboxInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |

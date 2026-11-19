@@ -58,6 +58,7 @@ type Client struct {
 	templates      SandboxTemplateInterface
 	providers      ProviderInterface
 	services       ServiceInterface
+	serviceRoutes  ServiceDiscoveryInterface
 	exec           ExecInterface
 	files          FileInterface
 	health         HealthInterface
@@ -105,6 +106,7 @@ func NewClient(cfg Config) (*Client, error) {
 	c.templates = newSandboxTemplateClient(conn)
 	c.providers = newProviderClient(conn)
 	c.services = newServiceClient(conn)
+	c.serviceRoutes = newServiceDiscoveryClient(conn)
 	c.exec = newExecClient(conn, c.sandboxes)
 	c.files = newFileClient(conn, c.sandboxes)
 	c.health = newHealthClient(conn)
