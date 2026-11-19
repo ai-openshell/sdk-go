@@ -44,7 +44,8 @@ semver=${tag#v}
 mkdir -p "$state"
 echo "$tag" >"$state/core-version"
 
-# Core pushes images after tagging; a proposal can be faster than that.
+# Core pushes images after tagging. core-watch proposes a tag only once its
+# images exist, so this wait matters for manual runs against a fresh tag.
 manifest_exists() {
   local token
   token=$(curl -fsS "https://ghcr.io/token?scope=repository:nvidia/openshell/gateway:pull" | jq -r .token) || return 1
