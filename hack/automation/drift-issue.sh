@@ -25,6 +25,25 @@ failure_lines() {
     f && /^- / { print }' <<<"$1"
 }
 
+# add_failure_line <failure-lines> <date> <job> <run-url>: the failure lines
+# with one more failed run recorded. A job that already has a line for the
+# date keeps that one line, now naming the latest run and the number of
+# failed runs ("- <date> <job> <url> (<n> runs)"), so an hourly job that keeps
+# failing adds one line per day instead of one per run.
+add_failure_line() {
+  awk -v d="${2:?add_failure_line needs a date}" -v j="${3:?add_failure_line needs a job}" \
+    -v u="${4:?add_failure_line needs a run URL}" '
+    NF == 0 { next }
+    !seen && $1 == "-" && $2 == d && $3 == j {
+      seen = 1; n = 1
+      if ($5 ~ /^\([0-9]+$/) n = substr($5, 2) + 0
+      printf "- %s %s %s (%d runs)\n", d, j, u, n + 1
+      next
+    }
+    { print }
+    END { if (!seen) printf "- %s %s %s\n", d, j, u }' <<<"$1"
+}
+
 # compose_body <report-text> <failure-lines>
 compose_body() {
   printf '%s\n\n%s\n\n' "$1" "$failures_heading"

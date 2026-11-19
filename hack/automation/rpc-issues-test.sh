@@ -168,5 +168,30 @@ else
   fail "drift-links $(cat "$work/err")"
 fi
 
+# Coverage issues are listed by creator, not by label.
+if [ "$(rpc_bot_issues_url ai-openshell/sdk-go 'ai-openshell-sdk-go[bot]' open)" = \
+  'repos/ai-openshell/sdk-go/issues?creator=ai-openshell-sdk-go%5Bbot%5D&state=open&per_page=100' ] &&
+  [ "$(rpc_bot_issues_url o/r bot)" = 'repos/o/r/issues?creator=bot&state=all&per_page=100' ]; then
+  echo "ok bot-issues-url"
+else
+  fail "bot-issues-url: $(rpc_bot_issues_url ai-openshell/sdk-go 'ai-openshell-sdk-go[bot]' open)"
+fi
+
+# Repeated failures of a job on one date share one line with a count.
+f0='- 2026-11-18 core-drift https://x/runs/1'
+f1=$(add_failure_line "$f0" 2026-11-19 core-watch https://x/runs/2)
+f2=$(add_failure_line "$f1" 2026-11-19 core-watch https://x/runs/3)
+f3=$(add_failure_line "$f2" 2026-11-19 core-watch https://x/runs/4)
+f4=$(add_failure_line "$f3" 2026-11-19 release-tag https://x/runs/5)
+expected='- 2026-11-18 core-drift https://x/runs/1
+- 2026-11-19 core-watch https://x/runs/4 (3 runs)
+- 2026-11-19 release-tag https://x/runs/5'
+if [ "$f4" = "$expected" ] && [ "$(add_failure_line '' 2026-11-19 core-watch https://x/runs/9)" = '- 2026-11-19 core-watch https://x/runs/9' ] &&
+  [ "$(failure_lines "$(compose_body report "$f4")")" = "$expected" ]; then
+  echo "ok failure-lines"
+else
+  fail "failure-lines: $f4"
+fi
+
 [ "$failed" -eq 0 ] || { echo "rpc-issues tests failed" >&2; exit 1; }
 echo "rpc-issues tests passed"

@@ -129,14 +129,26 @@ def auth_text:
     + (if .global_role then ", global role `\(.global_role)`" else "" end)
   end;
 
-def proto_block: "```proto\n" + . + "\n```";
+# md_text: text from core's protos (doc comments) is data. A zero-width
+# space keeps GitHub from turning "@name" into a mention and "#123" into a
+# reference to an issue of this repository, and keeps "<!--" from hiding the
+# rest of the body. It is invisible, also inside code spans, where an HTML
+# entity would show literally.
+def md_text: gsub("@"; "@\u200b") | gsub("#(?<d>[0-9])"; "#\u200b\(.d)") | gsub("<!--"; "<\u200b!--");
+
+# proto_block: a fenced code block whose fence is longer than any backtick
+# run in the source, so a proto comment cannot close it early.
+def proto_block:
+  ([scan("`+") | length] | max // 0) as $n
+  | ([range([3, $n + 1] | max)] | map("`") | join("")) as $f
+  | $f + "proto\n" + . + "\n" + $f;
 
 def link_list: map("[`\(.path)`](\(.url))") | join(", ");
 
 # One section per method: signature, comment, streaming kind, auth, messages.
 def method_section($tag):
   "## `\(.key)`\n\n"
-  + (if (.comment // "") != "" then .comment + "\n\n" else "" end)
+  + (if (.comment // "") != "" then (.comment | md_text) + "\n\n" else "" end)
   + "- Streaming: \(streaming_kind)\n"
   + "- Authorization: \(auth_text)\n"
   + "- Definition: [`proto/\(.file)`](\(.proto_url)) at core `\($tag)`\n"

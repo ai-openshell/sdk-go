@@ -1,0 +1,12 @@
+[
+  {
+    "action": "update",
+    "add_labels": [
+      "help wanted",
+      "rpc-coverage",
+      "rpc:ready"
+    ],
+    "group": "method:OpenShell.ForwardTcp",
+    "number": 20
+  }
+]

@@ -198,12 +198,13 @@ gather() {
   rpc_parse_exceptions "${RPC_EXCEPTIONS:-hack/automation/rpc-exceptions.txt}" >"$work/exceptions.json" || exit 1
   # The REST issue list, not gh issue list --label (the search index lags
   # behind writes). Only issues the bot opened count, so a marker in
-  # someone else's issue cannot steer the automation.
-  retry_to "$work/issues.ndjson" gh api --paginate "repos/$sdk_repo/issues?labels=rpc-coverage&state=all&per_page=100" \
+  # someone else's issue cannot steer the automation; they are listed by
+  # creator, not by label, so removing the label does not cause a duplicate.
+  retry_to "$work/issues.ndjson" gh api --paginate "$(rpc_bot_issues_url "$sdk_repo" "$bot_login" all)" \
     --jq '.[] | select(.pull_request == null)
           | {number, state: (.state | ascii_upcase), title, body: (.body // ""),
              labels: [.labels[].name], author: .user.login}' ||
-    die "cannot list the rpc-coverage issues of $sdk_repo"
+    die "cannot list the issues $bot_login opened in $sdk_repo"
   rpc_bot_issues "$bot_login" "$work/issues.ndjson" >"$work/issues.json"
 
   jq -n --arg repo "$sdk_repo" --arg core_repo "$core_repo" --arg tag "$tag" \

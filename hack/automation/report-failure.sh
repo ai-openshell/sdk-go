@@ -5,8 +5,10 @@
 #
 # Usage: report-failure.sh <job> <run-url> [--dry-run]
 #
-# Appends "- <date> <job> <run-url>" to the "## Automation failures" section
+# Records "- <date> <job> <run-url>" in the "## Automation failures" section
 # of the open "Core main drift" issue, creating the issue when none is open.
+# Repeated failures of a job on the same date update its one line with the
+# latest run and a count instead of adding a line per run.
 # Also writes the line to the job summary.
 set -euo pipefail
 # shellcheck source=hack/automation/drift-issue.sh
@@ -18,7 +20,8 @@ for a in "$@"; do
   case $a in --dry-run) dry=1 ;; *) args+=("$a") ;; esac
 done
 [ ${#args[@]} -eq 2 ] || { echo "usage: $0 <job> <run-url> [--dry-run]" >&2; exit 2; }
-line="- $(date -u +%Y-%m-%d) ${args[0]} ${args[1]}"
+today=$(date -u +%Y-%m-%d)
+line="- $today ${args[0]} ${args[1]}"
 [ -z "${GITHUB_STEP_SUMMARY:-}" ] || echo "Automation failure: $line" >>"$GITHUB_STEP_SUMMARY"
 
 n=$(drift_issue_number)
@@ -30,7 +33,7 @@ else
   report="No drift report yet; the next core-drift run fills this in."
   failures=
 fi
-failures=$(printf '%s\n%s' "$failures" "$line" | sed '/^$/d')
+failures=$(add_failure_line "$failures" "$today" "${args[0]}" "${args[1]}")
 body=$(compose_body "$report" "$failures")
 
 if [ "$dry" -eq 1 ]; then

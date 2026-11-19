@@ -23,6 +23,17 @@ rpc_count_declarations() {
     print "$n\n"' "${1:?rpc_count_declarations needs a file}"
 }
 
+# rpc_bot_issues_url <repo> <bot-login> <state>: the REST path that lists
+# the issues and pull requests bot-login opened in repo. Coverage issues are
+# found by their creator and marker, not by the rpc-coverage label, so an
+# issue whose label someone removed is still recognized (the next run adds
+# the label back) instead of getting a duplicate.
+rpc_bot_issues_url() {
+  local creator
+  creator=$(jq -rn --arg s "${2:?rpc_bot_issues_url needs the bot login}" '$s | @uri')
+  printf 'repos/%s/issues?creator=%s&state=%s&per_page=100\n' "${1:?rpc_bot_issues_url needs the repo}" "$creator" "${3:-all}"
+}
+
 # rpc_parse_exceptions <file>: print the entries of an exceptions list
 # (hack/automation/rpc-exceptions.txt) as a JSON array of {key, reason}.
 # Lines whose first non-blank character is "#" and blank lines are ignored.

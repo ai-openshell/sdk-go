@@ -37,7 +37,7 @@ header=$(head -1 <<<"$text")
 # issues cannot be listed, the report goes out without them.
 issues_file=$(mktemp)
 trap 'rm -f "$issues_file"' EXIT
-if gh api --paginate "repos/$sdk_repo/issues?labels=rpc-coverage&state=open&per_page=100" \
+if gh api --paginate "$(rpc_bot_issues_url "$sdk_repo" "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" open)" \
   --jq '.[] | select(.pull_request == null) | {number, body, author: .user.login}' |
   rpc_bot_issues "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" >"$issues_file" &&
   linked=$(link_uncovered_rpcs "$issues_file" "$text"); then

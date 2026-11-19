@@ -18,10 +18,10 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `rpc-marker.jq` | | The hidden issue marker, parsed by `rpc-issues.jq` and `update-drift-issue.sh` (jq module). |
 | `rpc-issue-body.md` | | Issue body template for `rpc-issues.jq`. |
 | `rpc-coverage.sh` | | The coverage rule shared by `rpc-issues.sh` and `drift-check.sh` (sourced, not run). |
-| `rpc-issues-lib.sh` | | Exceptions list parser (sourced, not run). |
+| `rpc-issues-lib.sh` | | Exceptions list parser and helpers for listing the bot's issues (sourced, not run). |
 | `rpc-exceptions.txt` | | RPCs the SDK deliberately does not wrap, one `Service.Method  reason` per line. |
 | `rpc-issues-test.sh [--update]` | | Offline planner, `rpc-issues.sh --plan-input`, coverage, exceptions, and drift link tests on `testdata/rpc-issues/`; part of `workflows:check`. |
-| `report-failure.sh <job> <run-url>` | | Append a dated failure line to the drift issue. Called from `if: failure()` steps. |
+| `report-failure.sh <job> <run-url>` | | Record a failed run in the drift issue: one dated line per job and day, with the latest run and a count when the job fails again that day. Called from `if: failure()` steps. |
 | `drift-issue.sh` | | Shared helpers for the two drift issue scripts (sourced, not run). |
 | `start-gateway.sh <core-semver>`, `stop-gateway.sh` | | Run the published gateway container for a core version with the Docker driver and a plaintext endpoint for the E2E lane, and collect its log. |
 
@@ -42,7 +42,8 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 - **Coverage**: an RPC is covered when a package under `openshell/v1` (tests and `fake/` excluded) that calls `New<Service>Client(` also calls `.<Method>(` (`rpc-coverage.sh`, also used by `drift-check.sh`).
 - **Grouping**: when the SDK wraps none of a service's user-facing methods, one issue tracks the whole service; otherwise each method gets its own issue.
   The hidden marker on the first body line (`<!-- rpc-coverage: kind=... -->`) is the issue's identity; an issue keeps the methods its marker lists, and new methods of a service join its open service issue.
-  Only issues the bot opened and that keep the `rpc-coverage` label count; a marker in any other issue is ignored.
+  Only issues the bot opened count, found by creator and marker rather than by label: a marker in any other issue is ignored, and an issue whose `rpc-coverage` label someone removed gets the label back instead of a duplicate.
+  Text from core's proto comments is defused before it goes into a body (`@name`, `#123`, and `<!--` get a zero-width space), so it cannot mention people, link issues of this repository, or hide the rest of the body.
 - **Lifecycle**: each run opens missing issues, rewrites a body or the `rpc:ready` / `rpc:blocked` label when they change, closes an issue with a reason per method (`covered`, `removed`, `excepted`, `not-user-facing`, or `tracked-elsewhere` when another issue's marker lists the method), and reopens an issue it closed itself when the methods apply again.
   An issue a maintainer closes stays closed (a closed service issue silences the whole service); an issue a maintainer reopens is never closed as `covered` again.
 - **Excluding an RPC**: add `Service.Method  reason` to `rpc-exceptions.txt`; the next run closes its issue with the reason.
