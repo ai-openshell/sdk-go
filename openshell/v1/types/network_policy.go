@@ -53,9 +53,9 @@ const (
 	NetworkAccessPresetFull NetworkAccessPreset = 3
 )
 
-// PolicyNetworkEndpoint describes a full network endpoint with its access controls
-// as used in sandbox network policy rules. This is distinct from [NetworkEndpoint]
-// which is the simplified profile-level endpoint (Host, Port, Protocol only).
+// PolicyNetworkEndpoint describes a network endpoint with its access controls,
+// as used in sandbox network policy rules and, as [NetworkEndpoint], in
+// provider profiles.
 type PolicyNetworkEndpoint struct {
 	Host                         string
 	Port                         uint32

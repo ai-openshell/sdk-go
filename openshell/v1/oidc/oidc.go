@@ -52,6 +52,9 @@ func Login(ctx context.Context, gatewayName string, opts ...LoginOption) (*oauth
 	if err != nil {
 		return nil, err
 	}
+	// Login authenticates a user, so the request must be an OIDC one whether the
+	// scopes came from the caller, the gateway metadata, or the defaults.
+	cfg.requireOpenIDScope()
 
 	// FR-019: Check for existing valid token on disk before starting
 	// an interactive flow.
@@ -120,8 +123,8 @@ func Login(ctx context.Context, gatewayName string, opts ...LoginOption) (*oauth
 	return tok, nil
 }
 
-// resolveOIDCConfig resolves the OIDC issuer and client ID either from
-// the gateway metadata or from explicit options. Returns the token
+// resolveOIDCConfig resolves the OIDC issuer, client ID, and scopes either
+// from the gateway metadata or from explicit options. Returns the token
 // directory path (empty if in-memory or no directory available).
 func resolveOIDCConfig(cfg *loginConfig, gatewayName string) (string, error) {
 	tokenDir := cfg.tokenDir
@@ -141,6 +144,7 @@ func resolveOIDCConfig(cfg *loginConfig, gatewayName string) (string, error) {
 		}
 		cfg.issuer = gwCfg.OIDCIssuer
 		cfg.clientID = gwCfg.OIDCClientID
+		cfg.applyGatewayScopes(gwCfg)
 		if tokenDir == "" {
 			tokenDir = gwCfg.Dir
 		}

@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # stop-gateway.sh: stop the E2E gateway started by start-gateway.sh, save its
 # log, remove the sandbox containers, and remove the "e2e" gateway
 # registration (and the active-gateway pointer when it still names "e2e").

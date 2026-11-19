@@ -308,6 +308,253 @@ func TestClientCredentialsAuthLateFlightReusesCachedToken(t *testing.T) {
 	assert.Equal(t, "cached-token", accessToken)
 }
 
+// No caller can cancel the detached background exchange, so a non-positive
+// timeout falls back to the default instead of leaving it unbounded. The
+// exchange context must not be born expired either, so the exchange succeeds.
+func TestClientCredentialsAuthNonPositiveTimeoutUsesDefaultBound(t *testing.T) {
+	for _, timeout := range []time.Duration{0, -1 * time.Second} {
+		t.Run(timeout.String(), func(t *testing.T) {
+			resetDiscoveryCache()
+			var server *httptest.Server
+			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				if r.URL.Path == "/.well-known/openid-configuration" {
+					_ = json.NewEncoder(w).Encode(map[string]string{
+						"issuer":                 server.URL,
+						"authorization_endpoint": server.URL + "/authorize",
+						"token_endpoint":         server.URL + "/token",
+					})
+					return
+				}
+				_, _ = w.Write([]byte(tokenResponseJSON("token", "", 3600)))
+			}))
+			t.Cleanup(server.Close)
+
+			// The secret provider runs on the exchange context, so it sees
+			// the bound the exchange runs under.
+			var remaining time.Duration
+			var hasDeadline bool
+			auth, err := NewClientCredentialsAuth(
+				WithIssuer(server.URL),
+				WithClientID("client"),
+				WithClientSecretProvider(func(ctx context.Context) (string, error) {
+					var deadline time.Time
+					deadline, hasDeadline = ctx.Deadline()
+					remaining = time.Until(deadline)
+					return "secret", nil
+				}),
+				WithTimeout(timeout),
+			)
+			require.NoError(t, err)
+
+			metadata, err := auth.GetRequestMetadata(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, "Bearer token", metadata["authorization"])
+			require.True(t, hasDeadline, "the background exchange must have a deadline")
+			assert.Greater(t, remaining, defaultTimeout-time.Minute)
+			assert.LessOrEqual(t, remaining, defaultTimeout)
+		})
+	}
+}
+
+// The client credentials grant has no user and no ID token, so "openid" must
+// never be forced onto it the way the interactive flows force it.
+func TestClientCredentialsScopesAreNotNormalized(t *testing.T) {
+	tests := []struct {
+		name string
+		opts []LoginOption
+		want []string
+	}{
+		{
+			name: "unset sends no scopes",
+			opts: nil,
+			want: nil,
+		},
+		{
+			name: "explicit empty sends no scopes",
+			opts: []LoginOption{WithScopes()},
+			want: []string{},
+		},
+		{
+			name: "application scopes are sent verbatim",
+			opts: []LoginOption{WithScopes("sandbox:read", "sandbox:write")},
+			want: []string{"sandbox:read", "sandbox:write"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := append([]LoginOption{
+				WithIssuer("https://issuer.example.com"),
+				WithClientID("client"),
+				WithClientSecret("secret"),
+			}, tt.opts...)
+
+			cfg, err := resolveClientCredentialsConfig(opts...)
+			require.NoError(t, err)
+			assert.Equal(t, tt.want, cfg.scopes)
+		})
+	}
+}
+
+// Without scopes (unset or WithScopes()), the token request must carry no
+// scope parameter at all, not a bare "scope=", for both entry points.
+func TestClientCredentialsSendNoScopeParameterWithoutScopes(t *testing.T) {
+	entryPoints := map[string]func(opts ...LoginOption) error{
+		"ClientCredentials": func(opts ...LoginOption) error {
+			_, err := ClientCredentials(context.Background(), opts...)
+			return err
+		},
+		"NewClientCredentialsAuth": func(opts ...LoginOption) error {
+			auth, err := NewClientCredentialsAuth(opts...)
+			if err != nil {
+				return err
+			}
+			_, err = auth.GetRequestMetadata(context.Background())
+			return err
+		},
+	}
+	scopeOptions := map[string][]LoginOption{
+		"unset":          nil,
+		"explicit empty": {WithScopes()},
+	}
+
+	for entryName, run := range entryPoints {
+		for scopeName, scopeOpts := range scopeOptions {
+			t.Run(entryName+"/"+scopeName, func(t *testing.T) {
+				resetDiscoveryCache()
+				var form url.Values
+				var srv *httptest.Server
+				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+					if r.URL.Path == "/.well-known/openid-configuration" {
+						_ = json.NewEncoder(w).Encode(map[string]string{
+							"issuer":                 srv.URL,
+							"authorization_endpoint": srv.URL + "/authorize",
+							"token_endpoint":         srv.URL + "/token",
+						})
+						return
+					}
+					_ = r.ParseForm()
+					form = r.Form
+					_, _ = w.Write([]byte(tokenResponseJSON("token", "", 3600)))
+				}))
+				t.Cleanup(srv.Close)
+
+				opts := append([]LoginOption{
+					WithIssuer(srv.URL),
+					WithClientID("client"),
+					WithClientSecret("secret"),
+				}, scopeOpts...)
+				require.NoError(t, run(opts...))
+				require.NotNil(t, form, "the token request was never made")
+				assert.False(t, form.Has("scope"), "unexpected scope parameter %q", form.Get("scope"))
+			})
+		}
+	}
+}
+
+// ClientCredentials applies WithTimeout when the caller's context has no
+// deadline, the same way Login and DeviceLogin do.
+func TestClientCredentials_WithTimeoutBoundsExchange(t *testing.T) {
+	start := time.Now()
+	_, err := ClientCredentials(context.Background(),
+		WithIssuer("https://issuer.example.com"),
+		WithClientID("client"),
+		WithClientSecretProvider(func(ctx context.Context) (string, error) {
+			<-ctx.Done()
+			return "", ctx.Err()
+		}),
+		WithTimeout(50*time.Millisecond),
+	)
+	require.ErrorIs(t, err, ErrClientCredentials)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Less(t, time.Since(start), 5*time.Second)
+}
+
+// A token endpoint that outlives the deadline yields an error that matches
+// context.DeadlineExceeded, so callers can tell a timeout from a provider
+// failure.
+func TestClientCredentials_TokenRequestTimeoutWrapsContextError(t *testing.T) {
+	resetDiscoveryCache()
+	release := make(chan struct{})
+	var srv *httptest.Server
+	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path == "/.well-known/openid-configuration" {
+			_ = json.NewEncoder(w).Encode(map[string]string{
+				"issuer":                 srv.URL,
+				"authorization_endpoint": srv.URL + "/authorize",
+				"token_endpoint":         srv.URL + "/token",
+			})
+			return
+		}
+		// Hold the token response until the test ends.
+		<-release
+	}))
+	t.Cleanup(srv.Close)
+	t.Cleanup(func() { close(release) }) // runs before srv.Close
+
+	// Fetch discovery first, so the timeout hits the token request.
+	_, err := discover(context.Background(), srv.URL)
+	require.NoError(t, err)
+
+	_, err = ClientCredentials(context.Background(),
+		WithIssuer(srv.URL),
+		WithClientID("client"),
+		WithClientSecret("secret"),
+		WithTimeout(50*time.Millisecond),
+	)
+	require.ErrorIs(t, err, ErrClientCredentials)
+	assert.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Contains(t, err.Error(), "token request failed")
+}
+
+// The other two WithTimeout rules for ClientCredentials: a caller deadline
+// wins over WithTimeout, and a non-positive timeout means no deadline.
+func TestClientCredentials_TimeoutDeadlineRules(t *testing.T) {
+	callerDeadline := time.Now().Add(time.Hour)
+	tests := []struct {
+		name         string
+		ctxDeadline  bool
+		timeout      time.Duration
+		wantDeadline bool
+	}{
+		{name: "caller deadline wins", ctxDeadline: true, timeout: time.Second, wantDeadline: true},
+		{name: "zero timeout", timeout: 0},
+		{name: "negative timeout", timeout: -time.Second},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resetDiscoveryCache()
+			provider := setupCredentialsMockProvider(t, "client", "secret")
+
+			ctx := context.Background()
+			if tt.ctxDeadline {
+				var cancel context.CancelFunc
+				ctx, cancel = context.WithDeadline(ctx, callerDeadline)
+				t.Cleanup(cancel)
+			}
+
+			// The secret provider runs on the exchange context, so it sees
+			// the deadline the exchange runs under.
+			var deadline time.Time
+			var hasDeadline bool
+			_, err := ClientCredentials(ctx,
+				WithIssuer(provider.URL),
+				WithClientID("client"),
+				WithClientSecretProvider(func(ctx context.Context) (string, error) {
+					deadline, hasDeadline = ctx.Deadline()
+					return "secret", nil
+				}),
+				WithTimeout(tt.timeout),
+			)
+			require.NoError(t, err)
+			require.Equal(t, tt.wantDeadline, hasDeadline)
+			if tt.wantDeadline {
+				assert.True(t, deadline.Equal(callerDeadline), "deadline %v, want the caller's %v", deadline, callerDeadline)
+			}
+		})
+	}
+}
+
 func TestClientCredentialsAuthCancellationDoesNotPoisonSharedExchange(t *testing.T) {
 	resetDiscoveryCache()
 	var server *httptest.Server

@@ -15,6 +15,12 @@ type NetworkPolicyRule = types.NetworkPolicyRule
 // PolicyNetworkEndpoint describes a full network endpoint in a sandbox network policy rule.
 type PolicyNetworkEndpoint = types.PolicyNetworkEndpoint
 
+// NetworkCredentialBinding binds an endpoint to static credentials from an attached provider.
+type NetworkCredentialBinding = types.NetworkCredentialBinding
+
+// McpOptions configures MCP inspection for a policy endpoint.
+type McpOptions = types.McpOptions
+
 // NetworkTLSMode controls TLS handling for a policy endpoint.
 type NetworkTLSMode = types.NetworkTLSMode
 

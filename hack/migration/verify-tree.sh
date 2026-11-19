@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # verify-tree.sh: check an imported history against the core subtree.
 #
 # Usage: verify-tree.sh <core-clone> <freeze-sha> <sdk-go-clone> <commit>

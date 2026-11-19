@@ -248,6 +248,8 @@ See the [Getting Started](https://ai-openshell.github.io/sdk-go/getting-started.
 
 The bindings are generated from OpenShell core v0.1.9 (`mise run core:version` prints the pin). SDK releases follow core releases, so SDK `vX.Y.Z` works with core `vX.Y.Z`.
 
+The [releases page](https://github.com/ai-openshell/sdk-go/releases) lists every SDK release and the core version it matches.
+
 ## Migrating from `github.com/NVIDIA/OpenShell/sdk/go`
 
 The SDK moved out of the OpenShell repository into its own module. Packages and APIs are unchanged, only the module path is new. Rewrite the imports, then fetch the new module:
@@ -323,6 +325,7 @@ stream completion.
 | File transfer API (transport capability-gated) | `FileInterface` | [Files](https://ai-openshell.github.io/sdk-go/api/files.html) |
 | Policy management (draft review, approve, reject, merge, global policy) | `PolicyInterface` | [Policy](https://ai-openshell.github.io/sdk-go/api/policy.html) |
 | Sandbox logs (streaming retrieval) | `SandboxInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
+| Resumable log and platform event watch (loss-aware reconnect) | `SandboxLogsWatchInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
 | Workspace management (create, get, list, delete, members) | `WorkspaceInterface` | [Workspaces](https://ai-openshell.github.io/sdk-go/api/workspaces.html) |
 | Sandbox provider attachment (attach, detach, list) | `SandboxInterface` | [Sandboxes](https://ai-openshell.github.io/sdk-go/api/sandboxes.html) |
 | Gateway info and current user identity | `HealthInterface` | [Health](https://ai-openshell.github.io/sdk-go/api/health.html) |
@@ -338,7 +341,7 @@ stream completion.
 
 ## Prerequisites
 
-- Go 1.25.13 or later
+- Go 1.26 or later
 - [mise](https://mise.jdx.dev) (recommended for reproducible builds)
 
 ## Build and Test

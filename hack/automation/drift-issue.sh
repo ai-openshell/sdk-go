@@ -1,3 +1,5 @@
+# SPDX-License-Identifier: Apache-2.0
+
 # drift-issue.sh: shared helpers for the "Core main drift" issue. Sourced by
 # update-drift-issue.sh and report-failure.sh.
 # shellcheck shell=bash

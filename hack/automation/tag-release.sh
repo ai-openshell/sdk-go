@@ -1,4 +1,6 @@
 #!/usr/bin/env bash
+# SPDX-License-Identifier: Apache-2.0
+
 # tag-release.sh: create the lockstep SDK release for a stable core pin.
 #
 # Usage: tag-release.sh [--dry-run] [--force] [--sha <commit>] [--since <commit>]
