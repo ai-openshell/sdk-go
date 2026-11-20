@@ -395,6 +395,14 @@ func checkTerminalPhase(sb *Sandbox, name string, target SandboxPhase) (*Sandbox
 	}
 }
 
+// Watch streams status changes for one sandbox. The first event is
+// EventAdded, later ones EventModified, and EventDeleted once the sandbox is
+// deleting.
+//
+// The channel closes when the server ends the stream, when StopOnTerminal
+// sees a terminal phase, when ctx is cancelled, or after Stop. Cancelling ctx
+// or calling Stop closes it without an EventError: EventError reports only a
+// stream failure, such as the gateway becoming unavailable.
 func (s *sandboxClient) Watch(ctx context.Context, workspace, name string, opts ...WatchOptions) (WatchInterface[*Sandbox], error) {
 	if name == "" {
 		return nil, &StatusError{Code: ErrorInvalidArgument, Message: "sandbox name must not be empty"}
@@ -444,9 +452,7 @@ func (s *sandboxClient) Watch(ctx context.Context, workspace, name string, opts 
 				} else if sandbox.Status.Phase == SandboxDeleting {
 					eventType = EventDeleted
 				}
-				select {
-				case ch <- Event[*Sandbox]{Type: eventType, Object: sandbox}:
-				case <-w.done:
+				if !w.emit(streamCtx, Event[*Sandbox]{Type: eventType, Object: sandbox}) {
 					return
 				}
 				if watchOpts.StopOnTerminal && (sandbox.Status.Phase == SandboxReady || sandbox.Status.Phase == SandboxCompleted || sandbox.Status.Phase == SandboxStopped || sandbox.Status.Phase == SandboxError) {
@@ -457,16 +463,10 @@ func (s *sandboxClient) Watch(ctx context.Context, workspace, name string, opts 
 			var recvErr error
 			ev, recvErr = stream.Recv()
 			if recvErr != nil {
-				if recvErr != io.EOF {
-					select {
-					case <-w.done:
-						return
-					default:
-					}
-					select {
-					case ch <- Event[*Sandbox]{Type: EventError, Err: converter.FromGRPCError(recvErr)}:
-					case <-w.done:
-					}
+				// A cancelled stream after Stop or ctx cancellation is the
+				// caller's own doing, not a failure to report.
+				if recvErr != io.EOF && !w.stopped() && streamCtx.Err() == nil {
+					w.emit(streamCtx, Event[*Sandbox]{Type: EventError, Err: converter.FromGRPCError(recvErr)})
 				}
 				return
 			}

@@ -227,6 +227,8 @@ Each `Event[T]` carries:
 - `Type`: one of `EventAdded`, `EventModified`, `EventDeleted`, or `EventError`
 - `Object`: the `*Sandbox` at that point in time (`nil` for `EventError`)
 
+The channel closes when the server ends the stream, when `StopOnTerminal` sees a terminal phase, when `ctx` is cancelled, or after `Stop`. Cancelling `ctx` or calling `Stop` closes it without an `EventError`, even if nothing is reading: `EventError` reports only a stream failure, such as the gateway becoming unavailable.
+
 ```go
 watcher, err := client.Sandboxes().Watch(ctx, "default", "my-sandbox")
 if err != nil {
