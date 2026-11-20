@@ -44,5 +44,9 @@ type RefreshInterface interface {
 	GetStatus(ctx context.Context, workspace, provider, credentialKey string) ([]*RefreshStatus, error)
 	Configure(ctx context.Context, workspace string, config *RefreshConfig) (*RefreshStatus, error)
 	Rotate(ctx context.Context, workspace, provider, credentialKey string) (*RefreshStatus, error)
+	// InlineSecrets copies each workspace secret that the credential's refresh
+	// configuration references into provider-owned refresh material and
+	// removes the references. Other material is kept.
+	InlineSecrets(ctx context.Context, workspace, provider, credentialKey string) (*RefreshStatus, error)
 	Delete(ctx context.Context, workspace, provider, credentialKey string, opts ...DeleteOptions) (*DeletionResult, error)
 }

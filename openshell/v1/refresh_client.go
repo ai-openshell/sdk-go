@@ -58,6 +58,18 @@ func (r *refreshClient) Rotate(ctx context.Context, workspace, provider, credent
 	return converter.RefreshStatusFromProto(resp.GetStatus()), nil
 }
 
+func (r *refreshClient) InlineSecrets(ctx context.Context, workspace, provider, credentialKey string) (*RefreshStatus, error) {
+	resp, err := r.client.InlineProviderRefreshSecrets(ctx, &pb.InlineProviderRefreshSecretsRequest{
+		Provider:       provider,
+		CredentialKey:  credentialKey,
+		WorkspaceScope: namedWorkspaceScope(workspace),
+	})
+	if err != nil {
+		return nil, converter.FromGRPCError(err)
+	}
+	return converter.RefreshStatusFromProto(resp.GetStatus()), nil
+}
+
 func (r *refreshClient) Delete(ctx context.Context, workspace, provider, credentialKey string, opts ...DeleteOptions) (*DeletionResult, error) {
 	resp, err := r.client.DeleteProviderRefresh(ctx, &pb.DeleteProviderRefreshRequest{
 		AllowMissing:   allowMissing(opts),

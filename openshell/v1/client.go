@@ -33,6 +33,7 @@ type ClientInterface interface {
 	Config() ConfigInterface
 	Policy() PolicyInterface
 	Workspaces() WorkspaceInterface
+	Secrets() SecretInterface
 	Close() error
 }
 
@@ -68,6 +69,7 @@ type Client struct {
 	cfg            ConfigInterface
 	policy         PolicyInterface
 	workspaces     WorkspaceInterface
+	secrets        SecretInterface
 }
 
 // NewClient creates a new SDK client connected to the given gateway.
@@ -116,6 +118,7 @@ func NewClient(cfg Config) (*Client, error) {
 	c.cfg = newConfigClient(conn, c.sandboxes)
 	c.policy = newPolicyClient(conn)
 	c.workspaces = newWorkspaceClient(conn)
+	c.secrets = newSecretClient(conn)
 
 	return c, nil
 }
@@ -167,6 +170,9 @@ func (c *Client) Policy() PolicyInterface { return c.policy }
 
 // Workspaces returns the workspace management sub-client.
 func (c *Client) Workspaces() WorkspaceInterface { return c.workspaces }
+
+// Secrets returns the workspace secret sub-client.
+func (c *Client) Secrets() SecretInterface { return c.secrets }
 
 // Close closes the underlying gRPC connection. Safe to call multiple times.
 func (c *Client) Close() error {

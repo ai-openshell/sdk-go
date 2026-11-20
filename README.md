@@ -289,8 +289,9 @@ Client
   ├── Services()    → ServiceInterface    (expose, get, list, delete)
   ├── Providers()   → ProviderInterface   (CRUD + ensure)
   │     ├── Profiles() → ProfileInterface (list, get, import, update, lint, delete)
-  │     └── Refresh()  → RefreshInterface (configure, status, rotate, delete)
+  │     └── Refresh()  → RefreshInterface (configure, status, rotate, inline secrets, delete)
   ├── Workspaces()  → WorkspaceInterface  (create, get, list, delete, members)
+  ├── Secrets()     → SecretInterface     (create, get, list, update, delete)
   └── Policy()      → PolicyInterface     (draft review, approve, reject, merge, status)
 ```
 

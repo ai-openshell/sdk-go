@@ -18,6 +18,7 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/grpc/test/bufconn"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -30,7 +31,11 @@ type mockRefreshServer struct {
 	getStatusErr error
 	configureErr error
 	rotateErr    error
+	inlineErr    error
 	deleteErr    error
+
+	configureRequest *pb.ConfigureProviderRefreshRequest
+	inlineRequest    *pb.InlineProviderRefreshSecretsRequest
 }
 
 func newMockRefreshServer() *mockRefreshServer {
@@ -71,17 +76,19 @@ func (s *mockRefreshServer) GetProviderRefreshStatus(_ context.Context, req *pb.
 func (s *mockRefreshServer) ConfigureProviderRefresh(_ context.Context, req *pb.ConfigureProviderRefreshRequest) (*pb.ConfigureProviderRefreshResponse, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	s.configureRequest = proto.Clone(req).(*pb.ConfigureProviderRefreshRequest)
 	if s.configureErr != nil {
 		return nil, s.configureErr
 	}
 
 	st := &pb.ProviderCredentialRefreshStatus{
-		Provider:       req.GetProvider(),
-		ProviderId:     "prov-id-" + req.GetProvider(),
-		CredentialKey:  req.GetCredentialKey(),
-		Strategy:       req.GetStrategy(),
-		Status:         "active",
-		ExpirationTime: req.GetExpirationTime(),
+		Provider:        req.GetProvider(),
+		ProviderId:      "prov-id-" + req.GetProvider(),
+		CredentialKey:   req.GetCredentialKey(),
+		Strategy:        req.GetStrategy(),
+		Status:          "active",
+		ExpirationTime:  req.GetExpirationTime(),
+		MaterialSecrets: req.GetMaterialSecrets(),
 	}
 	s.statuses[refreshKey(req.GetProvider(), req.GetCredentialKey())] = st
 	return &pb.ConfigureProviderRefreshResponse{Status: st}, nil
@@ -102,6 +109,23 @@ func (s *mockRefreshServer) RotateProviderCredential(_ context.Context, req *pb.
 	st.Status = "rotated"
 	st.LastRefreshTime = timestamppb.Now()
 	return &pb.RotateProviderCredentialResponse{Status: st}, nil
+}
+
+func (s *mockRefreshServer) InlineProviderRefreshSecrets(_ context.Context, req *pb.InlineProviderRefreshSecretsRequest) (*pb.InlineProviderRefreshSecretsResponse, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	s.inlineRequest = proto.Clone(req).(*pb.InlineProviderRefreshSecretsRequest)
+	if s.inlineErr != nil {
+		return nil, s.inlineErr
+	}
+
+	key := refreshKey(req.GetProvider(), req.GetCredentialKey())
+	st, ok := s.statuses[key]
+	if !ok {
+		return nil, status.Errorf(codes.NotFound, "refresh config %q not found", key)
+	}
+	st.MaterialSecrets = nil
+	return &pb.InlineProviderRefreshSecretsResponse{Status: st}, nil
 }
 
 func (s *mockRefreshServer) DeleteProviderRefresh(_ context.Context, req *pb.DeleteProviderRefreshRequest) (*pb.DeleteProviderRefreshResponse, error) {
@@ -287,6 +311,135 @@ func TestRefreshConfigure_Error(t *testing.T) {
 	assert.Nil(t, result)
 	require.Error(t, err)
 	assert.True(t, IsInvalidArgument(err))
+}
+
+func TestRefreshConfigure_MaterialSecrets(t *testing.T) {
+	mock := newMockRefreshServer()
+	client, cleanup := setupRefreshTest(t, mock)
+	defer cleanup()
+
+	cfg := &RefreshConfig{
+		Provider:           "openai",
+		CredentialKey:      "api-key",
+		Strategy:           RefreshStrategyOAuth2ClientCredentials,
+		Material:           map[string]string{"client_id": "id-1"},
+		SecretMaterialKeys: []string{"client_secret"},
+		MaterialSecrets:    map[string]string{"client_secret": "oauth-client"},
+	}
+
+	result, err := client.Configure(context.Background(), "team-a", cfg)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, map[string]string{"client_secret": "oauth-client"}, result.MaterialSecrets)
+
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	req := mock.configureRequest
+	require.NotNil(t, req)
+	assert.Equal(t, "team-a", req.GetWorkspaceScope().GetWorkspace())
+	assert.Equal(t, map[string]string{"client_id": "id-1"}, req.GetMaterial())
+	assert.Equal(t, []string{"client_secret"}, req.GetSecretMaterialKeys())
+	assert.Equal(t, map[string]string{"client_secret": "oauth-client"}, req.GetMaterialSecrets())
+}
+
+func TestRefreshConfigure_WithoutMaterialSecretsSendsNone(t *testing.T) {
+	mock := newMockRefreshServer()
+	client, cleanup := setupRefreshTest(t, mock)
+	defer cleanup()
+
+	result, err := client.Configure(context.Background(), "default", &RefreshConfig{
+		Provider:      "openai",
+		CredentialKey: "api-key",
+		Strategy:      RefreshStrategyStatic,
+	})
+
+	require.NoError(t, err)
+	assert.Empty(t, result.MaterialSecrets)
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	assert.Empty(t, mock.configureRequest.GetMaterialSecrets())
+}
+
+func TestRefreshGetStatus_ReportsMaterialSecrets(t *testing.T) {
+	mock := newMockRefreshServer()
+	client, cleanup := setupRefreshTest(t, mock)
+	defer cleanup()
+
+	_, err := client.Configure(context.Background(), "default", &RefreshConfig{
+		Provider:           "openai",
+		CredentialKey:      "api-key",
+		Strategy:           RefreshStrategyOAuth2ClientCredentials,
+		SecretMaterialKeys: []string{"client_secret"},
+		MaterialSecrets:    map[string]string{"client_secret": "oauth-client"},
+	})
+	require.NoError(t, err)
+
+	statuses, err := client.GetStatus(context.Background(), "default", "openai", "api-key")
+
+	require.NoError(t, err)
+	require.Len(t, statuses, 1)
+	assert.Equal(t, map[string]string{"client_secret": "oauth-client"}, statuses[0].MaterialSecrets)
+}
+
+// --- InlineSecrets tests ---
+
+func TestRefreshInlineSecrets(t *testing.T) {
+	mock := newMockRefreshServer()
+	client, cleanup := setupRefreshTest(t, mock)
+	defer cleanup()
+
+	_, err := client.Configure(context.Background(), "team-a", &RefreshConfig{
+		Provider:           "openai",
+		CredentialKey:      "api-key",
+		Strategy:           RefreshStrategyOAuth2ClientCredentials,
+		SecretMaterialKeys: []string{"client_secret"},
+		MaterialSecrets:    map[string]string{"client_secret": "oauth-client"},
+	})
+	require.NoError(t, err)
+
+	result, err := client.InlineSecrets(context.Background(), "team-a", "openai", "api-key")
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, "openai", result.Provider)
+	assert.Equal(t, "api-key", result.CredentialKey)
+	assert.Equal(t, RefreshStrategyOAuth2ClientCredentials, result.Strategy)
+	assert.Empty(t, result.MaterialSecrets)
+
+	mock.mu.Lock()
+	defer mock.mu.Unlock()
+	req := mock.inlineRequest
+	require.NotNil(t, req)
+	assert.Equal(t, "team-a", req.GetWorkspaceScope().GetWorkspace())
+	assert.Equal(t, "openai", req.GetProvider())
+	assert.Equal(t, "api-key", req.GetCredentialKey())
+	assert.Empty(t, req.GetRequestId())
+}
+
+func TestRefreshInlineSecrets_NotFound(t *testing.T) {
+	mock := newMockRefreshServer()
+	client, cleanup := setupRefreshTest(t, mock)
+	defer cleanup()
+
+	result, err := client.InlineSecrets(context.Background(), "default", "openai", "nonexistent")
+
+	assert.Nil(t, result)
+	require.Error(t, err)
+	assert.True(t, IsNotFound(err))
+}
+
+func TestRefreshInlineSecrets_Error(t *testing.T) {
+	mock := newMockRefreshServer()
+	mock.inlineErr = status.Errorf(codes.FailedPrecondition, "secret is not usable as refresh material")
+	client, cleanup := setupRefreshTest(t, mock)
+	defer cleanup()
+
+	result, err := client.InlineSecrets(context.Background(), "default", "openai", "key")
+
+	assert.Nil(t, result)
+	require.Error(t, err)
+	assert.True(t, IsConflict(err))
 }
 
 // --- Rotate tests ---

@@ -21,6 +21,7 @@ type Client struct {
 	providerStore      *objectStore[*types.Provider]
 	workspaceStore     *objectStore[*types.Workspace]
 	memberStore        *objectStore[*types.WorkspaceMember]
+	secretStore        *objectStore[*types.Secret]
 	sandboxBroadcaster *watchBroadcaster[*types.Sandbox]
 
 	sandboxes      v1.SandboxInterface
@@ -38,6 +39,7 @@ type Client struct {
 	cfg            v1.ConfigInterface
 	policy         v1.PolicyInterface
 	workspaces     v1.WorkspaceInterface
+	secrets        v1.SecretInterface
 
 	closeOnce sync.Once
 	closed    bool
@@ -80,6 +82,7 @@ func NewClient(opts ...ClientOption) *Client {
 		providerStore:      newobjectStore(providerName, copyProvider),
 		workspaceStore:     newobjectStore(workspaceName, copyWorkspace),
 		memberStore:        newobjectStore(memberName, copyMember),
+		secretStore:        newobjectStore(secretName, copySecret),
 		sandboxBroadcaster: newWatchBroadcaster[*types.Sandbox](),
 	}
 
@@ -99,6 +102,7 @@ func NewClient(opts ...ClientOption) *Client {
 	fc.cfg = newFakeConfigClient(fc.isClosed)
 	fc.policy = newFakePolicyClient(fc.isClosed)
 	fc.workspaces = newFakeWorkspaceClient(fc.workspaceStore, fc.memberStore, fc.isClosed)
+	fc.secrets = newFakeSecretClient(fc.secretStore, fc.isClosed)
 
 	options.Apply(fc, opts)
 
@@ -165,6 +169,9 @@ func (fc *Client) Policy() v1.PolicyInterface { return fc.policy }
 // Workspaces returns the workspace management sub-client.
 func (fc *Client) Workspaces() v1.WorkspaceInterface { return fc.workspaces }
 
+// Secrets returns the workspace secret sub-client.
+func (fc *Client) Secrets() v1.SecretInterface { return fc.secrets }
+
 // Close marks the client as closed, stops all active watchers, and causes
 // subsequent sub-client calls to return Unavailable. Safe to call multiple
 // times.
@@ -227,6 +234,16 @@ func (fc *Client) AddMember(workspace string, m *types.WorkspaceMember) {
 		return
 	}
 	fc.memberStore.Insert(workspace, m)
+}
+
+// AddSecret inserts workspace secret metadata directly into the store without
+// triggering any side effects. This is intended for pre-seeding test fixtures
+// before the test begins. The secret is deep-copied on insert.
+func (fc *Client) AddSecret(workspace string, s *types.Secret) {
+	if s == nil {
+		return
+	}
+	fc.secretStore.Insert(workspace, s)
 }
 
 // AddGlobalRevision adds a gateway-global policy revision for test seeding.

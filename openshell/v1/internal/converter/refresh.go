@@ -89,13 +89,14 @@ func RefreshStatusFromProto(s *pb.ProviderCredentialRefreshStatus) *types.Refres
 		FailureCode:          s.GetFailureCode(),
 		ProviderErrorSubtype: s.GetProviderErrorSubtype(),
 		LastErrorAt:          TimeFromProto(s.GetLastErrorTime()),
+		MaterialSecrets:      CopyStringMap(s.GetMaterialSecrets()),
 	}
 }
 
 // --- RefreshConfig ---
 
 // RefreshConfigToProto converts an SDK RefreshConfig to a proto ConfigureProviderRefreshRequest.
-// Material and SecretMaterialKeys are deep-copied.
+// Material, SecretMaterialKeys and MaterialSecrets are deep-copied.
 func RefreshConfigToProto(c *types.RefreshConfig) *pb.ConfigureProviderRefreshRequest {
 	if c == nil {
 		return nil
@@ -107,6 +108,7 @@ func RefreshConfigToProto(c *types.RefreshConfig) *pb.ConfigureProviderRefreshRe
 		Strategy:           RefreshStrategyToProto(c.Strategy),
 		Material:           CopyStringMap(c.Material),
 		SecretMaterialKeys: CopyStringSlice(c.SecretMaterialKeys),
+		MaterialSecrets:    CopyStringMap(c.MaterialSecrets),
 	}
 
 	if c.ExpiresAt != nil {

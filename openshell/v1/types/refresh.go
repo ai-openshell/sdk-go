@@ -70,6 +70,9 @@ type RefreshStatus struct {
 	FailureCode          string
 	ProviderErrorSubtype string
 	LastErrorAt          time.Time
+	// MaterialSecrets maps a material key to the name of the workspace secret
+	// that supplies it.
+	MaterialSecrets map[string]string
 }
 
 // RefreshConfig holds configuration parameters for gateway-owned credential
@@ -81,4 +84,9 @@ type RefreshConfig struct {
 	Material           map[string]string
 	SecretMaterialKeys []string
 	ExpiresAt          *time.Time
+	// MaterialSecrets supplies secret material from workspace secrets in the
+	// same workspace: each key is a material key and each value names a
+	// Secret. The gateway requires every key to also be listed in
+	// SecretMaterialKeys.
+	MaterialSecrets map[string]string
 }
