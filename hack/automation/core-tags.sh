@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: Apache-2.0
 
-# core-tags.sh: print NVIDIA/OpenShell release tags newer than the pin,
+# core-tags.sh: print ai-openshell/openshell release tags newer than the pin,
 # oldest first.
 #
 # Usage: core-tags.sh [--all] [--pin <tag>]
@@ -13,7 +13,7 @@
 # newer tag. --pin overrides the pin read from buf.gen.yaml.
 set -euo pipefail
 
-repo=${CORE_REPO:-NVIDIA/OpenShell}
+repo=${CORE_REPO:-ai-openshell/openshell}
 all=0
 pin=
 

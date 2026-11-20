@@ -18,7 +18,7 @@
 # check. Exits 0 when checks 1 and 2 pass, 1 otherwise.
 set -euo pipefail
 
-core_url=${CORE_URL:-https://github.com/NVIDIA/OpenShell.git}
+core_url=${CORE_URL:-https://github.com/ai-openshell/openshell.git}
 out=
 while [ $# -gt 0 ]; do
   case $1 in

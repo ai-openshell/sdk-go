@@ -6,7 +6,7 @@
 > [!IMPORTANT]
 > **[Read the full documentation](https://ai-openshell.github.io/sdk-go/)** for guides, API reference with gRPC mapping, and testing patterns.
 
-A Go SDK for interacting with [OpenShell](https://github.com/NVIDIA/OpenShell)
+A Go SDK for interacting with [OpenShell](https://github.com/ai-openshell/openshell)
 servers, providing idiomatic Go bindings for shell session management, command
 execution, provider configuration, and service exposure.
 

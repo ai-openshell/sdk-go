@@ -74,7 +74,7 @@ set -euo pipefail
 # Shared cross-SDK fixtures live in core's sdk/conformance/. A copy sits next
 # to the tests that read it, and must match core at the pinned tag.
 TAG=$(yq -r '.inputs[0].tag' buf.gen.yaml)
-BASE="https://raw.githubusercontent.com/NVIDIA/OpenShell/$TAG/sdk/conformance"
+BASE="https://raw.githubusercontent.com/ai-openshell/openshell/$TAG/sdk/conformance"
 FAILED=0
 TMP=$(mktemp)
 trap 'rm -f "$TMP"' EXIT
@@ -165,7 +165,7 @@ done
 
 if find proto -name '*.proto' -print -quit | grep -q .; then
   echo "ERROR: proto/ must contain generated bindings only."
-  echo "Proto sources come from NVIDIA/OpenShell at the tag in buf.gen.yaml."
+  echo "Proto sources come from ai-openshell/openshell at the tag in buf.gen.yaml."
   exit 1
 fi
 
@@ -198,7 +198,7 @@ done
 
 if find proto -name '*.proto' -print -quit | grep -q .; then
   echo "ERROR: proto/ contains copied proto sources."
-  echo "Proto sources come from NVIDIA/OpenShell at the tag in buf.gen.yaml."
+  echo "Proto sources come from ai-openshell/openshell at the tag in buf.gen.yaml."
   exit 1
 fi
 
