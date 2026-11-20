@@ -5,16 +5,21 @@ package oidc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
+	"syscall"
+	"time"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
 // writeToken persists an OIDC token bundle to disk as oidc_token.json in
 // the given directory, in the CLI's format. The file is written with 0600
-// permissions (owner-only) to protect credentials.
+// permissions (owner-only) to protect credentials, and on Windows the final
+// replace is retried briefly while another process has the file open.
 func writeToken(dir string, b oidctoken.Bundle) error {
 	data, err := json.Marshal(b)
 	if err != nil {
@@ -43,11 +48,57 @@ func writeToken(dir string, b oidctoken.Bundle) error {
 	if err := tmp.Close(); err != nil {
 		return fmt.Errorf("%w: failed to close %s: %v", ErrTokenPersist, path, err)
 	}
-	if err := os.Rename(tmpPath, path); err != nil {
+	err = retryReplace(
+		func() error { return os.Rename(tmpPath, path) },
+		func(err error) bool { return isTransientReplaceError(runtime.GOOS, err) },
+		time.Sleep,
+	)
+	if err != nil {
 		return fmt.Errorf("%w: failed to replace %s: %v", ErrTokenPersist, path, err)
 	}
 
 	return nil
+}
+
+// Windows replace retry timings, the same as _atomic_replace in the
+// Python SDK.
+const (
+	replaceRetryTimeout      = 250 * time.Millisecond
+	replaceRetryInitialDelay = 5 * time.Millisecond
+	replaceRetryMaxDelay     = 50 * time.Millisecond
+)
+
+// retryReplace calls rename until it succeeds, fails with an error that
+// transient rejects, or the delays between attempts add up to
+// replaceRetryTimeout. The delay starts at replaceRetryInitialDelay and
+// doubles up to replaceRetryMaxDelay.
+func retryReplace(rename func() error, transient func(error) bool, sleep func(time.Duration)) error {
+	delay := replaceRetryInitialDelay
+	var waited time.Duration
+	for {
+		err := rename()
+		if err == nil || !transient(err) || waited >= replaceRetryTimeout {
+			return err
+		}
+		sleep(delay)
+		waited += delay
+		delay = min(delay*2, replaceRetryMaxDelay)
+	}
+}
+
+// isTransientReplaceError reports whether a failed rename on goos may
+// succeed if tried again. On Windows the replace fails with access denied
+// or a sharing violation while another process, such as the CLI, another
+// SDK or a scanner, has oidc_token.json open. A refresh may already have
+// rotated the token by then, so giving up would lose it.
+func isTransientReplaceError(goos string, err error) bool {
+	const (
+		errorAccessDenied     syscall.Errno = 5
+		errorSharingViolation syscall.Errno = 32
+	)
+	var errno syscall.Errno
+	return goos == "windows" && errors.As(err, &errno) &&
+		(errno == errorAccessDenied || errno == errorSharingViolation)
 }
 
 // readToken reads an existing oidc_token.json from the given

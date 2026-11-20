@@ -42,7 +42,12 @@ Tokens are persisted to the gateway's config directory as
 `oidc_token.json`, in the same format as `openshell gateway login`, so CLI
 commands against that gateway can use them. Subsequent calls reuse the stored
 token only when it is valid and was issued for the gateway's issuer and client
-ID; otherwise `Login` runs the flow again and rewrites the file.
+ID. If that token has expired but carries a refresh token, `Login` refreshes it
+and rewrites the file. If the context ends, discovery fails, or the file cannot
+be written, `Login` returns the error. If there is no refresh token or the
+refresh fails for any other reason, `Login` runs the flow again and, unless
+`WithInMemory` is set, rewrites the file. `WithInMemory` skips the refresh,
+because a rotated refresh token would not be written back.
 
 For standalone use (no gateway), pass an empty `gatewayName` with
 `WithIssuer` and `WithClientID`. Combine with `WithInMemory` to skip

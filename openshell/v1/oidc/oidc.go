@@ -30,7 +30,12 @@ import (
 // Before starting an interactive flow, Login checks for an existing
 // token on disk (FR-019). If the stored token is valid and was issued
 // for the same issuer and client ID, it is returned immediately without
-// user interaction.
+// user interaction. If it has expired but carries a refresh token, Login
+// exchanges the refresh token for a new one and rewrites the file. If the
+// context ends, discovery fails, or the file cannot be written, Login
+// returns the error; if the refresh fails for any other reason, it runs
+// the interactive flow. [WithInMemory] skips the refresh, because a
+// rotated refresh token would not be written back.
 //
 // The flow attempts to open a browser for authorization. If the browser
 // cannot be opened, or if [WithKeyboardFlow] is set, the keyboard
@@ -60,15 +65,21 @@ func Login(ctx context.Context, gatewayName string, opts ...LoginOption) (*oauth
 	// an interactive flow.
 	if tokenDir != "" {
 		stored, readErr := readToken(tokenDir)
-		if readErr == nil && stored != nil &&
-			normalizeIssuer(stored.Issuer) == normalizeIssuer(cfg.issuer) &&
-			stored.ClientID == cfg.clientID {
+		if readErr == nil && stored != nil && sameClient(stored, cfg) {
 			if tok := stored.Token(); tok.Valid() {
 				return tok, nil
 			}
+			tok, err := refreshStoredToken(ctx, cfg, tokenDir, *stored)
+			if err != nil {
+				return nil, err
+			}
+			if tok != nil {
+				return tok, nil
+			}
 		}
-		// Unreadable, mismatched, or expired tokens and missing files
-		// are not errors; we simply proceed to the interactive flow.
+		// Unreadable or mismatched tokens, expired tokens that could not
+		// be refreshed, and missing files are not errors; we simply
+		// proceed to the interactive flow.
 	}
 
 	// Run OIDC discovery to get provider endpoints.
