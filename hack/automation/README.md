@@ -6,7 +6,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 
 | File | mise task | Purpose |
 |------|-----------|---------|
-| `core-tags.sh` | `core:tags` | List NVIDIA/OpenShell release tags newer than the pin (`buf.gen.yaml`, `inputs[0].tag`), semver-sorted with pre-releases below their stable version. |
+| `core-tags.sh` | `core:tags` | List ai-openshell/openshell release tags newer than the pin (`buf.gen.yaml`, `inputs[0].tag`), semver-sorted with pre-releases below their stable version. |
 | `open-bump-pr.sh <tag> [--dry-run]` | `core:bump` | Open the update proposal for one core tag: branch `core/<tag>`, pin change, regenerated bindings, proto diff in the body, labels `core-bump` plus `stable` or `prerelease`. Closes older pre-release proposals. |
 | `bump-pr-body.md` | | PR body template for `open-bump-pr.sh`. |
 | `tag-release.sh [--dry-run]` | `release:tag` | After a stable pin lands on `main`: create the lockstep tag `vX.Y.Z` and the GitHub release, then ask the Go module proxy for the version. |

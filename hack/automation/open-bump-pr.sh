@@ -19,7 +19,7 @@
 # Git identity and GH_TOKEN come from the environment (the App in CI).
 set -euo pipefail
 
-core_repo=${CORE_REPO:-NVIDIA/OpenShell}
+core_repo=${CORE_REPO:-ai-openshell/openshell}
 sdk_repo=${SDK_REPO:-ai-openshell/sdk-go}
 image=ghcr.io/nvidia/openshell/gateway
 diff_cap=400
