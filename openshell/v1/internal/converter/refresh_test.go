@@ -91,6 +91,7 @@ func TestRefreshStatusFromProto(t *testing.T) {
 		FailureCode:          "oauth_invalid_grant",
 		ProviderErrorSubtype: "invalid_rapt",
 		LastErrorTime:        TimestampFromMillis(1699997000000),
+		MaterialSecrets:      map[string]string{"client_secret": "oauth-client"},
 	}
 
 	status := RefreshStatusFromProto(proto)
@@ -109,6 +110,11 @@ func TestRefreshStatusFromProto(t *testing.T) {
 	assert.Equal(t, "oauth_invalid_grant", status.FailureCode)
 	assert.Equal(t, "invalid_rapt", status.ProviderErrorSubtype)
 	assert.Equal(t, TimeFromMillis(1699997000000), status.LastErrorAt)
+	assert.Equal(t, map[string]string{"client_secret": "oauth-client"}, status.MaterialSecrets)
+
+	// Verify deep copy by mutating the proto
+	proto.MaterialSecrets["client_secret"] = "mutated"
+	assert.Equal(t, "oauth-client", status.MaterialSecrets["client_secret"], "material secrets must be deep copied")
 }
 
 func TestRefreshStatusFromProto_Nil(t *testing.T) {
@@ -132,6 +138,7 @@ func TestRefreshStatusFromProto_ZeroTimestamps(t *testing.T) {
 	assert.True(t, status.LastRefreshAt.IsZero())
 	assert.True(t, status.LastErrorAt.IsZero())
 	assert.Equal(t, v1.RefreshRecoveryActionUnspecified, status.RecoveryAction)
+	assert.Nil(t, status.MaterialSecrets)
 }
 
 func TestRefreshStatusFromProto_ParkedRefreshHasNoNextTime(t *testing.T) {
@@ -162,8 +169,9 @@ func TestRefreshConfigToProto(t *testing.T) {
 			"client_id":     "my-id",
 			"client_secret": "my-secret",
 		},
-		SecretMaterialKeys: []string{"client_secret"},
+		SecretMaterialKeys: []string{"client_secret", "signing_key"},
 		ExpiresAt:          &expiresAt,
+		MaterialSecrets:    map[string]string{"signing_key": "jwt-signing-key"},
 	}
 
 	proto := RefreshConfigToProto(config)
@@ -182,11 +190,16 @@ func TestRefreshConfigToProto(t *testing.T) {
 	config.Material["client_id"] = "mutated"
 	assert.Equal(t, "my-id", proto.Material["client_id"], "material must be deep copied")
 
-	assert.Equal(t, []string{"client_secret"}, proto.SecretMaterialKeys)
+	assert.Equal(t, []string{"client_secret", "signing_key"}, proto.SecretMaterialKeys)
 
 	// Verify SecretMaterialKeys deep copy
 	config.SecretMaterialKeys[0] = "mutated"
 	assert.Equal(t, "client_secret", proto.SecretMaterialKeys[0], "secret keys must be deep copied")
+
+	// MaterialSecrets is deep-copied
+	assert.Equal(t, map[string]string{"signing_key": "jwt-signing-key"}, proto.MaterialSecrets)
+	config.MaterialSecrets["signing_key"] = "mutated"
+	assert.Equal(t, "jwt-signing-key", proto.MaterialSecrets["signing_key"], "material secrets must be deep copied")
 
 	// ExpiresAt conversion
 	require.NotNil(t, proto.ExpirationTime)

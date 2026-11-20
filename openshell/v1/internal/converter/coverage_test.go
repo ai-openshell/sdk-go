@@ -417,6 +417,107 @@ func TestConverterCoversAllProtoFields_McpOptions(t *testing.T) {
 	assertAllFieldsCovered(t, (&sandboxpb.McpOptions{}).ProtoReflect().Descriptor(), handled, nil)
 }
 
+func TestConverterCoversAllProtoFields_Secret(t *testing.T) {
+	handled := fieldSet{
+		"metadata":          true,
+		"description":       true,
+		"refresh_use":       true,
+		"value_update_time": true,
+	}
+
+	assertAllFieldsCovered(t, (&pb.Secret{}).ProtoReflect().Descriptor(), handled, nil)
+}
+
+func TestConverterCoversAllProtoFields_SecretRefreshUse(t *testing.T) {
+	handled := fieldSet{
+		"allowed_endpoints": true,
+	}
+
+	assertAllFieldsCovered(t, (&pb.SecretRefreshUse{}).ProtoReflect().Descriptor(), handled, nil)
+}
+
+func TestConverterCoversAllProtoFields_SecretLabels(t *testing.T) {
+	handled := fieldSet{
+		"labels": true,
+	}
+
+	assertAllFieldsCovered(t, (&pb.SecretLabels{}).ProtoReflect().Descriptor(), handled, nil)
+}
+
+func TestConverterCoversAllProtoFields_CreateSecretRequest(t *testing.T) {
+	handled := fieldSet{
+		"name":        true,
+		"description": true,
+		"value":       true,
+		"refresh_use": true,
+		"labels":      true,
+	}
+
+	// The client sets the workspace scope. No SDK client sends a request ID.
+	skipped := fieldSet{
+		"workspace_scope": true,
+		"request_id":      true,
+	}
+	assertAllFieldsCovered(t, (&pb.CreateSecretRequest{}).ProtoReflect().Descriptor(), handled, skipped)
+}
+
+func TestConverterCoversAllProtoFields_UpdateSecretRequest(t *testing.T) {
+	handled := fieldSet{
+		"name":                      true,
+		"value":                     true,
+		"description":               true,
+		"labels":                    true,
+		"expected_resource_version": true,
+	}
+
+	// The client sets the workspace scope. No SDK client sends a request ID.
+	skipped := fieldSet{
+		"workspace_scope": true,
+		"request_id":      true,
+	}
+	assertAllFieldsCovered(t, (&pb.UpdateSecretRequest{}).ProtoReflect().Descriptor(), handled, skipped)
+}
+
+func TestConverterCoversAllProtoFields_ProviderCredentialRefreshStatus(t *testing.T) {
+	handled := fieldSet{
+		"provider":               true,
+		"provider_id":            true,
+		"credential_key":         true,
+		"strategy":               true,
+		"status":                 true,
+		"expiration_time":        true,
+		"next_refresh_time":      true,
+		"last_refresh_time":      true,
+		"last_error":             true,
+		"recovery_action":        true,
+		"failure_code":           true,
+		"provider_error_subtype": true,
+		"last_error_time":        true,
+		"material_secrets":       true,
+	}
+
+	assertAllFieldsCovered(t, (&pb.ProviderCredentialRefreshStatus{}).ProtoReflect().Descriptor(), handled, nil)
+}
+
+func TestConverterCoversAllProtoFields_ConfigureProviderRefreshRequest(t *testing.T) {
+	handled := fieldSet{
+		"provider":             true,
+		"credential_key":       true,
+		"strategy":             true,
+		"material":             true,
+		"secret_material_keys": true,
+		"expiration_time":      true,
+		"material_secrets":     true,
+	}
+
+	// The client sets the workspace scope. No SDK client sends a request ID.
+	skipped := fieldSet{
+		"workspace_scope": true,
+		"request_id":      true,
+	}
+	assertAllFieldsCovered(t, (&pb.ConfigureProviderRefreshRequest{}).ProtoReflect().Descriptor(), handled, skipped)
+}
+
 // fieldSet tracks proto field names that the converter handles.
 type fieldSet map[string]bool
 

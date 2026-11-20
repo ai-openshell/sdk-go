@@ -22,6 +22,7 @@ for each resource domain and manages the underlying gRPC connection. The
 | `TCP()` | `TCPInterface` | TCP port forwarding |
 | `Config()` | `ConfigInterface` | Sandbox and gateway configuration |
 | `Policy()` | `PolicyInterface` | Draft policy review workflow |
+| `Secrets()` | `SecretInterface` | Workspace secret management (write-only values) |
 | `Close()` | `error` | Close the gRPC connection |
 
 Sub-client hierarchy: `Providers()` has two nested accessors:

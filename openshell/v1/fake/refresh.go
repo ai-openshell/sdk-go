@@ -45,6 +45,14 @@ func (c *fakeRefreshClient) Rotate(_ context.Context, _, _, _ string) (*types.Re
 	return nil, &types.StatusError{Code: types.ErrorUnimplemented, Message: "Rotate is not supported by the fake client"}
 }
 
+// InlineSecrets returns Unimplemented.
+func (c *fakeRefreshClient) InlineSecrets(_ context.Context, _, _, _ string) (*types.RefreshStatus, error) {
+	if c.closedFunc() {
+		return nil, &types.StatusError{Code: types.ErrorUnavailable, Message: "client is closed"}
+	}
+	return nil, &types.StatusError{Code: types.ErrorUnimplemented, Message: "InlineSecrets is not supported by the fake client"}
+}
+
 // Delete returns Unimplemented.
 func (c *fakeRefreshClient) Delete(_ context.Context, _, _, _ string, _ ...v1.DeleteOptions) (*types.DeletionResult, error) {
 	if c.closedFunc() {

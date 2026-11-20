@@ -39,6 +39,13 @@ func TestFakeRefresh_Rotate_ReturnsUnimplemented(t *testing.T) {
 	assert.True(t, types.IsUnimplemented(err))
 }
 
+func TestFakeRefresh_InlineSecrets_ReturnsUnimplemented(t *testing.T) {
+	c := newFakeRefreshClient(func() bool { return false })
+	_, err := c.InlineSecrets(context.Background(), "default", "provider-1", "cred-1")
+	require.Error(t, err)
+	assert.True(t, types.IsUnimplemented(err))
+}
+
 func TestFakeRefresh_Delete_ReturnsUnimplemented(t *testing.T) {
 	c := newFakeRefreshClient(func() bool { return false })
 	_, err := c.Delete(context.Background(), "default", "provider-1", "cred-1")
@@ -66,6 +73,13 @@ func TestFakeRefresh_Configure_ClosedReturnsUnavailable(t *testing.T) {
 func TestFakeRefresh_Rotate_ClosedReturnsUnavailable(t *testing.T) {
 	c := newFakeRefreshClient(func() bool { return true })
 	_, err := c.Rotate(context.Background(), "default", "provider-1", "cred-1")
+	require.Error(t, err)
+	assert.True(t, types.IsUnavailable(err))
+}
+
+func TestFakeRefresh_InlineSecrets_ClosedReturnsUnavailable(t *testing.T) {
+	c := newFakeRefreshClient(func() bool { return true })
+	_, err := c.InlineSecrets(context.Background(), "default", "provider-1", "cred-1")
 	require.Error(t, err)
 	assert.True(t, types.IsUnavailable(err))
 }
