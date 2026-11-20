@@ -1,0 +1,94 @@
+[
+  {
+    "file": "a.proto",
+    "service": "Svc",
+    "method": "Get",
+    "auth_mode": "bearer",
+    "scope": "s:read",
+    "workspace_role": "user",
+    "global_role": null,
+    "client_streaming": false,
+    "server_streaming": false,
+    "request": "pkg.Req",
+    "response": "pkg.Resp",
+    "comment": "Get returns one thing.\n  Indented detail stays indented.",
+    "signature": "rpc Get(Req) returns (Resp) {\n  option (openshell.options.v1.authorization) = {auth_mode: \"bearer\" scope: \"s:read\" workspace_role: \"user\"};\n}",
+    "messages": [
+      {
+        "name": "pkg.Req",
+        "source": "message Req {\n  string name = 1;\n}"
+      },
+      {
+        "name": "pkg.Resp",
+        "source": "message Resp {}"
+      }
+    ],
+    "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.3.0/proto/a.proto#L8-L10",
+    "server_refs": [
+      {
+        "path": "crates/openshell-server/src/svc.rs",
+        "url": "https://github.com/NVIDIA/OpenShell/blob/v0.3.0/crates/openshell-server/src/svc.rs"
+      }
+    ],
+    "rust_sdk_refs": [],
+    "ts_sdk_refs": []
+  },
+  {
+    "file": "a.proto",
+    "service": "Svc",
+    "method": "Ping",
+    "auth_mode": "dual",
+    "scope": null,
+    "workspace_role": null,
+    "global_role": "admin",
+    "client_streaming": true,
+    "server_streaming": false,
+    "request": "pkg.Req",
+    "response": "google.protobuf.Empty",
+    "comment": "",
+    "signature": "rpc Ping(stream Req) returns (google.protobuf.Empty);",
+    "messages": [
+      {
+        "name": "google.protobuf.Empty",
+        "source": ""
+      },
+      {
+        "name": "pkg.Req",
+        "source": "message Req {\n  string name = 1;\n}"
+      }
+    ],
+    "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.3.0/proto/a.proto#L11-L11",
+    "server_refs": [],
+    "rust_sdk_refs": [],
+    "ts_sdk_refs": []
+  },
+  {
+    "file": "a.proto",
+    "service": "Svc",
+    "method": "Bare",
+    "auth_mode": null,
+    "scope": null,
+    "workspace_role": null,
+    "global_role": null,
+    "client_streaming": false,
+    "server_streaming": false,
+    "request": "pkg.Req",
+    "response": "pkg.Resp",
+    "comment": "",
+    "signature": "rpc Bare(Req) returns (Resp);",
+    "messages": [
+      {
+        "name": "pkg.Req",
+        "source": "message Req {\n  string name = 1;\n}"
+      },
+      {
+        "name": "pkg.Resp",
+        "source": "message Resp {}"
+      }
+    ],
+    "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.3.0/proto/a.proto#L12-L12",
+    "server_refs": [],
+    "rust_sdk_refs": [],
+    "ts_sdk_refs": []
+  }
+]

@@ -6,13 +6,16 @@
 # Usage: update-drift-issue.sh <report.md> [--dry-run]
 #
 # The report comes from drift-check.sh. The issue body is the report plus the
-# "## Automation failures" section, which is carried over unchanged. With
+# "## Automation failures" section, which is carried over unchanged; each
+# uncovered RPC line links to its open RPC coverage issue (rpc-issues.sh). With
 # "Result: fail" or pending failures, the issue is created or its body
 # replaced. With "Result: pass" and no pending failures, an open issue is
 # closed with a comment, and nothing is created.
 set -euo pipefail
 # shellcheck source=hack/automation/drift-issue.sh
 . "$(dirname "${BASH_SOURCE[0]}")/drift-issue.sh"
+# shellcheck source=hack/automation/rpc-issues-lib.sh
+. "$(dirname "${BASH_SOURCE[0]}")/rpc-issues-lib.sh"
 
 report=
 dry=0
@@ -27,6 +30,22 @@ done
 
 text=$(cat "$report")
 header=$(head -1 <<<"$text")
+
+# Link each "- Service.Method" line of the report to its open RPC coverage
+# issue (rpc-issues.sh), counting only issues the bot opened (BOT_LOGIN,
+# default "ai-openshell-sdk-go[bot]"). The links are a convenience: when the
+# issues cannot be listed, the report goes out without them.
+issues_file=$(mktemp)
+trap 'rm -f "$issues_file"' EXIT
+if gh api --paginate "$(rpc_bot_issues_url "$sdk_repo" "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" open)" \
+  --jq '.[] | select(.pull_request == null) | {number, body, author: .user.login}' |
+  rpc_bot_issues "${BOT_LOGIN:-ai-openshell-sdk-go[bot]}" >"$issues_file" &&
+  linked=$(link_uncovered_rpcs "$issues_file" "$text"); then
+  text=$linked
+else
+  echo "WARNING: cannot list the rpc-coverage issues of $sdk_repo; uncovered RPCs stay unlinked" >&2
+fi
+
 case $header in
 *"Result: pass"*) result=pass ;;
 *"Result: fail"*) result=fail ;;

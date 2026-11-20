@@ -1,0 +1,14 @@
+# Core RPCs the Go SDK deliberately does not wrap.
+#
+# rpc-issues.sh opens no coverage issue for an RPC listed here, and closes an
+# open one with a comment that quotes the reason.
+#
+# Format: one entry per line, "Service.Method  reason (required)".
+#   - A line whose first non-blank character is "#" is a comment; blank lines
+#     are ignored.
+#   - The first whitespace-separated field is Service.Method, the rest of the
+#     line is the reason. An entry without a reason, or with a malformed key,
+#     fails the run.
+#
+# Example:
+#   OpenShell.BeginRootfsTarStaging  Requires a client that shares the gateway filesystem.

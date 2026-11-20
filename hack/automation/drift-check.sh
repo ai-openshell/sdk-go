@@ -11,12 +11,15 @@
 #   2. regenerate and build: bindings from core main in a temporary
 #      worktree, then go build ./... && go vet ./...
 #   3. uncovered RPCs: methods in the regenerated proto/openshellv1 gRPC
-#      stubs that no SDK code under openshell/v1 calls (fakes and tests
-#      excluded); informational, it does not fail the check
+#      stubs that the SDK does not cover, decided per service by
+#      rpc-coverage.sh (fakes and tests excluded); informational, it does
+#      not fail the check
 # Writes a markdown report with the header
 # "Pin: <tag> | Core main: <sha> | Result: pass|fail" and one section per
 # check. Exits 0 when checks 1 and 2 pass, 1 otherwise.
 set -euo pipefail
+# shellcheck source=hack/automation/rpc-coverage.sh
+. "$(dirname "${BASH_SOURCE[0]}")/rpc-coverage.sh"
 
 core_url=${CORE_URL:-https://github.com/NVIDIA/OpenShell.git}
 out=
@@ -80,19 +83,20 @@ $(fence "$(tail -n 60 <<<"$build")")"
 fi
 
 # 3. RPCs the SDK does not call yet. Full method names look like
-# "/openshell.v1.OpenShell/CreateSandbox".
+# "/openshell.v1.OpenShell/CreateSandbox"; coverage is decided per service by
+# rpc-coverage.sh, the rule rpc-issues.sh uses too.
 uncovered=""
 if ls "$work/wt"/proto/openshellv1/*_grpc.pb.go >/dev/null 2>&1; then
-  methods=$(grep -ho '"/[a-zA-Z0-9_.]*\.[A-Za-z0-9_]*/[A-Za-z0-9_]*"' "$work/wt"/proto/openshellv1/*_grpc.pb.go |
-    tr -d '"' | sort -u)
-  for m in $methods; do
-    service=${m#/}; service=${service%%/*}; service=${service##*.}
-    method=${m##*/}
-    if ! grep -rqE "\.${method}\(" openshell/v1 --include='*.go' \
-      --exclude='*_test.go' --exclude-dir=fake; then
-      uncovered+="- ${service}.${method}"$'\n'
-    fi
-  done
+  grep -ho '"/[a-zA-Z0-9_.]*\.[A-Za-z0-9_]*/[A-Za-z0-9_]*"' "$work/wt"/proto/openshellv1/*_grpc.pb.go |
+    tr -d '"' | sed -E 's#^/([A-Za-z0-9_]+\.)*([A-Za-z0-9_]+)/([A-Za-z0-9_]+)$#\2.\3#' |
+    sort -u >"$work/keys.txt"
+  covered=$(rpc_covered_list . "$work/keys.txt") || {
+    echo "ERROR: cannot determine the RPCs the SDK covers" >&2
+    exit 1
+  }
+  while read -r key; do
+    grep -qxF "$key" <<<"$covered" || uncovered+="- ${key}"$'\n'
+  done <"$work/keys.txt"
 fi
 if [ -z "$uncovered" ]; then
   uncovered_section="Every RPC in the regenerated stubs is called by the SDK."

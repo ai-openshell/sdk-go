@@ -1,0 +1,128 @@
+{
+  "built": [
+    "OpenShell.GetSandbox"
+  ],
+  "bump_branch_exists": true,
+  "core_repo": "NVIDIA/OpenShell",
+  "covered": [
+    "OpenShell.GetSandbox"
+  ],
+  "exceptions": [],
+  "generated_files": [
+    "openshell.proto",
+    "datamodel.proto",
+    "sandbox.proto",
+    "options.proto"
+  ],
+  "issues": [],
+  "max_new": 10,
+  "repo": "ai-openshell/sdk-go",
+  "rpcs": [
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "GetSandbox does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxRequest",
+          "source": "message GetSandboxRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.GetSandboxResponse",
+          "source": "message GetSandboxResponse {}"
+        }
+      ],
+      "method": "GetSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.GetSandboxRequest",
+      "response": "openshell.v1.GetSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc GetSandbox(GetSandboxRequest) returns (GetSandboxResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "CreateSandbox does something useful.",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.CreateSandboxRequest",
+          "source": "message CreateSandboxRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.CreateSandboxResponse",
+          "source": "message CreateSandboxResponse {}"
+        }
+      ],
+      "method": "CreateSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/compute_driver.proto#L10-L12",
+      "request": "openshell.v1.CreateSandboxRequest",
+      "response": "openshell.v1.CreateSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "rpc CreateSandbox(CreateSandboxRequest) returns (CreateSandboxResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    },
+    {
+      "auth_mode": null,
+      "client_streaming": false,
+      "comment": "DeleteSandbox does something useful.",
+      "file": "compute_driver.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.DeleteSandboxRequest",
+          "source": "message DeleteSandboxRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.DeleteSandboxResponse",
+          "source": "message DeleteSandboxResponse {}"
+        }
+      ],
+      "method": "DeleteSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/compute_driver.proto#L10-L12",
+      "request": "openshell.v1.DeleteSandboxRequest",
+      "response": "openshell.v1.DeleteSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": null,
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "ComputeDriver",
+      "signature": "rpc DeleteSandbox(DeleteSandboxRequest) returns (DeleteSandboxResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": null
+    }
+  ],
+  "services_bound": [
+    "OpenShell"
+  ],
+  "tag": "v0.2.0"
+}

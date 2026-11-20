@@ -1,0 +1,4 @@
+{"number":1,"state":"OPEN","title":"a","body":"<!-- rpc-coverage: kind=method service=OpenShell method=ForwardTcp first-seen=v0.1.9 methods=ForwardTcp -->","labels":["rpc-coverage"],"author":"ai-openshell-sdk-go[bot]"}
+{"number":2,"state":"OPEN","title":"b","body":"<!-- rpc-coverage: kind=service service=OpenShell first-seen=v0.1.9 methods=ForwardTcp -->","labels":["rpc-coverage"],"author":"someone"}
+{"number":3,"state":"CLOSED","title":"c","body":"","labels":["rpc-coverage"],"author":"ai-openshell-sdk-go[bot]"}
+{"number":4,"state":"OPEN","title":"d","body":"x","labels":["rpc-coverage"],"author":"ai-openshell-sdk-go"}

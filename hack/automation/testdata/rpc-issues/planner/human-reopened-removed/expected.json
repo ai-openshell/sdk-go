@@ -1,0 +1,8 @@
+[
+  {
+    "action": "close",
+    "comment": "Nothing left to track at core `v0.2.0`:\n\n- `OpenShell.Gone`: removed, core `v0.2.0` no longer has it.\n\nIf this is wrong, reopen the issue; the automation then keeps it open while the SDK covers its methods.",
+    "group": "method:OpenShell.Gone",
+    "number": 20
+  }
+]
