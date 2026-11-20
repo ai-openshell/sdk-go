@@ -3,3 +3,5 @@ OpenShell.Snapshot
 ServiceDiscovery.Watch
 OpenShell.Hidden
 NewsFeed.Get
+OpenShell.Exec
+OpenShell.Forward

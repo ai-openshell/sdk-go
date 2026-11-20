@@ -7,8 +7,10 @@
 # Only non-test Go files under <sdk-root>/openshell/v1 outside fake/ count.
 # A package directory binds service S when one of its files calls
 # New<S>Client( (the generated constructor). Method M of S is covered when a
-# file in a package that binds S contains ".M(". Methods with the same name
-# in different services are told apart by the binding.
+# file in a package that binds S calls it (".M(") or passes it as a method
+# value (".M)" or ".M,"), as the bidi stream wrappers do with
+# openBidiRouted(ctx, owner, start, e.client.ExecSandboxInteractive). Methods
+# with the same name in different services are told apart by the binding.
 # shellcheck shell=bash
 
 # _rpc_go_files <sdk-root>: NUL-separated SDK Go files that count.
@@ -49,10 +51,10 @@ rpc_covered_list() {
   [ -f "$keys" ] || { echo "ERROR: $keys: no such file" >&2; return 1; }
   b=$(_rpc_bindings "$root") || return 1
   calls=$(_rpc_go_files "$root" |
-    xargs -0 grep -HoE '\.[A-Za-z0-9_]+\(' /dev/null |
+    xargs -0 grep -HoE '\.[A-Za-z0-9_]+[(),]' /dev/null |
     awk '{
       i = index($0, ":"); path = substr($0, 1, i - 1); m = substr($0, i + 2)
-      sub(/\($/, "", m)
+      sub(/[(),]$/, "", m)
       dir = path; sub(/\/[^\/]*$/, "", dir)
       print dir, m
     }' | sort -u) || true
