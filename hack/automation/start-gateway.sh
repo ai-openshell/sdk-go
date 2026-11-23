@@ -22,7 +22,6 @@
 set -euo pipefail
 
 core_repo=${CORE_REPO:-ai-openshell/openshell}
-registry=ghcr.io/nvidia/openshell
 name=e2e
 port=8080
 health_port=8081
@@ -45,20 +44,15 @@ mkdir -p "$state"
 echo "$tag" >"$state/core-version"
 
 # Core pushes images after tagging; a proposal can be faster than that.
-manifest_exists() {
-  local token
-  token=$(curl -fsS "https://ghcr.io/token?scope=repository:nvidia/openshell/gateway:pull" | jq -r .token) || return 1
-  curl -fsS -o /dev/null -H "Authorization: Bearer $token" \
-    -H 'Accept: application/vnd.oci.image.index.v1+json,application/vnd.docker.distribution.manifest.list.v2+json,application/vnd.oci.image.manifest.v1+json' \
-    "https://ghcr.io/v2/nvidia/openshell/gateway/manifests/$semver"
-}
+# shellcheck source=hack/automation/core-registry.sh
+. "$(dirname "${BASH_SOURCE[0]}")/core-registry.sh"
 for i in $(seq 1 15); do
-  manifest_exists && break
+  registry=$(core_registry "$semver") && break
   if [ "$i" -eq 15 ]; then
     echo "ERROR: gateway image for $semver not published yet, re-run later" >&2
     exit 1
   fi
-  echo "Waiting for $registry/gateway:$semver ($i/15) ..."
+  echo "Waiting for the gateway image $semver ($i/15) ..."
   sleep 60
 done
 
@@ -66,6 +60,16 @@ done
 base="https://raw.githubusercontent.com/$core_repo/$tag/deploy/docker"
 curl -fsSL "$base/docker-compose.yml" -o "$state/docker-compose.yml"
 curl -fsSL "$base/gateway.toml" -o "$state/gateway.toml"
+# Use the registry that holds this version: tags cut shortly after the move
+# still name GHCR in their deployment files while their images are on Quay.
+for f in docker-compose.yml gateway.toml; do
+  sed -E -i.bak "s#(ghcr\.io/nvidia/openshell|quay\.io/ai-openshell)/#$registry/#g" "$state/$f" &&
+    rm -f "$state/$f.bak"
+done
+grep -q "$registry/gateway:" "$state/docker-compose.yml" || {
+  echo "ERROR: core's docker-compose.yml at $tag does not use $registry/gateway" >&2
+  exit 1
+}
 sed -i.bak \
   -e "s#\"$registry/supervisor:latest\"#\"$registry/supervisor:$semver\"#" \
   -e "s#\"$registry/sandbox:latest\"#\"$registry/sandbox:$semver\"#" \
