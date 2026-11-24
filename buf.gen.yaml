@@ -10,7 +10,7 @@
 version: v2
 inputs:
   - git_repo: https://github.com/ai-openshell/openshell.git
-    tag: v0.1.9
+    tag: v0.1.10
     depth: 1
     subdir: proto
     paths:
