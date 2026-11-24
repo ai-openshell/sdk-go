@@ -118,6 +118,25 @@ func SandboxPolicyFromProto(p *sbv1.SandboxPolicy) *types.SandboxPolicy {
 		Landlock:   landlockPolicyFromProto(p.GetLandlock()),
 		Process:    processPolicyFromProto(p.GetProcess()),
 	}
+	if cedar := p.GetCedarPolicy(); cedar != nil {
+		result.CedarPolicy = &types.CedarPolicy{Source: cedar.GetSource()}
+	}
+	if rules := p.GetProviderCredentialRules(); rules != nil {
+		result.ProviderCredentialRules = make(map[string]types.NetworkPolicyRule, len(rules))
+		for name, rule := range rules {
+			if converted := NetworkPolicyRuleFromProto(rule); converted != nil {
+				result.ProviderCredentialRules[name] = *converted
+			}
+		}
+	}
+	if endpoints := p.GetEndpointSettings(); endpoints != nil {
+		result.EndpointSettings = make([]types.PolicyNetworkEndpoint, 0, len(endpoints))
+		for _, endpoint := range endpoints {
+			if endpoint != nil {
+				result.EndpointSettings = append(result.EndpointSettings, policyNetworkEndpointFromProto(endpoint))
+			}
+		}
+	}
 	if np := p.GetNetworkPolicies(); np != nil {
 		result.NetworkPolicies = make(map[string]types.NetworkPolicyRule, len(np))
 		for k, v := range np {
@@ -148,6 +167,21 @@ func SandboxPolicyToProto(p *types.SandboxPolicy) *sbv1.SandboxPolicy {
 		Filesystem: filesystemPolicyToProto(p.Filesystem),
 		Landlock:   landlockPolicyToProto(p.Landlock),
 		Process:    processPolicyToProto(p.Process),
+	}
+	if p.CedarPolicy != nil {
+		result.CedarPolicy = &sbv1.CedarPolicy{Source: p.CedarPolicy.Source}
+	}
+	if p.ProviderCredentialRules != nil {
+		result.ProviderCredentialRules = make(map[string]*sbv1.NetworkPolicyRule, len(p.ProviderCredentialRules))
+		for name, rule := range p.ProviderCredentialRules {
+			result.ProviderCredentialRules[name] = NetworkPolicyRuleToProto(&rule)
+		}
+	}
+	if p.EndpointSettings != nil {
+		result.EndpointSettings = make([]*sbv1.NetworkEndpoint, len(p.EndpointSettings))
+		for i := range p.EndpointSettings {
+			result.EndpointSettings[i] = policyNetworkEndpointToProto(&p.EndpointSettings[i])
+		}
 	}
 	if p.NetworkPolicies != nil {
 		result.NetworkPolicies = make(map[string]*sbv1.NetworkPolicyRule, len(p.NetworkPolicies))

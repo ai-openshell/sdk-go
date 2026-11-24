@@ -5,6 +5,20 @@ Accessor: `client.Policy()`
 Manage network policies for sandboxes through a draft-based workflow. Policies
 go through a draft, review, and approval cycle before being applied.
 
+## Cedar policies
+
+`types.SandboxPolicy.CedarPolicy` carries Cedar source in its `Source` field.
+Cedar policies control access through that source and cannot also specify
+`NetworkPolicies` or filesystem paths. A sandbox cannot switch between Cedar
+and YAML policies after creation, and global policies must use YAML.
+
+`EndpointSettings` configures endpoints inspected by Cedar without granting
+access. It uses `[]types.PolicyNetworkEndpoint` and supports host, port/ports,
+and path selectors with TLS, encoded-slash, body-size, MCP, and persisted-query
+settings. `ProviderCredentialRules` contains gateway-managed credential
+injection rules for attached providers; these never grant access and must not
+be included in user-submitted policies.
+
 ## GetDraft
 
 Retrieve the current draft policy for a sandbox.
