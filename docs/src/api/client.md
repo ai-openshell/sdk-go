@@ -15,6 +15,7 @@ for each resource domain and manages the underlying gRPC connection. The
 | `SandboxTemplates()` | `SandboxTemplateInterface` | Reusable sandbox template management |
 | `Providers()` | `ProviderInterface` | Provider CRUD and idempotent ensure |
 | `Services()` | `ServiceInterface` | Service exposure and management |
+| `ServiceRoutes()` | `ServiceDiscoveryInterface` | Installed route snapshots and watches (concrete client) |
 | `Exec()` | `ExecInterface` | Command execution (run, stream, interactive) |
 | `Files()` | `FileInterface` | File upload and download |
 | `Health()` | `HealthInterface` | Gateway health checking |
