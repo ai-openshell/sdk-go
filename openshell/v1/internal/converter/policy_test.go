@@ -185,6 +185,58 @@ func TestSandboxPolicyToProtoNil(t *testing.T) {
 	assert.Nil(t, SandboxPolicyToProto(nil))
 }
 
+func TestSandboxPolicyCedarRoundTripAndDeepCopy(t *testing.T) {
+	original := &sbv1.SandboxPolicy{
+		CedarPolicy: &sbv1.CedarPolicy{Source: "permit(principal, action, resource);"},
+		ProviderCredentialRules: map[string]*sbv1.NetworkPolicyRule{
+			"provider": {Name: "provider", Endpoints: []*sbv1.NetworkEndpoint{
+				{Host: "api.example.com", Ports: []uint32{443}, CredentialBinding: &sbv1.NetworkCredentialBinding{Provider: "provider"}},
+			}},
+		},
+		EndpointSettings: []*sbv1.NetworkEndpoint{{Host: "api.example.com", Ports: []uint32{443}}},
+	}
+	sdk := SandboxPolicyFromProto(original)
+	roundTrip := SandboxPolicyToProto(sdk)
+	assert.Equal(t, original.CedarPolicy.Source, roundTrip.CedarPolicy.Source)
+	assert.Equal(t, original.ProviderCredentialRules["provider"].Endpoints[0].GetCredentialBinding().GetProvider(),
+		roundTrip.ProviderCredentialRules["provider"].Endpoints[0].GetCredentialBinding().GetProvider())
+	assert.Equal(t, []uint32{443}, roundTrip.EndpointSettings[0].Ports)
+	assert.Equal(t, sdk, SandboxPolicyFromProto(roundTrip))
+
+	original.CedarPolicy.Source = "changed"
+	original.ProviderCredentialRules["provider"].Endpoints[0].Ports[0] = 80
+	original.ProviderCredentialRules["provider"].Endpoints[0].CredentialBinding.Provider = "changed"
+	original.EndpointSettings[0].Ports[0] = 80
+	assert.Equal(t, "permit(principal, action, resource);", sdk.CedarPolicy.Source)
+	assert.Equal(t, uint32(443), sdk.ProviderCredentialRules["provider"].Endpoints[0].Ports[0])
+	assert.Equal(t, "provider", sdk.ProviderCredentialRules["provider"].Endpoints[0].CredentialBinding.Provider)
+	assert.Equal(t, uint32(443), sdk.EndpointSettings[0].Ports[0])
+
+	sdk.CedarPolicy.Source = "changed again"
+	sdk.ProviderCredentialRules["provider"].Endpoints[0].Ports[0] = 8080
+	sdk.ProviderCredentialRules["provider"].Endpoints[0].CredentialBinding.Provider = "changed again"
+	sdk.EndpointSettings[0].Ports[0] = 8080
+	assert.Equal(t, "permit(principal, action, resource);", roundTrip.CedarPolicy.Source)
+	assert.Equal(t, uint32(443), roundTrip.ProviderCredentialRules["provider"].Endpoints[0].Ports[0])
+	assert.Equal(t, "provider", roundTrip.ProviderCredentialRules["provider"].Endpoints[0].CredentialBinding.Provider)
+	assert.Equal(t, uint32(443), roundTrip.EndpointSettings[0].Ports[0])
+}
+
+func TestSandboxPolicyCedarOptionalFields(t *testing.T) {
+	for _, original := range []*v1.SandboxPolicy{
+		{},
+		{CedarPolicy: &v1.CedarPolicy{}, ProviderCredentialRules: map[string]v1.NetworkPolicyRule{}, EndpointSettings: []v1.PolicyNetworkEndpoint{}},
+	} {
+		assert.Equal(t, original, SandboxPolicyFromProto(SandboxPolicyToProto(original)))
+	}
+	converted := SandboxPolicyFromProto(&sbv1.SandboxPolicy{
+		ProviderCredentialRules: map[string]*sbv1.NetworkPolicyRule{"nil": nil},
+		EndpointSettings:        []*sbv1.NetworkEndpoint{nil},
+	})
+	assert.Empty(t, converted.ProviderCredentialRules)
+	assert.Empty(t, converted.EndpointSettings)
+}
+
 func TestSandboxPolicyRoundTrip(t *testing.T) {
 	original := &v1.SandboxPolicy{
 		Version: 5,
