@@ -65,9 +65,16 @@ const (
 	OpenShell_GetProviderRefreshStatus_FullMethodName      = "/openshell.v1.OpenShell/GetProviderRefreshStatus"
 	OpenShell_ConfigureProviderRefresh_FullMethodName      = "/openshell.v1.OpenShell/ConfigureProviderRefresh"
 	OpenShell_RotateProviderCredential_FullMethodName      = "/openshell.v1.OpenShell/RotateProviderCredential"
+	OpenShell_InlineProviderRefreshSecrets_FullMethodName  = "/openshell.v1.OpenShell/InlineProviderRefreshSecrets"
 	OpenShell_DeleteProviderRefresh_FullMethodName         = "/openshell.v1.OpenShell/DeleteProviderRefresh"
 	OpenShell_DeleteProvider_FullMethodName                = "/openshell.v1.OpenShell/DeleteProvider"
 	OpenShell_DeleteProviderProfile_FullMethodName         = "/openshell.v1.OpenShell/DeleteProviderProfile"
+	OpenShell_CreateSecret_FullMethodName                  = "/openshell.v1.OpenShell/CreateSecret"
+	OpenShell_GetSecret_FullMethodName                     = "/openshell.v1.OpenShell/GetSecret"
+	OpenShell_ListSecrets_FullMethodName                   = "/openshell.v1.OpenShell/ListSecrets"
+	OpenShell_UpdateSecret_FullMethodName                  = "/openshell.v1.OpenShell/UpdateSecret"
+	OpenShell_DeleteSecret_FullMethodName                  = "/openshell.v1.OpenShell/DeleteSecret"
+	OpenShell_RevealSecret_FullMethodName                  = "/openshell.v1.OpenShell/RevealSecret"
 	OpenShell_GetSandboxConfig_FullMethodName              = "/openshell.v1.OpenShell/GetSandboxConfig"
 	OpenShell_GetGatewayConfig_FullMethodName              = "/openshell.v1.OpenShell/GetGatewayConfig"
 	OpenShell_UpdateConfig_FullMethodName                  = "/openshell.v1.OpenShell/UpdateConfig"
@@ -79,6 +86,7 @@ const (
 	OpenShell_ReportSandboxConfiguration_FullMethodName    = "/openshell.v1.OpenShell/ReportSandboxConfiguration"
 	OpenShell_GetSandboxProviderEnvironment_FullMethodName = "/openshell.v1.OpenShell/GetSandboxProviderEnvironment"
 	OpenShell_ExchangeProviderSubjectToken_FullMethodName  = "/openshell.v1.OpenShell/ExchangeProviderSubjectToken"
+	OpenShell_GetSandboxProviderAccessToken_FullMethodName = "/openshell.v1.OpenShell/GetSandboxProviderAccessToken"
 	OpenShell_GetSandboxLogs_FullMethodName                = "/openshell.v1.OpenShell/GetSandboxLogs"
 	OpenShell_PushSandboxLogs_FullMethodName               = "/openshell.v1.OpenShell/PushSandboxLogs"
 	OpenShell_ConnectSupervisor_FullMethodName             = "/openshell.v1.OpenShell/ConnectSupervisor"
@@ -220,12 +228,32 @@ type OpenShellClient interface {
 	ConfigureProviderRefresh(ctx context.Context, in *ConfigureProviderRefreshRequest, opts ...grpc.CallOption) (*ConfigureProviderRefreshResponse, error)
 	// Record a gateway-owned refresh request for one provider credential.
 	RotateProviderCredential(ctx context.Context, in *RotateProviderCredentialRequest, opts ...grpc.CallOption) (*RotateProviderCredentialResponse, error)
+	// Copy each workspace secret referenced by one credential's refresh
+	// configuration into provider-owned refresh material and remove the
+	// references. Other material, including a rotated refresh token, is kept.
+	InlineProviderRefreshSecrets(ctx context.Context, in *InlineProviderRefreshSecretsRequest, opts ...grpc.CallOption) (*InlineProviderRefreshSecretsResponse, error)
 	// Delete gateway-owned refresh configuration for one provider credential.
 	DeleteProviderRefresh(ctx context.Context, in *DeleteProviderRefreshRequest, opts ...grpc.CallOption) (*DeleteProviderRefreshResponse, error)
 	// Delete a provider by name.
 	DeleteProvider(ctx context.Context, in *DeleteProviderRequest, opts ...grpc.CallOption) (*DeleteProviderResponse, error)
 	// Delete a custom provider type profile by id.
 	DeleteProviderProfile(ctx context.Context, in *DeleteProviderProfileRequest, opts ...grpc.CallOption) (*DeleteProviderProfileResponse, error)
+	// Create a workspace secret. Secrets are credential minting material only:
+	// OpenShell never injects them into sandboxes, and Get and List never
+	// return their values.
+	CreateSecret(ctx context.Context, in *CreateSecretRequest, opts ...grpc.CallOption) (*SecretResponse, error)
+	// Fetch workspace secret metadata by name. The value is never returned.
+	GetSecret(ctx context.Context, in *GetSecretRequest, opts ...grpc.CallOption) (*SecretResponse, error)
+	// List workspace secret metadata. Values are never returned.
+	ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error)
+	// Replace a workspace secret's value, description, or labels.
+	UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*SecretResponse, error)
+	// Delete a workspace secret by name.
+	DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error)
+	// Return a workspace secret's plaintext value to a control-plane caller.
+	// Disabled unless the gateway sets enable_secret_reveal. Only directly
+	// authenticated mTLS operators may call this method. Every call is audited.
+	RevealSecret(ctx context.Context, in *RevealSecretRequest, opts ...grpc.CallOption) (*RevealSecretResponse, error)
 	// Get sandbox settings by id (called by users, and by supervisors at startup
 	// and in their poll loop). A supervisor whose session pushes configuration
 	// receives later updates over ConnectSupervisor and stops polling.
@@ -260,6 +288,9 @@ type OpenShellClient interface {
 	// Exchange a stored provider subject token for an intermediate token scoped
 	// to the calling supervisor's SPIFFE identity.
 	ExchangeProviderSubjectToken(ctx context.Context, in *ExchangeProviderSubjectTokenRequest, opts ...grpc.CallOption) (*ExchangeProviderSubjectTokenResponse, error)
+	// Obtain the final provider token for the authenticated sandbox session.
+	// SPIFFE assertions and intermediate credentials remain in the gateway.
+	GetSandboxProviderAccessToken(ctx context.Context, in *GetSandboxProviderAccessTokenRequest, opts ...grpc.CallOption) (*GetSandboxProviderAccessTokenResponse, error)
 	// Fetch recent sandbox logs (one-shot).
 	GetSandboxLogs(ctx context.Context, in *GetSandboxLogsRequest, opts ...grpc.CallOption) (*GetSandboxLogsResponse, error)
 	// Push sandbox supervisor logs to the server (client-streaming).
@@ -802,6 +833,16 @@ func (c *openShellClient) RotateProviderCredential(ctx context.Context, in *Rota
 	return out, nil
 }
 
+func (c *openShellClient) InlineProviderRefreshSecrets(ctx context.Context, in *InlineProviderRefreshSecretsRequest, opts ...grpc.CallOption) (*InlineProviderRefreshSecretsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InlineProviderRefreshSecretsResponse)
+	err := c.cc.Invoke(ctx, OpenShell_InlineProviderRefreshSecrets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *openShellClient) DeleteProviderRefresh(ctx context.Context, in *DeleteProviderRefreshRequest, opts ...grpc.CallOption) (*DeleteProviderRefreshResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteProviderRefreshResponse)
@@ -826,6 +867,66 @@ func (c *openShellClient) DeleteProviderProfile(ctx context.Context, in *DeleteP
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(DeleteProviderProfileResponse)
 	err := c.cc.Invoke(ctx, OpenShell_DeleteProviderProfile_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) CreateSecret(ctx context.Context, in *CreateSecretRequest, opts ...grpc.CallOption) (*SecretResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretResponse)
+	err := c.cc.Invoke(ctx, OpenShell_CreateSecret_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) GetSecret(ctx context.Context, in *GetSecretRequest, opts ...grpc.CallOption) (*SecretResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretResponse)
+	err := c.cc.Invoke(ctx, OpenShell_GetSecret_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) ListSecrets(ctx context.Context, in *ListSecretsRequest, opts ...grpc.CallOption) (*ListSecretsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListSecretsResponse)
+	err := c.cc.Invoke(ctx, OpenShell_ListSecrets_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) UpdateSecret(ctx context.Context, in *UpdateSecretRequest, opts ...grpc.CallOption) (*SecretResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SecretResponse)
+	err := c.cc.Invoke(ctx, OpenShell_UpdateSecret_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) DeleteSecret(ctx context.Context, in *DeleteSecretRequest, opts ...grpc.CallOption) (*DeleteSecretResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteSecretResponse)
+	err := c.cc.Invoke(ctx, OpenShell_DeleteSecret_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) RevealSecret(ctx context.Context, in *RevealSecretRequest, opts ...grpc.CallOption) (*RevealSecretResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevealSecretResponse)
+	err := c.cc.Invoke(ctx, OpenShell_RevealSecret_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -936,6 +1037,16 @@ func (c *openShellClient) ExchangeProviderSubjectToken(ctx context.Context, in *
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ExchangeProviderSubjectTokenResponse)
 	err := c.cc.Invoke(ctx, OpenShell_ExchangeProviderSubjectToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *openShellClient) GetSandboxProviderAccessToken(ctx context.Context, in *GetSandboxProviderAccessTokenRequest, opts ...grpc.CallOption) (*GetSandboxProviderAccessTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetSandboxProviderAccessTokenResponse)
+	err := c.cc.Invoke(ctx, OpenShell_GetSandboxProviderAccessToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1372,12 +1483,32 @@ type OpenShellServer interface {
 	ConfigureProviderRefresh(context.Context, *ConfigureProviderRefreshRequest) (*ConfigureProviderRefreshResponse, error)
 	// Record a gateway-owned refresh request for one provider credential.
 	RotateProviderCredential(context.Context, *RotateProviderCredentialRequest) (*RotateProviderCredentialResponse, error)
+	// Copy each workspace secret referenced by one credential's refresh
+	// configuration into provider-owned refresh material and remove the
+	// references. Other material, including a rotated refresh token, is kept.
+	InlineProviderRefreshSecrets(context.Context, *InlineProviderRefreshSecretsRequest) (*InlineProviderRefreshSecretsResponse, error)
 	// Delete gateway-owned refresh configuration for one provider credential.
 	DeleteProviderRefresh(context.Context, *DeleteProviderRefreshRequest) (*DeleteProviderRefreshResponse, error)
 	// Delete a provider by name.
 	DeleteProvider(context.Context, *DeleteProviderRequest) (*DeleteProviderResponse, error)
 	// Delete a custom provider type profile by id.
 	DeleteProviderProfile(context.Context, *DeleteProviderProfileRequest) (*DeleteProviderProfileResponse, error)
+	// Create a workspace secret. Secrets are credential minting material only:
+	// OpenShell never injects them into sandboxes, and Get and List never
+	// return their values.
+	CreateSecret(context.Context, *CreateSecretRequest) (*SecretResponse, error)
+	// Fetch workspace secret metadata by name. The value is never returned.
+	GetSecret(context.Context, *GetSecretRequest) (*SecretResponse, error)
+	// List workspace secret metadata. Values are never returned.
+	ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error)
+	// Replace a workspace secret's value, description, or labels.
+	UpdateSecret(context.Context, *UpdateSecretRequest) (*SecretResponse, error)
+	// Delete a workspace secret by name.
+	DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error)
+	// Return a workspace secret's plaintext value to a control-plane caller.
+	// Disabled unless the gateway sets enable_secret_reveal. Only directly
+	// authenticated mTLS operators may call this method. Every call is audited.
+	RevealSecret(context.Context, *RevealSecretRequest) (*RevealSecretResponse, error)
 	// Get sandbox settings by id (called by users, and by supervisors at startup
 	// and in their poll loop). A supervisor whose session pushes configuration
 	// receives later updates over ConnectSupervisor and stops polling.
@@ -1412,6 +1543,9 @@ type OpenShellServer interface {
 	// Exchange a stored provider subject token for an intermediate token scoped
 	// to the calling supervisor's SPIFFE identity.
 	ExchangeProviderSubjectToken(context.Context, *ExchangeProviderSubjectTokenRequest) (*ExchangeProviderSubjectTokenResponse, error)
+	// Obtain the final provider token for the authenticated sandbox session.
+	// SPIFFE assertions and intermediate credentials remain in the gateway.
+	GetSandboxProviderAccessToken(context.Context, *GetSandboxProviderAccessTokenRequest) (*GetSandboxProviderAccessTokenResponse, error)
 	// Fetch recent sandbox logs (one-shot).
 	GetSandboxLogs(context.Context, *GetSandboxLogsRequest) (*GetSandboxLogsResponse, error)
 	// Push sandbox supervisor logs to the server (client-streaming).
@@ -1645,6 +1779,9 @@ func (UnimplementedOpenShellServer) ConfigureProviderRefresh(context.Context, *C
 func (UnimplementedOpenShellServer) RotateProviderCredential(context.Context, *RotateProviderCredentialRequest) (*RotateProviderCredentialResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method RotateProviderCredential not implemented")
 }
+func (UnimplementedOpenShellServer) InlineProviderRefreshSecrets(context.Context, *InlineProviderRefreshSecretsRequest) (*InlineProviderRefreshSecretsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method InlineProviderRefreshSecrets not implemented")
+}
 func (UnimplementedOpenShellServer) DeleteProviderRefresh(context.Context, *DeleteProviderRefreshRequest) (*DeleteProviderRefreshResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteProviderRefresh not implemented")
 }
@@ -1653,6 +1790,24 @@ func (UnimplementedOpenShellServer) DeleteProvider(context.Context, *DeleteProvi
 }
 func (UnimplementedOpenShellServer) DeleteProviderProfile(context.Context, *DeleteProviderProfileRequest) (*DeleteProviderProfileResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method DeleteProviderProfile not implemented")
+}
+func (UnimplementedOpenShellServer) CreateSecret(context.Context, *CreateSecretRequest) (*SecretResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method CreateSecret not implemented")
+}
+func (UnimplementedOpenShellServer) GetSecret(context.Context, *GetSecretRequest) (*SecretResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSecret not implemented")
+}
+func (UnimplementedOpenShellServer) ListSecrets(context.Context, *ListSecretsRequest) (*ListSecretsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListSecrets not implemented")
+}
+func (UnimplementedOpenShellServer) UpdateSecret(context.Context, *UpdateSecretRequest) (*SecretResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method UpdateSecret not implemented")
+}
+func (UnimplementedOpenShellServer) DeleteSecret(context.Context, *DeleteSecretRequest) (*DeleteSecretResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method DeleteSecret not implemented")
+}
+func (UnimplementedOpenShellServer) RevealSecret(context.Context, *RevealSecretRequest) (*RevealSecretResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method RevealSecret not implemented")
 }
 func (UnimplementedOpenShellServer) GetSandboxConfig(context.Context, *sandboxv1.GetSandboxConfigRequest) (*sandboxv1.GetSandboxConfigResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSandboxConfig not implemented")
@@ -1686,6 +1841,9 @@ func (UnimplementedOpenShellServer) GetSandboxProviderEnvironment(context.Contex
 }
 func (UnimplementedOpenShellServer) ExchangeProviderSubjectToken(context.Context, *ExchangeProviderSubjectTokenRequest) (*ExchangeProviderSubjectTokenResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ExchangeProviderSubjectToken not implemented")
+}
+func (UnimplementedOpenShellServer) GetSandboxProviderAccessToken(context.Context, *GetSandboxProviderAccessTokenRequest) (*GetSandboxProviderAccessTokenResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetSandboxProviderAccessToken not implemented")
 }
 func (UnimplementedOpenShellServer) GetSandboxLogs(context.Context, *GetSandboxLogsRequest) (*GetSandboxLogsResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetSandboxLogs not implemented")
@@ -2525,6 +2683,24 @@ func _OpenShell_RotateProviderCredential_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _OpenShell_InlineProviderRefreshSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InlineProviderRefreshSecretsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).InlineProviderRefreshSecrets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_InlineProviderRefreshSecrets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).InlineProviderRefreshSecrets(ctx, req.(*InlineProviderRefreshSecretsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _OpenShell_DeleteProviderRefresh_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(DeleteProviderRefreshRequest)
 	if err := dec(in); err != nil {
@@ -2575,6 +2751,114 @@ func _OpenShell_DeleteProviderProfile_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OpenShellServer).DeleteProviderProfile(ctx, req.(*DeleteProviderProfileRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_CreateSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).CreateSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_CreateSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).CreateSecret(ctx, req.(*CreateSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_GetSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).GetSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_GetSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).GetSecret(ctx, req.(*GetSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_ListSecrets_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListSecretsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).ListSecrets(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_ListSecrets_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).ListSecrets(ctx, req.(*ListSecretsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_UpdateSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).UpdateSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_UpdateSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).UpdateSecret(ctx, req.(*UpdateSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_DeleteSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).DeleteSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_DeleteSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).DeleteSecret(ctx, req.(*DeleteSecretRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_RevealSecret_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevealSecretRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).RevealSecret(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_RevealSecret_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).RevealSecret(ctx, req.(*RevealSecretRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2773,6 +3057,24 @@ func _OpenShell_ExchangeProviderSubjectToken_Handler(srv interface{}, ctx contex
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(OpenShellServer).ExchangeProviderSubjectToken(ctx, req.(*ExchangeProviderSubjectTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _OpenShell_GetSandboxProviderAccessToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetSandboxProviderAccessTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(OpenShellServer).GetSandboxProviderAccessToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: OpenShell_GetSandboxProviderAccessToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(OpenShellServer).GetSandboxProviderAccessToken(ctx, req.(*GetSandboxProviderAccessTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3430,6 +3732,10 @@ var OpenShell_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _OpenShell_RotateProviderCredential_Handler,
 		},
 		{
+			MethodName: "InlineProviderRefreshSecrets",
+			Handler:    _OpenShell_InlineProviderRefreshSecrets_Handler,
+		},
+		{
 			MethodName: "DeleteProviderRefresh",
 			Handler:    _OpenShell_DeleteProviderRefresh_Handler,
 		},
@@ -3440,6 +3746,30 @@ var OpenShell_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "DeleteProviderProfile",
 			Handler:    _OpenShell_DeleteProviderProfile_Handler,
+		},
+		{
+			MethodName: "CreateSecret",
+			Handler:    _OpenShell_CreateSecret_Handler,
+		},
+		{
+			MethodName: "GetSecret",
+			Handler:    _OpenShell_GetSecret_Handler,
+		},
+		{
+			MethodName: "ListSecrets",
+			Handler:    _OpenShell_ListSecrets_Handler,
+		},
+		{
+			MethodName: "UpdateSecret",
+			Handler:    _OpenShell_UpdateSecret_Handler,
+		},
+		{
+			MethodName: "DeleteSecret",
+			Handler:    _OpenShell_DeleteSecret_Handler,
+		},
+		{
+			MethodName: "RevealSecret",
+			Handler:    _OpenShell_RevealSecret_Handler,
 		},
 		{
 			MethodName: "GetSandboxConfig",
@@ -3484,6 +3814,10 @@ var OpenShell_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ExchangeProviderSubjectToken",
 			Handler:    _OpenShell_ExchangeProviderSubjectToken_Handler,
+		},
+		{
+			MethodName: "GetSandboxProviderAccessToken",
+			Handler:    _OpenShell_GetSandboxProviderAccessToken_Handler,
 		},
 		{
 			MethodName: "GetSandboxLogs",
