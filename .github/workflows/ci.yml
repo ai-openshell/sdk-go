@@ -41,7 +41,7 @@ jobs:
       - name: Install tools
         run: mise install --locked
 
-      # buf fetches proto/ from NVIDIA/OpenShell at the pinned tag (public, no credentials).
+      # buf fetches proto/ from ai-openshell/openshell at the pinned tag (public, no credentials).
       - name: Run CI pipeline
         run: mise run ci
 
