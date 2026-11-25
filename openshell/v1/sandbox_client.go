@@ -395,14 +395,7 @@ func checkTerminalPhase(sb *Sandbox, name string, target SandboxPhase) (*Sandbox
 	}
 }
 
-// Watch streams status changes for one sandbox. The first event is
-// EventAdded, later ones EventModified, and EventDeleted once the sandbox is
-// deleting.
-//
-// The channel closes when the server ends the stream, when StopOnTerminal
-// sees a terminal phase, when ctx is cancelled, or after Stop. Cancelling ctx
-// or calling Stop closes it without an EventError: EventError reports only a
-// stream failure, such as the gateway becoming unavailable.
+// Watch implements SandboxInterface.Watch.
 func (s *sandboxClient) Watch(ctx context.Context, workspace, name string, opts ...WatchOptions) (WatchInterface[*Sandbox], error) {
 	if name == "" {
 		return nil, &StatusError{Code: ErrorInvalidArgument, Message: "sandbox name must not be empty"}
