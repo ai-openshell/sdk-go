@@ -50,6 +50,20 @@ out=$(run "$tmp/two.md" OLD='v1 & \1' NEW='v2')
 want=$'v1 & \\1...v2 v1 & \\1\nplain {line} {{lower}}'
 if [ "$out" = "$want" ]; then ok several-placeholders; else bad several-placeholders "got: $out"; fi
 
+# Backslashes in a value arrive unchanged: values must not pass through
+# anything that processes escape sequences (such as awk -v).
+out=$(run "$tmp/one.md" PROTO_DIFF='a\tb\\c\n')
+if [ "$out" = 'a a\tb\\c\n b' ]; then ok backslashes; else bad backslashes "got: $out"; fi
+
+# A template without placeholders comes out byte for byte, including a last
+# line without a newline, and no arguments are needed.
+printf 'line one\n\nlast line {not a placeholder}' >"$tmp/plain.md"
+if run "$tmp/plain.md" >"$tmp/plain.out" && cmp -s "$tmp/plain.md" "$tmp/plain.out"; then
+  ok same-bytes
+else
+  bad same-bytes "output differs: $(od -c "$tmp/plain.out" | head -3)"
+fi
+
 # A placeholder without a KEY=value argument stops the run.
 printf 'x {{NEW}} {{GH_TOKEN}}\n' >"$tmp/bad.md"
 if GH_TOKEN=ghs_SECRET run "$tmp/bad.md" NEW=v1 >"$tmp/out" 2>"$tmp/err"; then
