@@ -1,5 +1,7 @@
 # Automation scripts
 
+For how these scripts fit together in the release process, see [RELEASING.md](../../RELEASING.md).
+
 Every workflow under `.github/workflows/` wraps one of these scripts through a mise task, so each job can be run locally before it runs in CI.
 Scripts that write to GitHub take `--dry-run` and print what they would do instead.
 Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-openshell-sdk-go[bot]`; secrets `SDK_BOT_CLIENT_ID` and `SDK_BOT_PRIVATE_KEY` in the `sdk-bot` environment, which only `main` can deploy to), never with `GITHUB_TOKEN`, so their pushes and PRs trigger CI.
