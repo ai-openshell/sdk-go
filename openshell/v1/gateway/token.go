@@ -62,10 +62,8 @@ func readEdgeToken(dir string) (string, error) {
 	return token, nil
 }
 
-// refreshWindow is how long before expiry the gateway refreshes a token,
-// as the CLI and the Python SDK do. NewClient also gives it to
-// RefreshableToken as the cache leeway, so the source is asked for a token
-// as soon as it is due.
+// refreshWindow is the gateway's default renewal window before expiry,
+// matching the CLI and Python SDK.
 const refreshWindow = 30 * time.Second
 
 // refreshRetryDelay is how long the source waits after a failed renewal
@@ -90,7 +88,7 @@ var refreshWaitTimeout = 30 * time.Second
 
 // writeUnsaved writes a renewed token that an earlier write could not
 // store. Tests replace it to make the write fail.
-var writeUnsaved = oidcclient.WriteToken
+var writeUnsaved = oidcclient.SavePendingToken
 
 // diskTokenSource implements oauth2.TokenSource by reading oidc_token.json
 // from disk on every Token() call. This allows the source to pick up
@@ -208,7 +206,7 @@ func (d *diskTokenSource) Token() (*oauth2.Token, error) {
 	bundle = d.withUnsaved(bundle)
 
 	tok := bundle.Token()
-	window := d.window()
+	window := time.Duration(d.RefreshWindow())
 	if bundle.RefreshToken == "" || oidcclient.Fresh(tok, window) || d.issuer == "" || d.clientID == "" {
 		return d.unexpired(tok)
 	}
@@ -380,21 +378,8 @@ func (d *diskTokenSource) saveUnsaved(ctx context.Context) (rotated bool, err er
 	if u == nil {
 		return false, nil
 	}
-	unlock, err := oidcclient.LockDir(ctx, d.dir)
-	if err != nil {
-		return u.rotated, fmt.Errorf("waiting for another refresh of %s: %w", oidctoken.FileName, err)
-	}
-	defer unlock()
-	current, err := oidcclient.ReadToken(d.dir)
-	switch {
-	case err != nil:
+	if err := writeUnsaved(ctx, d.dir, u.bundle, u.over); err != nil {
 		return u.rotated, err
-	case current == nil || current.AccessToken != u.over:
-		// Removed or replaced since: the logout or newer token stands.
-	default:
-		if err := writeUnsaved(d.dir, u.bundle); err != nil {
-			return u.rotated, err
-		}
 	}
 	d.mu.Lock()
 	if d.unsaved == u {
@@ -437,18 +422,15 @@ func (d *diskTokenSource) unexpired(tok *oauth2.Token) (*oauth2.Token, error) {
 	return tok, nil
 }
 
-// window returns how close to expiry a token may get before Token
-// refreshes it: refreshWindow, or half the lifetime of the last token this
-// source got from a token request if that is shorter. Without the cap, a
-// provider that issues tokens valid for less than the window would get a
-// refresh request on every RPC.
-func (d *diskTokenSource) window() time.Duration {
+// RefreshWindow is shared by the SDK cache and Token. It uses half the
+// last observed token lifetime when that is shorter than refreshWindow.
+func (d *diskTokenSource) RefreshWindow() oidctoken.RefreshWindow {
 	d.mu.Lock()
 	defer d.mu.Unlock()
 	if half := d.lifetime / 2; half > 0 && half < refreshWindow {
-		return half
+		return oidctoken.RefreshWindow(half)
 	}
-	return refreshWindow
+	return oidctoken.RefreshWindow(refreshWindow)
 }
 
 // observe records how long a token from a token request is valid for.

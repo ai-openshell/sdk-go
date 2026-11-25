@@ -17,6 +17,8 @@ import (
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // ClientCredentials performs a non-interactive OAuth2 client credentials
@@ -117,7 +119,7 @@ func exchangeClientCredentials(ctx context.Context, cfg *loginConfig, requirePos
 	}
 
 	// Discover provider endpoints.
-	provider, err := discover(ctx, cfg.issuer)
+	provider, err := oidcclient.Discover(ctx, cfg.issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -144,7 +146,7 @@ func exchangeClientCredentials(ctx context.Context, cfg *loginConfig, requirePos
 	// Use a no-redirect client for token requests that carry client_secret
 	// in the POST body. A 307/308 redirect would replay the body (including
 	// the secret) to the redirect target.
-	noRedirectClient := *oidcHTTPClient
+	noRedirectClient := *oidcclient.HTTPClient
 	noRedirectClient.CheckRedirect = func(*http.Request, []*http.Request) error {
 		return http.ErrUseLastResponse
 	}

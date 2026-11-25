@@ -13,6 +13,7 @@ import (
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/grpc/status"
 
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
 	"github.com/ai-openshell/sdk-go/openshell/v1/types"
 )
@@ -110,7 +111,13 @@ func (r *refreshableAuth) isTokenValid() bool {
 	if r.tok.Expiry.IsZero() {
 		return true
 	}
-	return time.Now().Before(r.tok.Expiry.Add(-r.leeway))
+	leeway := r.leeway
+	if source, ok := r.source.(interface {
+		RefreshWindow() oidctoken.RefreshWindow
+	}); ok {
+		leeway = time.Duration(source.RefreshWindow())
+	}
+	return time.Now().Before(r.tok.Expiry.Add(-leeway))
 }
 
 func (r *refreshableAuth) GetRequestMetadata(ctx context.Context, _ ...string) (map[string]string, error) {
@@ -190,8 +197,9 @@ wait:
 // error.
 var errNilToken = errors.New("openshell: token source returned nil token without error")
 
-// record stores the outcome of a refresh: the new token, or the error with
-// the next backoff step. A failure while the cached token has not expired
+// record stores a token or advances backoff on failure. A source that
+// returns a still-valid token with no error resets this backoff and owns
+// any cooldown for retries it makes. A failure with a usable cached token
 // is logged once.
 func (r *refreshableAuth) record(tok *oauth2.Token, err error) {
 	r.mu.Lock()
@@ -233,8 +241,9 @@ func (r *refreshableAuth) RequireTransportSecurity() bool {
 // in-flight refresh via singleflight. Failed refreshes trigger exponential
 // backoff (1s, 2s, 4s, ..., 30s cap) to avoid amplifying token endpoint outages.
 // After a failed refresh, the cached token is used only until it expires;
-// after that, requests fail with the last refresh error. While a refresh
-// runs and the cached token has not expired, a request with a deadline
+// after that, requests fail with the last refresh error. A source that
+// returns neither a token nor an error is treated as a failed refresh.
+// While a refresh runs and the cached token has not expired, a request with a deadline
 // waits for the refresh for at most half the time it has left, then uses
 // the cached token. A request whose context ends while it waits uses the
 // cached token if it has not expired, and otherwise fails with an error

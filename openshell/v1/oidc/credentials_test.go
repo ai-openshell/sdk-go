@@ -81,7 +81,7 @@ func TestClientCredentialsRejectsInvalidExpiryConformance(t *testing.T) {
 	for _, raw := range fixture.Expiry.InvalidExpiresIn {
 		raw := raw
 		t.Run(string(raw), func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 			var server *httptest.Server
 			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == "/.well-known/openid-configuration" {
@@ -109,7 +109,7 @@ func TestClientCredentialsRejectsInvalidExpiryConformance(t *testing.T) {
 }
 
 func TestClientCredentialsMissingExpiryCompatibility(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/.well-known/openid-configuration" {
@@ -148,7 +148,7 @@ func TestClientCredentialsRefusesRedirectsConformance(t *testing.T) {
 		for _, endpoint := range []string{"discovery", "token"} {
 			endpoint := endpoint
 			t.Run(fmt.Sprintf("%s_%d", endpoint, status), func(t *testing.T) {
-				resetDiscoveryCache()
+				oidcclient.ResetDiscoveryCache()
 				var server *httptest.Server
 				var redirected atomic.Bool
 				server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -187,7 +187,7 @@ func TestClientCredentialsRefusesRedirectsConformance(t *testing.T) {
 }
 
 func TestClientCredentialsRejectsMismatchedIssuerConformance(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	fixture := loadClientCredentialsFixture(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{
@@ -209,7 +209,7 @@ func TestClientCredentialsRejectsMismatchedIssuerConformance(t *testing.T) {
 }
 
 func TestClientCredentialsRejectsOversizedResponseConformance(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	fixture := loadClientCredentialsFixture(t)
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		_, _ = w.Write(make([]byte, fixture.Limits.MaxResponseBytes+1))
@@ -227,7 +227,7 @@ func TestClientCredentialsRejectsOversizedResponseConformance(t *testing.T) {
 }
 
 func TestClientCredentialsAuthSingleFlightRenewalAndFields(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	fixture := loadClientCredentialsFixture(t)
 	var server *httptest.Server
 	var calls atomic.Int32
@@ -315,7 +315,7 @@ func TestClientCredentialsAuthLateFlightReusesCachedToken(t *testing.T) {
 func TestClientCredentialsAuthNonPositiveTimeoutUsesDefaultBound(t *testing.T) {
 	for _, timeout := range []time.Duration{0, -1 * time.Second} {
 		t.Run(timeout.String(), func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 			var server *httptest.Server
 			server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 				if r.URL.Path == "/.well-known/openid-configuration" {
@@ -422,7 +422,7 @@ func TestClientCredentialsSendNoScopeParameterWithoutScopes(t *testing.T) {
 	for entryName, run := range entryPoints {
 		for scopeName, scopeOpts := range scopeOptions {
 			t.Run(entryName+"/"+scopeName, func(t *testing.T) {
-				resetDiscoveryCache()
+				oidcclient.ResetDiscoveryCache()
 				var form url.Values
 				var srv *httptest.Server
 				srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -475,7 +475,7 @@ func TestClientCredentials_WithTimeoutBoundsExchange(t *testing.T) {
 // context.DeadlineExceeded, so callers can tell a timeout from a provider
 // failure.
 func TestClientCredentials_TokenRequestTimeoutWrapsContextError(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	release := make(chan struct{})
 	var srv *httptest.Server
 	srv = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -494,7 +494,7 @@ func TestClientCredentials_TokenRequestTimeoutWrapsContextError(t *testing.T) {
 	t.Cleanup(func() { close(release) }) // runs before srv.Close
 
 	// Fetch discovery first, so the timeout hits the token request.
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.NoError(t, err)
 
 	_, err = ClientCredentials(context.Background(),
@@ -524,7 +524,7 @@ func TestClientCredentials_TimeoutDeadlineRules(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 			provider := setupCredentialsMockProvider(t, "client", "secret")
 
 			ctx := context.Background()
@@ -557,7 +557,7 @@ func TestClientCredentials_TimeoutDeadlineRules(t *testing.T) {
 }
 
 func TestClientCredentialsAuthCancellationDoesNotPoisonSharedExchange(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	var server *httptest.Server
 	started := make(chan struct{})
 	release := make(chan struct{})
@@ -613,7 +613,7 @@ func TestClientCredentialsAuthRedactsSecretProviderError(t *testing.T) {
 }
 
 func TestClientCredentialsAuthFailsClosedOnRenewalError(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	var server *httptest.Server
 	var fail atomic.Bool
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -718,7 +718,7 @@ func setupCredentialsMockProvider(t *testing.T, expectedClientID, expectedSecret
 // TestClientCredentials_Success verifies the happy path: valid client
 // ID, secret, and issuer produce a valid access token.
 func TestClientCredentials_Success(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupCredentialsMockProvider(t, "my-client", "my-secret")
 
@@ -738,7 +738,7 @@ func TestClientCredentials_Success(t *testing.T) {
 // TestClientCredentials_MissingIssuer verifies that ClientCredentials
 // returns ErrOIDCConfig when the issuer is not set.
 func TestClientCredentials_MissingIssuer(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := ClientCredentials(context.Background(),
 		WithClientID("my-client"),
@@ -751,7 +751,7 @@ func TestClientCredentials_MissingIssuer(t *testing.T) {
 // TestClientCredentials_MissingClientID verifies that ClientCredentials
 // returns ErrOIDCConfig when the client ID is not set.
 func TestClientCredentials_MissingClientID(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := ClientCredentials(context.Background(),
 		WithIssuer("https://example.com"),
@@ -765,7 +765,7 @@ func TestClientCredentials_MissingClientID(t *testing.T) {
 // ClientCredentials returns ErrClientCredentials when the secret is
 // missing.
 func TestClientCredentials_MissingClientSecret(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := ClientCredentials(context.Background(),
 		WithIssuer("https://example.com"),
@@ -780,7 +780,7 @@ func TestClientCredentials_MissingClientSecret(t *testing.T) {
 // rejects the credentials, and that the secret is not leaked in the
 // error message.
 func TestClientCredentials_InvalidCredentials(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupCredentialsMockProvider(t, "good-client", "good-secret")
 
@@ -804,7 +804,7 @@ func TestClientCredentials_InvalidCredentials(t *testing.T) {
 // ClientCredentials returns ErrDiscovery when the provider is
 // unreachable.
 func TestClientCredentials_DiscoveryFailure(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -821,7 +821,7 @@ func TestClientCredentials_DiscoveryFailure(t *testing.T) {
 // TestClientCredentials_WithGateway verifies that ClientCredentials
 // resolves OIDC config from gateway metadata when WithGateway is set.
 func TestClientCredentials_WithGateway(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupCredentialsMockProvider(t, "gw-client", "gw-secret")
 
@@ -851,7 +851,7 @@ func TestClientCredentials_WithGateway(t *testing.T) {
 // TestClientCredentials_CustomScopes verifies that WithScopes overrides
 // default scopes in the client credentials request.
 func TestClientCredentials_CustomScopes(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	var receivedScope string
 	mux := http.NewServeMux()
@@ -894,7 +894,7 @@ func TestClientCredentials_CustomScopes(t *testing.T) {
 // TestClientCredentials_ContextCancellation verifies that
 // ClientCredentials respects context cancellation.
 func TestClientCredentials_ContextCancellation(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupCredentialsMockProvider(t, "my-client", "my-secret")
 

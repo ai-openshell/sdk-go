@@ -14,24 +14,6 @@ import (
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
-// Discovery, the refresh_token grant and the token file live in
-// internal/oidcclient: this package imports gateway, so gateway could not
-// use them from here.
-
-var oidcHTTPClient = oidcclient.HTTPClient
-
-type providerConfig = oidcclient.ProviderConfig
-
-func discover(ctx context.Context, issuer string) (*providerConfig, error) {
-	return oidcclient.Discover(ctx, issuer)
-}
-
-func resetDiscoveryCache() { oidcclient.ResetDiscoveryCache() }
-
-func readToken(dir string) (*oidctoken.Bundle, error) { return oidcclient.ReadToken(dir) }
-
-func writeToken(dir string, b oidctoken.Bundle) error { return oidcclient.WriteToken(dir, b) }
-
 // refreshStoredToken renews an expired stored token with its refresh token
 // and rewrites the file (see [oidcclient.Refresh]). It returns a nil token
 // and nil error when Login should run the interactive flow instead, and an
@@ -60,7 +42,7 @@ func refreshStoredToken(ctx context.Context, cfg *loginConfig, tokenDir string, 
 		Issuer:   cfg.issuer,
 		ClientID: cfg.clientID,
 		Scopes:   scopes,
-		Window:   oidcclient.RefreshWindow,
+		Window:   oidcclient.LoginRefreshWindow,
 	})
 	if err != nil {
 		return nil, loginRefreshError(ctx, err)

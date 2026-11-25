@@ -23,9 +23,9 @@ import (
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
-// RefreshWindow is how long before expiry Login treats a stored token as
+// LoginRefreshWindow is how long before expiry Login treats a stored token as
 // due for refresh: the expiry margin of oauth2.Token.Valid.
-const RefreshWindow = 10 * time.Second
+const LoginRefreshWindow = 10 * time.Second
 
 // now is the clock used to decide whether a token is fresh. Tests replace
 // it.
@@ -254,18 +254,20 @@ func Refresh(ctx context.Context, req Request) (Result, error) {
 	// close, the gap in which a logout or login can be overwritten. A file
 	// that cannot be read now, for example while the CLI rewrites it in
 	// place, is written over: the new token is the only one known to work.
-	latest, err := ReadToken(req.Dir)
-	if err == nil && (latest == nil || !sameClient(latest, req) || latest.RefreshToken != stored.RefreshToken) {
+	b := oidctoken.FromToken(tok, stored.Issuer, stored.ClientID)
+	b.ClientCredentials = stored.ClientCredentials
+	latest, attempted, err := replaceTokenIfCurrent(req.Dir, b, func(current *oidctoken.Bundle) bool {
+		return sameClient(current, req) && current.RefreshToken == stored.RefreshToken
+	}, true)
+	if !attempted {
 		if latest != nil && sameClient(latest, req) && Fresh(latest.Token(), req.Window) {
 			return Result{Token: latest.Token()}, nil
 		}
 		return Result{}, fmt.Errorf("%w: %s changed during the refresh", ErrNotRefreshable, oidctoken.FileName)
 	}
 
-	b := oidctoken.FromToken(tok, stored.Issuer, stored.ClientID)
-	b.ClientCredentials = stored.ClientCredentials
 	granted := Result{Token: tok, Granted: true}
-	if err := WriteToken(req.Dir, b); err != nil {
+	if err != nil {
 		granted.Unwritten, granted.Replaced = &b, &stored
 		if latest != nil {
 			granted.Replaced = latest

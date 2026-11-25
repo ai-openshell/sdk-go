@@ -153,7 +153,7 @@ func TestRefresh_NotRefreshable(t *testing.T) {
 				require.NoError(t, WriteToken(dir, expired(issuer, "client", "old-refresh")))
 			}
 
-			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: LoginRefreshWindow})
 			require.Error(t, err)
 			assert.Equal(t, Result{}, res)
 			assert.Contains(t, err.Error(), tc.want)
@@ -257,7 +257,7 @@ func TestRefresh_FileChangedDuringGrant(t *testing.T) {
 			issuer, calls := newRefreshServer(t, func() { tc.change(t, dir, issuer) }, rotated)
 			require.NoError(t, WriteToken(dir, expired(issuer, "old-refresh")))
 
-			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: LoginRefreshWindow})
 			assert.Equal(t, int32(1), calls.Load())
 			assert.Equal(t, tc.granted, res.Granted)
 			if tc.wantToken == "" {
@@ -304,32 +304,46 @@ func TestRefresh_WriteFailure(t *testing.T) {
 		require.NoError(t, os.Chmod(dir, 0o500))
 		t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
 
-		res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
+		res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: LoginRefreshWindow})
 		require.ErrorIs(t, err, ErrTokenPersist)
 		assert.Equal(t, Result{}, res)
 		assert.Equal(t, int32(0), calls.Load(), "the refresh token was spent")
 	})
-	t.Run("after the token request", func(t *testing.T) {
-		dir := t.TempDir()
-		issuer, calls := newRefreshServer(t, func() {
-			if err := os.Chmod(dir, 0o500); err != nil {
-				t.Errorf("chmod: %v", err)
-			}
-		}, rotated)
-		require.NoError(t, WriteToken(dir, stored(issuer)))
-		t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
+	for _, accessToken := range []string{"old-access", "peer-access"} {
+		t.Run("after the token request/"+accessToken, func(t *testing.T) {
+			dir := t.TempDir()
+			var issuer string
+			issuer, calls := newRefreshServer(t, func() {
+				if accessToken != "old-access" {
+					peer := stored(issuer)
+					peer.AccessToken = accessToken
+					if err := WriteToken(dir, peer); err != nil {
+						t.Errorf("write peer token: %v", err)
+					}
+				}
+				if err := os.Chmod(dir, 0o500); err != nil {
+					t.Errorf("chmod: %v", err)
+				}
+			}, rotated)
+			require.NoError(t, WriteToken(dir, stored(issuer)))
+			t.Cleanup(func() { _ = os.Chmod(dir, 0o700) })
 
-		res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow})
-		require.ErrorIs(t, err, ErrTokenPersist)
-		assert.True(t, res.Granted)
-		require.NotNil(t, res.Token)
-		assert.Equal(t, "new-access", res.Token.AccessToken)
-		assert.Equal(t, "rotated", res.Token.RefreshToken)
-		assert.Equal(t, int32(1), calls.Load())
-		got, readErr := ReadToken(dir)
-		require.NoError(t, readErr)
-		assert.Equal(t, "old-refresh", got.RefreshToken)
-	})
+			res, err := Refresh(context.Background(), Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: LoginRefreshWindow})
+			require.ErrorIs(t, err, ErrTokenPersist)
+			assert.True(t, res.Granted)
+			require.NotNil(t, res.Token)
+			assert.Equal(t, "new-access", res.Token.AccessToken)
+			assert.Equal(t, "rotated", res.Token.RefreshToken)
+			require.NotNil(t, res.Unwritten)
+			assert.Equal(t, "rotated", res.Unwritten.RefreshToken)
+			require.NotNil(t, res.Replaced)
+			assert.Equal(t, accessToken, res.Replaced.AccessToken)
+			assert.Equal(t, int32(1), calls.Load())
+			got, readErr := ReadToken(dir)
+			require.NoError(t, readErr)
+			assert.Equal(t, "old-refresh", got.RefreshToken)
+		})
+	}
 }
 
 // TestRefresh_LockWaitError verifies that a lock wait cut off by ctx says
@@ -342,7 +356,7 @@ func TestRefresh_LockWaitError(t *testing.T) {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
-	_, err = Refresh(ctx, Request{Dir: dir, Issuer: "https://idp.example.com", ClientID: "client", Window: RefreshWindow})
+	_, err = Refresh(ctx, Request{Dir: dir, Issuer: "https://idp.example.com", ClientID: "client", Window: LoginRefreshWindow})
 	require.ErrorIs(t, err, context.DeadlineExceeded)
 	assert.Contains(t, err.Error(), "waiting for another refresh of "+oidctoken.FileName)
 }

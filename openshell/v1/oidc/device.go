@@ -17,6 +17,8 @@ import (
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // deviceAuthResponse holds the parsed response from the device
@@ -90,7 +92,7 @@ func DeviceLogin(ctx context.Context, opts ...LoginOption) (*oauth2.Token, error
 	}
 
 	// Discover provider endpoints.
-	provider, err := discover(ctx, cfg.issuer)
+	provider, err := oidcclient.Discover(ctx, cfg.issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -155,7 +157,7 @@ func requestDeviceCode(ctx context.Context, endpoint, clientID string, scopes []
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := oidcHTTPClient.Do(req)
+	resp, err := oidcclient.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%w: device authorization request failed", ErrDeviceCode)
 	}
@@ -232,7 +234,7 @@ func tryDeviceTokenExchange(ctx context.Context, tokenEndpoint, clientID, device
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := oidcHTTPClient.Do(req)
+	resp, err := oidcclient.HTTPClient.Do(req)
 	if err != nil {
 		// If the context was cancelled or timed out, surface that as
 		// ErrTimeout so callers can distinguish "user/caller cancelled"

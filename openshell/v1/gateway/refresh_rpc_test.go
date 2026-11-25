@@ -115,6 +115,25 @@ func TestNewClient_OIDCRenewsExpiredToken(t *testing.T) {
 	assert.Equal(t, "rotated-refresh", readBundle(t, dir).RefreshToken)
 }
 
+func TestNewClient_OIDCCachesShortLivedToken(t *testing.T) {
+	rec := newAuthRecorder(t)
+	p := newTokenProvider(t, func(url.Values) (int, string) {
+		return http.StatusOK, `{"access_token":"short-access","refresh_token":"rotated-refresh","expires_in":20}`
+	})
+	client, dir := newOIDCGatewayClient(t, rec.addr, p.URL, "expired-access", -time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err := client.Health().Check(ctx)
+	require.Equal(t, codes.Unimplemented, status.Code(err))
+	storeToken(t, dir, p.URL, "peer-access", "peer-refresh", time.Hour)
+	_, err = client.Health().Check(ctx)
+	require.Equal(t, codes.Unimplemented, status.Code(err))
+
+	assert.Equal(t, []string{"Bearer short-access", "Bearer short-access"}, rec.headers())
+	assert.Len(t, p.requests(), 1)
+}
+
 // TestNewClient_OIDCRenewalFailureIsUnauthenticated checks that a failed
 // renewal reaches the caller as Unauthenticated, naming the provider's
 // error and the login command, and that no call goes out.

@@ -244,7 +244,7 @@ func TestRefreshToken_ExpiresIn(t *testing.T) {
 }
 
 // TestFresh verifies the freshness test at the window boundary. With the
-// 10 second RefreshWindow it is oauth2.Token.Valid: a token that expires
+// 10 second LoginRefreshWindow it is oauth2.Token.Valid: a token that expires
 // exactly one window from now is still fresh, one nanosecond less is not.
 func TestFresh(t *testing.T) {
 	base := time.Date(2026, 1, 2, 3, 4, 5, 0, time.UTC)
@@ -254,7 +254,7 @@ func TestFresh(t *testing.T) {
 	at := func(d time.Duration) *oauth2.Token {
 		return &oauth2.Token{AccessToken: "a", Expiry: base.Add(d)}
 	}
-	w := RefreshWindow
+	w := LoginRefreshWindow
 	assert.True(t, Fresh(at(w), w), "expires exactly one window from now")
 	assert.False(t, Fresh(at(w-time.Nanosecond), w), "expires just inside the window")
 	assert.True(t, Fresh(at(time.Hour), w))
@@ -266,17 +266,17 @@ func TestFresh(t *testing.T) {
 	assert.False(t, Fresh(at(30*time.Second-time.Nanosecond), 30*time.Second))
 }
 
-// TestFreshMatchesOAuth2Valid verifies that with RefreshWindow, Fresh
+// TestFreshMatchesOAuth2Valid verifies that with LoginRefreshWindow, Fresh
 // agrees with oauth2.Token.Valid, which Login used before the refresh code
 // moved here. The expiries stay a second away from the boundary so the
 // two clocks cannot disagree.
 func TestFreshMatchesOAuth2Valid(t *testing.T) {
 	for _, d := range []time.Duration{-time.Hour, -time.Second, 0, 5 * time.Second, 9 * time.Second, 11 * time.Second, time.Hour} {
 		tok := &oauth2.Token{AccessToken: "a", Expiry: time.Now().Add(d)}
-		assert.Equal(t, tok.Valid(), Fresh(tok, RefreshWindow), "expiry in %v", d)
+		assert.Equal(t, tok.Valid(), Fresh(tok, LoginRefreshWindow), "expiry in %v", d)
 	}
 	for _, tok := range []*oauth2.Token{{AccessToken: "a"}, {}, {Expiry: time.Now().Add(time.Hour)}} {
-		assert.Equal(t, tok.Valid(), Fresh(tok, RefreshWindow), "%+v", tok)
+		assert.Equal(t, tok.Valid(), Fresh(tok, LoginRefreshWindow), "%+v", tok)
 	}
 }
 
@@ -301,7 +301,7 @@ func TestRefresh_FinishGrant(t *testing.T) {
 				AccessToken: "old-access", RefreshToken: "old-refresh", Expiry: time.Now().Add(-time.Minute),
 			}, issuer, "client")))
 
-			res, err := Refresh(ctx, Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: RefreshWindow, FinishGrant: finish})
+			res, err := Refresh(ctx, Request{Dir: dir, Issuer: issuer, ClientID: "client", Window: LoginRefreshWindow, FinishGrant: finish})
 			stored, readErr := ReadToken(dir)
 			require.NoError(t, readErr)
 			entries, dirErr := os.ReadDir(dir)

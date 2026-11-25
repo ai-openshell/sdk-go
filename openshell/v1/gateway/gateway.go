@@ -172,9 +172,7 @@ func resolveAuthProvider(cfg *Config, logger types.Logger) (types.AuthProvider, 
 		return &lazyEdgeAuth{dir: cfg.Dir}, nil
 
 	case AuthModeOIDC:
-		// The cache leeway is the window in which the source refreshes,
-		// so the source is asked for a token as soon as it is due.
-		opts := []v1.RefreshOption{v1.WithLeeway(refreshWindow)}
+		var opts []v1.RefreshOption
 		if logger != nil {
 			opts = append(opts, v1.WithLogger(logger))
 		}

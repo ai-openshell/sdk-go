@@ -4,6 +4,7 @@
 package oidcclient
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -138,4 +139,33 @@ func ReadToken(dir string) (*oidctoken.Bundle, error) {
 	}
 
 	return &bundle, nil
+}
+
+// SavePendingToken retries a write while the file still contains the
+// access token that the pending token replaced.
+func SavePendingToken(ctx context.Context, dir string, bundle oidctoken.Bundle, replacedAccessToken string) error {
+	unlock, err := LockDir(ctx, dir)
+	if err != nil {
+		return fmt.Errorf("waiting for another refresh of %s: %w", oidctoken.FileName, err)
+	}
+	defer unlock()
+
+	_, _, err = replaceTokenIfCurrent(dir, bundle, func(current *oidctoken.Bundle) bool {
+		return current.AccessToken == replacedAccessToken
+	}, false)
+	return err
+}
+
+// replaceTokenIfCurrent rereads the file under the caller's refresh lock.
+// It returns the observed bundle and whether a write was attempted.
+func replaceTokenIfCurrent(dir string, bundle oidctoken.Bundle, matches func(*oidctoken.Bundle) bool, replaceUnreadable bool) (*oidctoken.Bundle, bool, error) {
+	current, err := ReadToken(dir)
+	if err != nil {
+		if !replaceUnreadable {
+			return nil, false, err
+		}
+	} else if current == nil || !matches(current) {
+		return current, false, nil
+	}
+	return current, true, WriteToken(dir, bundle)
 }

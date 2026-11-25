@@ -17,6 +17,8 @@ import (
 	"github.com/stretchr/testify/require"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // --- T025: Device code flow tests ---
@@ -90,7 +92,7 @@ func setupDeviceMockProvider(t *testing.T, pendingPolls int) *httptest.Server {
 // requests a device code, displays it, polls until authorized, and
 // returns a valid token.
 func TestDeviceLogin_Success(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Provider returns "authorization_pending" for the first 2 polls,
 	// then returns a token on the 3rd poll.
@@ -145,7 +147,7 @@ func TestDeviceLogin_AlwaysRequestsOpenIDScope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 
 			scope := &capturedScope{}
 			srv := setupScopeCapturingDeviceProvider(t, scope)
@@ -201,7 +203,7 @@ func TestDeviceLogin_GatewayScopes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 
 			scope := &capturedScope{}
 			srv := setupScopeCapturingDeviceProvider(t, scope)
@@ -284,7 +286,7 @@ func setupScopeCapturingDeviceProvider(t *testing.T, scope *capturedScope) *http
 // TestDeviceLogin_MissingIssuer verifies that DeviceLogin returns
 // ErrOIDCConfig when the issuer is not provided.
 func TestDeviceLogin_MissingIssuer(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := DeviceLogin(context.Background(),
 		WithClientID("device-client"),
@@ -296,7 +298,7 @@ func TestDeviceLogin_MissingIssuer(t *testing.T) {
 // TestDeviceLogin_MissingClientID verifies that DeviceLogin returns
 // ErrOIDCConfig when the client ID is not provided.
 func TestDeviceLogin_MissingClientID(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := DeviceLogin(context.Background(),
 		WithIssuer("https://example.com"),
@@ -308,7 +310,7 @@ func TestDeviceLogin_MissingClientID(t *testing.T) {
 // TestDeviceLogin_DiscoveryFailure verifies that DeviceLogin returns
 // ErrDiscovery when the OIDC provider is unreachable.
 func TestDeviceLogin_DiscoveryFailure(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
@@ -324,7 +326,7 @@ func TestDeviceLogin_DiscoveryFailure(t *testing.T) {
 // TestDeviceLogin_SlowDown verifies that the polling loop respects the
 // "slow_down" response by increasing the polling interval.
 func TestDeviceLogin_SlowDown(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -391,7 +393,7 @@ func TestDeviceLogin_SlowDown(t *testing.T) {
 // TestDeviceLogin_ExpiredDeviceCode verifies that DeviceLogin returns
 // ErrDeviceCode when the device code expires before authorization.
 func TestDeviceLogin_ExpiredDeviceCode(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -443,7 +445,7 @@ func TestDeviceLogin_ExpiredDeviceCode(t *testing.T) {
 // TestDeviceLogin_CustomDisplayFunc verifies that WithDisplayFunc is
 // invoked with the verification URL and user code.
 func TestDeviceLogin_CustomDisplayFunc(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Provider that immediately returns a token (0 pending polls).
 	provider := setupDeviceMockProvider(t, 0)
@@ -473,7 +475,7 @@ func TestDeviceLogin_CustomDisplayFunc(t *testing.T) {
 // TestDeviceLogin_WithGateway verifies that DeviceLogin resolves OIDC
 // config from gateway metadata when WithGateway is set.
 func TestDeviceLogin_WithGateway(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupDeviceMockProvider(t, 0)
 
@@ -503,7 +505,7 @@ func TestDeviceLogin_WithGateway(t *testing.T) {
 // TestDeviceLogin_ContextCancellation verifies that DeviceLogin
 // respects context cancellation during polling.
 func TestDeviceLogin_ContextCancellation(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Provider that always returns "authorization_pending" so
 	// the polling loop never succeeds on its own.
@@ -526,7 +528,7 @@ func TestDeviceLogin_ContextCancellation(t *testing.T) {
 }
 
 func TestDeviceLogin_WithTimeoutBoundsPolling(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 	provider := setupDeviceMockProvider(t, 1000)
 
 	started := time.Now()
@@ -544,7 +546,7 @@ func TestDeviceLogin_WithTimeoutBoundsPolling(t *testing.T) {
 // TestDeviceLogin_AccessDenied verifies that DeviceLogin returns
 // ErrDeviceCode when the user denies authorization.
 func TestDeviceLogin_AccessDenied(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -597,7 +599,7 @@ func TestDeviceLogin_AccessDenied(t *testing.T) {
 // TestDeviceLogin_UnknownError verifies that DeviceLogin returns
 // ErrDeviceCode with the error description for unknown error codes.
 func TestDeviceLogin_UnknownError(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -652,7 +654,7 @@ func TestDeviceLogin_UnknownError(t *testing.T) {
 // returns ErrDeviceCode when the device authorization endpoint returns
 // a non-200 HTTP status.
 func TestDeviceLogin_DeviceEndpointHTTPError(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -691,7 +693,7 @@ func TestDeviceLogin_DeviceEndpointHTTPError(t *testing.T) {
 // TestDeviceLogin_DeviceEndpointInvalidJSON verifies that DeviceLogin
 // returns ErrDeviceCode when the device endpoint returns invalid JSON.
 func TestDeviceLogin_DeviceEndpointInvalidJSON(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -730,7 +732,7 @@ func TestDeviceLogin_DeviceEndpointInvalidJSON(t *testing.T) {
 // TestDeviceLogin_MissingUserCode verifies that DeviceLogin returns
 // ErrDeviceCode when the device endpoint returns an empty user_code.
 func TestDeviceLogin_MissingUserCode(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -777,7 +779,7 @@ func TestDeviceLogin_MissingUserCode(t *testing.T) {
 // returns ErrDeviceCode when the token endpoint returns invalid JSON
 // during polling.
 func TestDeviceLogin_TokenEndpointInvalidJSON(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server
@@ -829,7 +831,7 @@ func TestDeviceLogin_TokenEndpointInvalidJSON(t *testing.T) {
 // ErrDeviceCode when the provider does not advertise a device
 // authorization endpoint.
 func TestDeviceLogin_NoDeviceEndpoint(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	mux := http.NewServeMux()
 	var srv *httptest.Server

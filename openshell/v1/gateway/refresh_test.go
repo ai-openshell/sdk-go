@@ -643,11 +643,11 @@ func TestDiskTokenSource_WindowFollowsGrantedLifetime(t *testing.T) {
 			dir := t.TempDir()
 			storeToken(t, dir, p.URL, "expired-access", "stored-refresh", -time.Minute)
 			src := oidcSource(t, dir, p.URL, nil)
-			assert.Equal(t, refreshWindow, src.window(), "before any grant")
+			assert.Equal(t, refreshWindow, time.Duration(src.RefreshWindow()), "before any grant")
 
 			_, err := src.Token()
 			require.NoError(t, err)
-			assert.InDelta(t, want.Seconds(), src.window().Seconds(), 0.5)
+			assert.InDelta(t, want.Seconds(), time.Duration(src.RefreshWindow()).Seconds(), 0.5)
 		})
 	}
 }
@@ -674,7 +674,7 @@ func TestDiskTokenSource_WindowIgnoresPeerTokens(t *testing.T) {
 	tok, err := src.Token()
 	require.NoError(t, err)
 	assert.Equal(t, "peer-access", tok.AccessToken)
-	assert.Equal(t, refreshWindow, src.window())
+	assert.Equal(t, refreshWindow, time.Duration(src.RefreshWindow()))
 	assert.Empty(t, p.requests())
 }
 
@@ -1009,7 +1009,7 @@ func TestDiskTokenSource_UnsavedTokenLosesToLoginDuringFailedWrite(t *testing.T)
 // token was rotated: otherwise the one in the file still works.
 func TestDiskTokenSource_UnsavedTokenWithoutRotation(t *testing.T) {
 	old := writeUnsaved
-	writeUnsaved = func(string, oidctoken.Bundle) error { return errors.New("disk full") }
+	writeUnsaved = func(context.Context, string, oidctoken.Bundle, string) error { return errors.New("disk full") }
 	t.Cleanup(func() { writeUnsaved = old })
 	for _, rotated := range []bool{false, true} {
 		t.Run(fmt.Sprint("rotated=", rotated), func(t *testing.T) {

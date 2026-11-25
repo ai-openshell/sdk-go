@@ -52,9 +52,10 @@
 //	$XDG_CONFIG_HOME/openshell/gateways/<name>/metadata.json   (user)
 //	/etc/openshell/gateways/<name>/metadata.json                (system)
 //
-// Token files (edge_token, cf_token, oidc_token.json) sit alongside
-// metadata.json and are read on each authentication attempt, so tokens
-// refreshed by the CLI are picked up. When oidc_token.json holds a refresh
+// Token files sit alongside metadata.json. Edge authentication reads
+// edge_token or cf_token on each request. OIDC authentication reads
+// oidc_token.json when it needs a token or the cached token is due for
+// renewal, picking up tokens refreshed by the CLI. When the file holds a refresh
 // token and was issued for the OIDC issuer and client ID that metadata.json
 // names, the client also renews the token itself within 30 seconds of
 // expiry, or at half the token's lifetime for tokens valid for less than a
