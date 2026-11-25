@@ -10,7 +10,7 @@ The migration is tracked in NVIDIA/OpenShell#5031.
 | `message-rules.txt` | `git filter-repo --replace-message` rules: bare `#N` becomes `NVIDIA/OpenShell#N`. |
 | `verify-tree.sh <core-clone> <freeze-sha> <sdk-go-clone> <commit>` | Prove the imported tree is byte-identical to `sdk/go` at the freeze commit, compare commit, author, and sign-off counts, and reject bare references. |
 | `port-pr.sh <core-pr-number>` | Port an open NVIDIA/OpenShell PR into this repository with its original commits and authorship (branch `port/<n>`, label `port`). |
-| `port-pr-body.md` | PR body template used by `port-pr.sh`. |
+| `port-pr-body.md` | PR body template used by `port-pr.sh`, filled by `hack/automation/fill-template.sh`. |
 | `FREEZE` | The recorded freeze commit (`sha=<sha>`) and the stable core tag at the freeze (`tag=<tag>`). |
 
 ## Import procedure

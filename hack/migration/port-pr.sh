@@ -230,15 +230,11 @@ else
   outside='The PR changed only `sdk/go`, so nothing stays in core.'
 fi
 body="$state_dir/body.md"
-CORE_PR="$core_repo#$pr" CORE_URL="$url" AUTHOR="@$author" HEAD_OID="$head_oid" \
-FREEZE_SHA="${freeze:-unknown}" COMMITS="$commits" OUTSIDE="$outside" \
-  awk '{
-    while (match($0, /\{\{[A-Z_]+\}\}/)) {
-      key = substr($0, RSTART + 2, RLENGTH - 4)
-      $0 = substr($0, 1, RSTART - 1) ENVIRON[key] substr($0, RSTART + RLENGTH)
-    }
-    print
-  }' "$body_tmpl" >"$body"
+# Commit subjects and author names come from the core PR; fill-template.sh
+# inserts them as is and never scans them again for placeholders.
+"$here/../automation/fill-template.sh" "$body_tmpl" \
+  CORE_PR="$core_repo#$pr" CORE_URL="$url" AUTHOR="@$author" HEAD_OID="$head_oid" \
+  FREEZE_SHA="${freeze:-unknown}" COMMITS="$commits" OUTSIDE="$outside" >"$body"
 
 echo
 echo "Branch $branch: $ncommits commit(s) on $(git rev-parse --short "$start")"

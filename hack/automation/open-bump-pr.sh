@@ -151,30 +151,12 @@ fixtures=$(cat "$work/fixtures.txt")
 # A fresh tag's images may not be pushed yet; new releases go to Quay.
 registry=$(core_registry "${tag#v}") || registry=quay.io/ai-openshell
 body="$work/body.md"
-# Fill the template in one pass over each template line. Inserted values are
-# never scanned again, so upstream text such as "{{GH_TOKEN}}" in the proto
-# diff stays literal, and only the keys listed here are read from ENVIRON.
-OLD="$old" NEW="$tag" KIND="$kind" COMPARE_URL="$compare_url" IMAGE="$registry/gateway:${tag#v}" \
-GENERATED="${generated:-no generated files changed}" FIXTURES="${fixtures:-- no fixture changes}" \
-PROTO_DIFF="$proto_section" \
-  awk 'BEGIN {
-    n = split("OLD NEW KIND COMPARE_URL IMAGE GENERATED FIXTURES PROTO_DIFF", keys, " ")
-    for (i = 1; i <= n; i++) allowed[keys[i]] = 1
-  }
-  {
-    rest = $0
-    out = ""
-    while (match(rest, /\{\{[A-Z_]+\}\}/)) {
-      key = substr(rest, RSTART + 2, RLENGTH - 4)
-      if (!(key in allowed)) {
-        printf "ERROR: unknown placeholder {{%s}} in %s\n", key, FILENAME > "/dev/stderr"
-        exit 1
-      }
-      out = out substr(rest, 1, RSTART - 1) ENVIRON[key]
-      rest = substr(rest, RSTART + RLENGTH)
-    }
-    print out rest
-  }' "$body_tmpl" >"$body"
+# Values are inserted as is and never scanned again, so upstream text such as
+# "{{GH_TOKEN}}" in the proto diff stays literal (fill-template.sh).
+"$here/fill-template.sh" "$body_tmpl" \
+  OLD="$old" NEW="$tag" KIND="$kind" COMPARE_URL="$compare_url" IMAGE="$registry/gateway:${tag#v}" \
+  GENERATED="${generated:-no generated files changed}" FIXTURES="${fixtures:-- no fixture changes}" \
+  PROTO_DIFF="$proto_section" >"$body"
 
 echo "Proposal for $tag ($kind), pin $old -> $tag:"
 git log --format='  %h %an <%ae>  %s' "$base..$branch"
