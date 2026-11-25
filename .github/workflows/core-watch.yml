@@ -1,9 +1,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Opens one update proposal per new core release tag, reconciles the RPC
-# coverage issues against the newest core tag, and merges stable proposals
-# that change no proto when auto-merge is on (hack/automation/).
+# Opens one update proposal per new core release tag and reconciles the RPC
+# coverage issues against the newest core tag; when auto-merge is on, a
+# separate job merges stable proposals that change no proto
+# (hack/automation/).
 name: core-watch
 
 on:
@@ -35,6 +36,8 @@ jobs:
     environment: sdk-bot
     runs-on: ubuntu-latest
     timeout-minutes: 20
+    outputs:
+      bot_email: ${{ steps.identity.outputs.email }}
     steps:
       - id: app-token
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
@@ -59,6 +62,7 @@ jobs:
         run: mise install --locked
 
       - name: Set the bot identity
+        id: identity
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
@@ -66,7 +70,9 @@ jobs:
           set -euo pipefail
           id=$(gh api "users/${APP_SLUG}[bot]" --jq .id)
           git config user.name "${APP_SLUG}[bot]"
-          git config user.email "${id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          email="${id}+${APP_SLUG}[bot]@users.noreply.github.com"
+          git config user.email "$email"
+          echo "email=$email" >>"$GITHUB_OUTPUT"
 
       - name: Propose new core tags
         env:
@@ -98,13 +104,55 @@ jobs:
           MAX_NEW: ${{ inputs.max_new_issues }}
         run: BOT_LOGIN="${APP_SLUG}[bot]" hack/automation/rpc-issues.sh ${MAX_NEW:+--max-new "$MAX_NEW"}
 
-      # Merges stable proposals that change no proto and whose checks went
-      # green since the last run. Off unless the CORE_AUTO_MERGE repository
-      # variable is on; see hack/automation/merge-bump-pr.sh.
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: hack/automation/report-failure.sh core-watch "$RUN_URL"
+
+  # Merges stable proposals that change no proto and whose checks went green
+  # (hack/automation/merge-bump-pr.sh). Only when the CORE_AUTO_MERGE
+  # repository variable is on. A separate job with a separate App: only the
+  # merge App is a bypass actor on main-integrity, the bump App that pushes
+  # core/* branches is not, and this job runs no generator or other code
+  # from core.
+  merge:
+    name: merge
+    needs: watch
+    if: ${{ !cancelled() && vars.CORE_AUTO_MERGE == 'on' && needs.watch.outputs.bot_email != '' }}
+    environment: sdk-bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.SDK_MERGE_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_MERGE_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-checks: read
+          permission-statuses: read
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          install: false
+
+      - name: Install tools
+        run: mise install --locked yq
+
       - name: Merge proposals that change no proto
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           CORE_AUTO_MERGE: ${{ vars.CORE_AUTO_MERGE }}
+          BUMP_BOT_EMAIL: ${{ needs.watch.outputs.bot_email }}
         run: hack/automation/merge-bump-pr.sh
 
       - name: Report failure
@@ -112,4 +160,4 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
-        run: hack/automation/report-failure.sh core-watch "$RUN_URL"
+        run: hack/automation/report-failure.sh core-watch-merge "$RUN_URL"

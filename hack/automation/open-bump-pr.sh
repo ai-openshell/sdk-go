@@ -104,9 +104,14 @@ cleanup() { git worktree remove --force "$work/wt" >/dev/null 2>&1 || true; rm -
 trap cleanup EXIT
 git worktree add --quiet -b "$branch" "$work/wt" "$base"
 
+# shellcheck source=hack/automation/pin-bump.sh
+. "$here/pin-bump.sh"
+
 (
   cd "$work/wt"
-  yq -i ".inputs[0].tag = \"$tag\"" buf.gen.yaml
+  # The pin and the README line; merge-bump-pr.sh rebuilds the same edits
+  # with pin_bump_tree to check that a proposal is a pin bump only.
+  pin_bump_edit "$tag" "$kind"
   mise run --quiet proto:gen >/dev/null
 
   # Refresh vendored fixtures; one not in the tag yet is left as is.
@@ -126,13 +131,6 @@ git worktree add --quiet -b "$branch" "$work/wt" "$base"
     *) echo "ERROR: fetching $name at $tag returned HTTP $status" >&2; exit 1 ;;
     esac
   done
-
-  # Keep the README's "generated from OpenShell core vX.Y.Z" line in step
-  # with stable pins. Match any version: after a merged pre-release
-  # proposal, the line still names the last stable tag, not the old pin.
-  if [ "$kind" = stable ]; then
-    sed -E -i.bak "s/generated from OpenShell core v[0-9]+\.[0-9]+\.[0-9]+(-pre\.[0-9]+)?/generated from OpenShell core ${tag}/" README.md && rm -f README.md.bak
-  fi
 
   git add -A
   git commit --quiet --signoff -m "chore(core): track $tag" -m "Move the core pin from $old to $tag and regenerate the bindings."

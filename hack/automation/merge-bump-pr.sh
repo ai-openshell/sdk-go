@@ -16,21 +16,28 @@
 # not trusted. A proposal is merged only when all of these hold:
 #   - open, not a draft, from branch core/vX.Y.Z of this repository into main
 #   - no "hold" label (a maintainer's way to keep it for review)
-#   - exactly one commit since main, authored and committed by the bot
-#     identity in git config (the one core-watch sets), so any human push
+#   - exactly one commit since main, authored and committed by the bump
+#     bot (BUMP_BOT_EMAIL, the identity core-watch sets), so any other push
 #     sends it back to review
-#   - the pin in buf.gen.yaml is the branch's tag, and the commit touches
-#     only buf.gen.yaml and README.md: no file under proto/ changed (the
-#     generated bindings are identical), and no conformance fixture changed
+#   - the commit's tree is exactly the tree pin_bump_tree (pin-bump.sh)
+#     rebuilds from the merge base: the pin in buf.gen.yaml set to the
+#     branch's tag and the README line updated, nothing else. No file under
+#     proto/ changed (the generated bindings are identical), no conformance
+#     fixture changed, and no other edit to buf.gen.yaml, such as a plugin.
 #   - the checks in required_checks passed and none failed or is pending
-# The bot must be a bypass actor (pull requests only) on the main-integrity
-# ruleset, since the merge skips the code owner review.
-# Run from the root of an sdk-go clone. GH_TOKEN comes from the environment.
+# Provenance and merge rights come from repository rules, not from this
+# script (see README.md, "Auto-merge for stable pins"): only the bump App and
+# maintainers may write core/* branches, the required checks have no bypass,
+# and only the merge App, whose token GH_TOKEN carries here, is a bypass actor
+# (pull requests only) on main-integrity for the code owner review.
+# Run from the root of an sdk-go clone.
 set -euo pipefail
 
 sdk_repo=${SDK_REPO:-ai-openshell/sdk-go}
 required_checks=("ci" "e2e / e2e" "DCO")
-allowed_paths='^(buf\.gen\.yaml|README\.md)$'
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=hack/automation/pin-bump.sh
+. "$here/pin-bump.sh"
 
 dry=0
 mode=${CORE_AUTO_MERGE:-off}
@@ -49,7 +56,8 @@ esac
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run this from the root of the sdk-go clone"
-bot_email=$(git config user.email) || die "git user.email is not set; it names the bot identity"
+bot_email=${BUMP_BOT_EMAIL:-}
+[ -n "$bot_email" ] || die "BUMP_BOT_EMAIL is not set; it names the bot that commits the bumps"
 
 git fetch --quiet origin main
 
@@ -78,14 +86,15 @@ while IFS=$'\t' read -r n head sha base draft cross held; do
   idents=$(git log -1 --format='%ae %ce' "$sha")
   [ "$idents" = "$bot_email $bot_email" ] || { skip "commit is not the bot's ($idents)"; continue; }
 
-  pin=$(git show "$sha:buf.gen.yaml" | yq -r '.inputs[0].tag')
-  [ "$pin" = "$tag" ] || { skip "pin is $pin, branch says $tag"; continue; }
-  extra=$(git diff --name-only "$mb" "$sha" | grep -Ev "$allowed_paths" || true)
-  if [ -n "$extra" ]; then
-    if grep -q '^proto/' <<<"$extra"; then
-      skip "the bindings change ($(grep -c '^proto/' <<<"$extra") files under proto/), so the new core API needs review"
+  # Compare whole trees rather than file names: an edit inside an allowed
+  # file (a Buf plugin entry in buf.gen.yaml, say) must not pass.
+  expected=$(pin_bump_tree "$mb" "$tag" stable)
+  if [ "$expected" != "$(git rev-parse "$sha^{tree}")" ]; then
+    diff=$(git diff --name-only "$expected" "$sha")
+    if grep -q '^proto/' <<<"$diff"; then
+      skip "the bindings change ($(grep -c '^proto/' <<<"$diff") files under proto/), so the new core API needs review"
     else
-      skip "touches files outside the pin bump: $(tr '\n' ' ' <<<"$extra")"
+      skip "differs from the pin bump to $tag in: $(tr '\n' ' ' <<<"$diff")"
     fi
     continue
   fi
@@ -113,7 +122,7 @@ while IFS=$'\t' read -r n head sha base draft cross held; do
   fi
   gh pr comment "$n" -R "$sdk_repo" --body "$comment"
   # --match-head-commit refuses the merge if someone pushed since the checks.
-  # --admin uses the bot's ruleset bypass for the code owner review.
+  # --admin uses the merge App's ruleset bypass for the code owner review.
   gh pr merge "$n" -R "$sdk_repo" --squash --admin --match-head-commit "$sha"
   echo "#$n: merged ($tag)."
 done <<<"$prs"
