@@ -122,21 +122,20 @@ func TestLogin_ReusesValidToken(t *testing.T) {
 }
 
 // TestLogin_ExpiredTokenTriggersFlow verifies that an expired token on
-// disk does not short-circuit: Login proceeds to the interactive flow.
-// Since we use keyboard flow (no browser), we feed it a code and verify
-// a new token is returned.
+// disk without a refresh token does not short-circuit: Login proceeds to
+// the interactive flow. Since we use keyboard flow (no browser), we feed
+// it a code and verify a new token is returned.
 func TestLogin_ExpiredTokenTriggersFlow(t *testing.T) {
 	resetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 	tokenDir := t.TempDir()
 
-	// Write an expired token.
+	// Write an expired token with no refresh token to fall back on.
 	expiredToken := &oauth2.Token{
-		AccessToken:  "expired-token",
-		RefreshToken: "old-refresh",
-		TokenType:    "Bearer",
-		Expiry:       time.Now().Add(-1 * time.Hour), // expired
+		AccessToken: "expired-token",
+		TokenType:   "Bearer",
+		Expiry:      time.Now().Add(-1 * time.Hour), // expired
 	}
 	err := writeToken(tokenDir, oidctoken.FromToken(expiredToken, provider.URL, "test-client"))
 	require.NoError(t, err)

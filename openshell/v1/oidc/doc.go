@@ -24,7 +24,10 @@
 // gateway directory as oidc_token.json, in the same format as
 // `openshell gateway login`, so both [gateway.NewClient] and the CLI can
 // use them. A later Login reuses the stored token only when it is valid
-// and was issued for the gateway's issuer and client ID.
+// and was issued for the gateway's issuer and client ID. If that token has
+// expired but carries a refresh token, Login refreshes it and rewrites the
+// file without prompting; see [Login] for what happens when the refresh
+// fails.
 //
 // # Standalone Login
 //
@@ -65,7 +68,7 @@
 //   - [ErrAuthCode]: Authorization code exchange failed
 //   - [ErrDeviceCode]: Device code flow failed
 //   - [ErrClientCredentials]: Client credentials exchange failed
-//   - [ErrTimeout]: Interactive flow timed out
+//   - [ErrTimeout]: Interactive flow or token refresh timed out
 //   - [ErrCallbackServer]: Localhost callback server failed to start
 //   - [ErrTokenPersist]: Token disk write failed
 //   - [ErrOIDCConfig]: Gateway metadata missing OIDC fields
