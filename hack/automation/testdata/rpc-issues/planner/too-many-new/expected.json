@@ -1,0 +1,16 @@
+{
+  "error": "too-many-new",
+  "planned": [
+    "feat(sdk): wrap OpenShell.Method01 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method02 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method03 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method04 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method05 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method06 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method07 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method08 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method09 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method10 (core v0.2.0)",
+    "feat(sdk): wrap OpenShell.Method11 (core v0.2.0)"
+  ]
+}

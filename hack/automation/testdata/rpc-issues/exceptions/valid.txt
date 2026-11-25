@@ -1,0 +1,4 @@
+# Exceptions used by rpc-issues-test.sh.
+
+OpenShell.ForwardTcp  The TCP client already forwards ports over SSH.
+  ServiceDiscovery.WatchServiceRoutes	Only ingress controllers consume routes.

@@ -227,11 +227,12 @@ echo "Proto check passed: generated files match core $(yq -r '.inputs[0].tag' bu
 """
 
 [tasks."workflows:check"]
-description = "Lint GitHub workflows (actionlint with shellcheck, zizmor) and the hack/ scripts (shellcheck)"
+description = "Lint GitHub workflows (actionlint with shellcheck, zizmor) and the hack/ scripts (shellcheck), run the RPC coverage issue tests"
 run = [
   "actionlint",
   "zizmor --offline --min-severity medium .github",
   "shellcheck -x -S warning hack/automation/*.sh hack/migration/*.sh",
+  "hack/automation/rpc-issues-test.sh",
 ]
 
 [tasks."docs:build"]
@@ -257,3 +258,7 @@ run = "hack/automation/drift-check.sh"
 [tasks.e2e]
 description = "Run the E2E suite against the gateway named in OPENSHELL_GATEWAY (see hack/automation/start-gateway.sh)"
 run = "go vet -tags=e2e ./e2e/... && go test -tags=e2e -timeout 8m -parallel ${E2E_PARALLEL:-5} ./e2e/..."
+
+[tasks."core:rpc-issues"]
+description = "Open, update, close, and reopen RPC coverage issues (--dry-run, --max-new <n>, --tag <tag>)"
+run = "hack/automation/rpc-issues.sh"

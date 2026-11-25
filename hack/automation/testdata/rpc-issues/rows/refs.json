@@ -1,0 +1,10 @@
+{
+  "Svc.Get": {
+    "server_refs": [
+      {
+        "path": "crates/openshell-server/src/svc.rs",
+        "url": "https://github.com/NVIDIA/OpenShell/blob/v0.3.0/crates/openshell-server/src/svc.rs"
+      }
+    ]
+  }
+}

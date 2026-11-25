@@ -1,0 +1,8 @@
+[
+  {
+    "action": "close",
+    "comment": "Nothing left to track at core `v0.2.0`:\n\n- `Disc.A`: covered, the SDK calls it under `openshell/v1`.\n- `Disc.B`: removed, core `v0.2.0` no longer has it.\n\nIf this is wrong, reopen the issue; the automation then keeps it open while the SDK covers its methods.",
+    "group": "service:Disc",
+    "number": 20
+  }
+]

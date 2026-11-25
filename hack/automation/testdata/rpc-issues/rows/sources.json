@@ -1,0 +1,3 @@
+{
+  "a.proto": "syntax = \"proto3\";\npackage pkg;\n\n// Svc does things.\nservice Svc {\n  // Get returns one thing.\n  //   Indented detail stays indented.\n  rpc Get(Req) returns (Resp) {\n    option (openshell.options.v1.authorization) = {auth_mode: \"bearer\" scope: \"s:read\" workspace_role: \"user\"};\n  }\n  rpc Ping(stream Req) returns (google.protobuf.Empty);\n  rpc Bare(Req) returns (Resp);\n}\n\nmessage Req {\n  string name = 1;\n}\nmessage Resp {}\n"
+}

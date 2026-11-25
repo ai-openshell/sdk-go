@@ -1,0 +1,434 @@
+{
+  "built": [
+    "OpenShell.GetSandbox"
+  ],
+  "bump_branch_exists": true,
+  "core_repo": "NVIDIA/OpenShell",
+  "covered": [
+    "OpenShell.GetSandbox"
+  ],
+  "exceptions": [],
+  "generated_files": [
+    "openshell.proto",
+    "datamodel.proto",
+    "sandbox.proto",
+    "options.proto"
+  ],
+  "issues": [],
+  "max_new": 11,
+  "repo": "ai-openshell/sdk-go",
+  "rpcs": [
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "GetSandbox does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.GetSandboxRequest",
+          "source": "message GetSandboxRequest {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.GetSandboxResponse",
+          "source": "message GetSandboxResponse {}"
+        }
+      ],
+      "method": "GetSandbox",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.GetSandboxRequest",
+      "response": "openshell.v1.GetSandboxResponse",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc GetSandbox(GetSandboxRequest) returns (GetSandboxResponse) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method01 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method01Request",
+          "source": "message Method01Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method01Response",
+          "source": "message Method01Response {}"
+        }
+      ],
+      "method": "Method01",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method01Request",
+      "response": "openshell.v1.Method01Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method01(Method01Request) returns (Method01Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method02 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method02Request",
+          "source": "message Method02Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method02Response",
+          "source": "message Method02Response {}"
+        }
+      ],
+      "method": "Method02",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method02Request",
+      "response": "openshell.v1.Method02Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method02(Method02Request) returns (Method02Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method03 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method03Request",
+          "source": "message Method03Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method03Response",
+          "source": "message Method03Response {}"
+        }
+      ],
+      "method": "Method03",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method03Request",
+      "response": "openshell.v1.Method03Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method03(Method03Request) returns (Method03Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method04 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method04Request",
+          "source": "message Method04Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method04Response",
+          "source": "message Method04Response {}"
+        }
+      ],
+      "method": "Method04",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method04Request",
+      "response": "openshell.v1.Method04Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method04(Method04Request) returns (Method04Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method05 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method05Request",
+          "source": "message Method05Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method05Response",
+          "source": "message Method05Response {}"
+        }
+      ],
+      "method": "Method05",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method05Request",
+      "response": "openshell.v1.Method05Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method05(Method05Request) returns (Method05Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method06 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method06Request",
+          "source": "message Method06Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method06Response",
+          "source": "message Method06Response {}"
+        }
+      ],
+      "method": "Method06",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method06Request",
+      "response": "openshell.v1.Method06Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method06(Method06Request) returns (Method06Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method07 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method07Request",
+          "source": "message Method07Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method07Response",
+          "source": "message Method07Response {}"
+        }
+      ],
+      "method": "Method07",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method07Request",
+      "response": "openshell.v1.Method07Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method07(Method07Request) returns (Method07Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method08 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method08Request",
+          "source": "message Method08Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method08Response",
+          "source": "message Method08Response {}"
+        }
+      ],
+      "method": "Method08",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method08Request",
+      "response": "openshell.v1.Method08Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method08(Method08Request) returns (Method08Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method09 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method09Request",
+          "source": "message Method09Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method09Response",
+          "source": "message Method09Response {}"
+        }
+      ],
+      "method": "Method09",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method09Request",
+      "response": "openshell.v1.Method09Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method09(Method09Request) returns (Method09Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method10 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method10Request",
+          "source": "message Method10Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method10Response",
+          "source": "message Method10Response {}"
+        }
+      ],
+      "method": "Method10",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method10Request",
+      "response": "openshell.v1.Method10Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method10(Method10Request) returns (Method10Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    },
+    {
+      "auth_mode": "bearer",
+      "client_streaming": false,
+      "comment": "Method11 does something useful.",
+      "file": "openshell.proto",
+      "global_role": null,
+      "messages": [
+        {
+          "name": "openshell.v1.Method11Request",
+          "source": "message Method11Request {\n  string name = 1;\n}"
+        },
+        {
+          "name": "openshell.v1.Method11Response",
+          "source": "message Method11Response {}"
+        }
+      ],
+      "method": "Method11",
+      "proto_url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/proto/openshell.proto#L10-L12",
+      "request": "openshell.v1.Method11Request",
+      "response": "openshell.v1.Method11Response",
+      "rust_sdk_refs": [],
+      "scope": "sandbox:read",
+      "server_refs": [
+        {
+          "path": "crates/openshell-server/src/grpc/mod.rs",
+          "url": "https://github.com/NVIDIA/OpenShell/blob/v0.2.0/crates/openshell-server/src/grpc/mod.rs"
+        }
+      ],
+      "server_streaming": false,
+      "service": "OpenShell",
+      "signature": "rpc Method11(Method11Request) returns (Method11Response) {}",
+      "ts_sdk_refs": [],
+      "workspace_role": "user"
+    }
+  ],
+  "services_bound": [
+    "OpenShell"
+  ],
+  "tag": "v0.2.0"
+}
