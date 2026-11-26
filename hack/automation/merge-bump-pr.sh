@@ -16,24 +16,22 @@
 # not trusted. A proposal is merged only when all of these hold:
 #   - open, not a draft, from branch core/vX.Y.Z of this repository into main
 #   - no "hold" label (a maintainer's way to keep it for review)
-#   - exactly one commit since main, authored and committed by the bump
-#     bot (BUMP_BOT_EMAIL, the identity core-watch sets), so any other push
-#     sends it back to review
+#   - exactly one commit since main, with a successful provenance check from
+#     the bump App on that exact SHA
 #   - the commit's tree is exactly the tree pin_bump_tree (pin-bump.sh)
 #     rebuilds from the merge base: the pin in buf.gen.yaml set to the
 #     branch's tag and the README line updated, nothing else. No file under
 #     proto/ changed (the generated bindings are identical), no conformance
 #     fixture changed, and no other edit to buf.gen.yaml, such as a plugin.
 #   - the checks in required_checks passed and none failed or is pending
-# Provenance and merge rights come from repository rules, not from this
-# script (see README.md, "Auto-merge for stable pins"): only the bump App and
-# maintainers may write core/* branches, the required checks have no bypass,
-# and only the merge App, whose token GH_TOKEN carries here, is a bypass actor
-# (pull requests only) on main-integrity for the code owner review.
+# Repository rules limit writes to core/*, enforce required checks without
+# bypass, and let the merge App bypass code owner review on pull requests.
 # Run from the root of an sdk-go clone.
 set -euo pipefail
 
 sdk_repo=${SDK_REPO:-ai-openshell/sdk-go}
+bump_app_id=5613773 # ai-openshell-sdk-go GitHub App
+provenance_check=core-bump/provenance
 required_checks=("ci" "e2e / e2e" "DCO")
 here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=hack/automation/pin-bump.sh
@@ -56,8 +54,6 @@ esac
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run this from the root of the sdk-go clone"
-bot_email=${BUMP_BOT_EMAIL:-}
-[ -n "$bot_email" ] || die "BUMP_BOT_EMAIL is not set; it names the bot that commits the bumps"
 
 git fetch --quiet origin main
 
@@ -83,8 +79,14 @@ while IFS=$'\t' read -r n head sha base draft cross held; do
 
   count=$(git rev-list --count "$mb..$sha")
   [ "$count" = 1 ] || { skip "$count commits, expected 1"; continue; }
-  idents=$(git log -1 --format='%ae %ce' "$sha")
-  [ "$idents" = "$bot_email $bot_email" ] || { skip "commit is not the bot's ($idents)"; continue; }
+
+  if ! gh api --method GET "repos/$sdk_repo/commits/$sha/check-runs" \
+    -f check_name="$provenance_check" -F app_id="$bump_app_id" |
+    jq -e --arg name "$provenance_check" --arg sha "$sha" --argjson app "$bump_app_id" \
+      'any(.check_runs[]; .name == $name and .app.id == $app and .head_sha == $sha and .conclusion == "success")' >/dev/null; then
+    skip "no successful bump App provenance for $sha"
+    continue
+  fi
 
   # Compare whole trees rather than file names: an edit inside an allowed
   # file (a Buf plugin entry in buf.gen.yaml, say) must not pass.
@@ -112,7 +114,7 @@ while IFS=$'\t' read -r n head sha base draft cross held; do
   bad=$(jq -r '[.[] | select(.bucket != "pass" and .bucket != "skipping") | "\(.name) (\(.bucket))"] | join(", ")' <<<"$checks")
   [ -z "$bad" ] || { skip "checks not green: $bad"; continue; }
 
-  comment=$(printf 'Merged without review by core-watch: core `%s` changes no proto, so the generated bindings are identical; one bot commit, pin bump only, required checks green.\n\nMerging tags the SDK release `%s`.' \
+  comment=$(printf 'Merged without review by core-watch: core `%s` changes no proto, the bump App vouched for the head SHA, and required checks passed.\n\nMerging tags the SDK release `%s`.' \
     "$tag" "$tag")
 
   if [ "$dry" -eq 1 ]; then

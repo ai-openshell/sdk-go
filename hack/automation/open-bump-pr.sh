@@ -196,6 +196,16 @@ url=$(gh pr create -R "$sdk_repo" --base main --head "$branch" \
 echo "Opened $url"
 new=${url##*/}
 
+if [ "${CORE_AUTO_MERGE:-off}" = on ] && [ "$kind" = stable ]; then
+  # Use the local branch we generated. The PR head may already have changed.
+  sha=$(git rev-parse "refs/heads/$branch")
+  if ! gh api --method POST "repos/$sdk_repo/check-runs" --silent \
+    -f name=core-bump/provenance -f head_sha="$sha" \
+    -f status=completed -f conclusion=success; then
+    echo "WARNING: could not record bump provenance for $sha; $url needs review." >&2
+  fi
+fi
+
 # Close open pre-release proposals for older tags; this one supersedes them.
 gh pr list -R "$sdk_repo" --label core-bump --label prerelease --state open \
   --json number,headRefName --jq '.[] | "\(.number) \(.headRefName)"' |

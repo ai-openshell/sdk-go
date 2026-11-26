@@ -82,7 +82,8 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: |
           set -euo pipefail
-          if git diff --name-only "${BASE_SHA}...HEAD" | grep -qE '^(buf\.gen\.yaml$|go\.(mod|sum)$|mise\.toml$|proto/|openshell/|e2e/|hack/automation/(start|stop)-gateway\.sh$|\.github/workflows/e2e\.yml$)'; then
+          changed_paths=$(git diff --name-only "${BASE_SHA}...HEAD")
+          if grep -qE '^(buf\.gen\.yaml$|go\.(mod|sum)$|mise\.toml$|proto/|openshell/|e2e/|hack/automation/(start|stop)-gateway\.sh$|\.github/workflows/e2e\.yml$)' <<<"$changed_paths"; then
             echo "e2e=true" >>"$GITHUB_OUTPUT"
           else
             echo "e2e=false" >>"$GITHUB_OUTPUT"
@@ -93,3 +94,22 @@ jobs:
     needs: changes
     if: needs.changes.outputs.e2e == 'true'
     uses: ./.github/workflows/e2e.yml
+
+  e2e-gate:
+    name: e2e-gate
+    needs: [changes, e2e]
+    if: ${{ always() && github.event_name == 'pull_request' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check E2E result
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          E2E_REQUIRED: ${{ needs.changes.outputs.e2e }}
+          E2E_RESULT: ${{ needs.e2e.result }}
+        run: |
+          case "$CHANGES_RESULT:$E2E_REQUIRED:$E2E_RESULT" in
+            success:true:success | success:false:skipped) exit 0 ;;
+          esac
+          echo "E2E gate failed (changes=$CHANGES_RESULT, required=$E2E_REQUIRED, e2e=$E2E_RESULT)." >&2
+          exit 1

@@ -10,7 +10,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `open-bump-pr.sh <tag> [--dry-run]` | `core:bump` | Open the update proposal for one core tag: branch `core/<tag>`, pin change, regenerated bindings, proto diff in the body, labels `core-bump` plus `stable` or `prerelease`. Closes older pre-release proposals. |
 | `bump-pr-body.md` | | PR body template for `open-bump-pr.sh`. |
 | `core-registry.sh` | | Sourced by `start-gateway.sh` and `open-bump-pr.sh`: `core_registry <version>` prints the registry that holds a core release's images, `quay.io/ai-openshell` for releases since the move and `ghcr.io/nvidia/openshell` for older ones. |
-| `merge-bump-pr.sh [--dry-run] [--auto-merge on\|off]` | `core:merge` | Merge stable proposals that change no proto: one commit by the bump bot (`BUMP_BOT_EMAIL`) whose tree is exactly the pin bump, green checks, no `hold` label. Off unless `CORE_AUTO_MERGE` is `on`. |
+| `merge-bump-pr.sh [--dry-run] [--auto-merge on\|off]` | `core:merge` | Merge stable proposals that change no proto: one commit with a provenance check from the bump App, exactly the pin bump, green checks, no `hold` label. Off unless `CORE_AUTO_MERGE` is `on`. |
 | `pin-bump.sh` | | Sourced by `open-bump-pr.sh` and `merge-bump-pr.sh`: `pin_bump_edit <tag> <kind>` makes the pin and README edits of a bump, `pin_bump_tree <base> <tag> <kind>` prints the tree a bump commit with only those edits has. |
 | `tag-release.sh [--dry-run]` | `release:tag` | After a stable pin lands on `main`: create the lockstep tag `vX.Y.Z` and the GitHub release, then ask the Go module proxy for the version. |
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
@@ -64,6 +64,7 @@ A release that changes the protos always waits for review; the SDK release may l
 The proposal must be exactly a pin bump.
 `pin_bump_tree` rebuilds the expected tree from the merge base with the same edits `open-bump-pr.sh` makes (the pin in `buf.gen.yaml` and the README line), and the bump commit's tree has to match it.
 Any other change sends the proposal to review, including one inside `buf.gen.yaml` such as a plugin entry, a changed conformance fixture, or a second commit.
+When auto-merge is on, the bump App records a `core-bump/provenance` check on the stable commit it generated. The merge script verifies the App ID and the exact PR head SHA. A new head without that check goes through review, including proposals opened before auto-merge was enabled.
 The proposal also goes back to review when a check fails or someone adds the `hold` label.
 Merges happen on the hourly run after the checks turn green, so a stable SDK release follows the core release within about two hours.
 
@@ -73,6 +74,7 @@ The script checks the proposal; who may write a `core/*` branch and who may skip
 Before an admin sets `CORE_AUTO_MERGE` to `on`:
 
 1. A ruleset on `core/*` lets only the `ai-openshell-sdk-go` App and maintainers create, update, or delete those branches.
-2. A ruleset on `main` requires `ci`, `e2e / e2e`, and `DCO` with no bypass actors.
-3. The merge App is installed on this repository with contents and pull requests write, checks and statuses read, and issues write (for failure reports), and its secrets are in `sdk-bot`.
-4. The merge App, and only the merge App, is a bypass actor on the `main-integrity` ruleset with mode "pull requests only", so its merge can skip the code owner review.
+2. A ruleset on `main` requires the GitHub Actions `ci` and `e2e-gate` checks with no bypass actors, and the separate DCO rule stays in force. Auto-merge also requires an actual `e2e / e2e` pass on the proposal.
+3. The bump App installation has checks write so `core-watch` can record provenance when auto-merge is enabled.
+4. The merge App is installed on this repository with contents and pull requests write, checks and statuses read, and issues write (for failure reports), and its secrets are in `sdk-bot`.
+5. The merge App is a PR-only bypass actor for `main-integrity` on this repository, so its merge can skip the code owner review.
