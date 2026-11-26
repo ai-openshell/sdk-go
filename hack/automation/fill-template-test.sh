@@ -88,7 +88,7 @@ fi
 # from the caller's fill-template.sh call, so a key dropped from or renamed
 # in a caller fails here instead of in the scheduled automation.
 caller_keys() { # <script>: the KEY= names of its fill-template.sh call
-  awk '/fill-template\.sh" "\$body_tmpl"/ { on = 1 } on { print } on && />"\$body"$/ { exit }' "$1" |
+  awk '/fill-template\.sh" "/ { on = 1 } on { print } on && />"\$body"$/ { exit }' "$1" |
     { grep -oE '(^|[[:space:]])[A-Z_]+=' || true; } | tr -d ' =\t' | sort -u # no call: empty, reported below
 }
 template_keys() { grep -oE '\{\{[A-Z_]+\}\}' "$1" | tr -d '{}' | sort -u; }

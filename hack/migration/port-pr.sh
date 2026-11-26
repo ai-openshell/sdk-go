@@ -28,10 +28,14 @@
 #      the sdk/go/ prefix stripped.
 #   3. Rewrite github.com/NVIDIA/OpenShell/sdk/go to github.com/ai-openshell/sdk-go
 #      inside the patches, so diff context matches this tree.
-#   4. git am --3way onto port/<n> from --base. On a conflict, resolve it,
-#      run --fix-paths (a 3-way resolution comes from the core blob and still
-#      has the old module path, which breaks the context of the next patch),
-#      run `git am --continue`, then rerun this script with --continue.
+#   4. Copy this script and the files it runs later into the git directory
+#      (port-src/<n>/trusted), then git am --3way onto port/<n> from --base.
+#      From here on the working tree holds the upstream patches, so
+#      --fix-paths and --continue run only from that trusted copy; the script
+#      prints its path. On a conflict, resolve it, run --fix-paths (a 3-way
+#      resolution comes from the core blob and still has the old module path,
+#      which breaks the context of the next patch), run `git am --continue`,
+#      then run the trusted copy with --continue.
 #   5. Rewrite the old module path on any line the port added (left by a
 #      3-way merge) and amend it into the last commit, which keeps that
 #      commit's author. Lines already in the base are not touched.
@@ -76,13 +80,30 @@ while [ $# -gt 0 ]; do
 done
 case $pr in '' | *[!0-9]*) usage ;; esac
 
-here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 body_tmpl="$here/port-pr-body.md"
 branch="port/$pr"
 src="refs/port-src/$pr"
 state_dir="$(git rev-parse --git-path "port-src/$pr")"
 
 die() { echo "ERROR: $*" >&2; exit 1; }
+
+# Once git am has applied the upstream patches, the working tree is not
+# trusted: a patch can replace any script in it, this one included. The first
+# run therefore copies everything it runs later into the git directory, which
+# git am never writes, before it switches branches. The PR body is rendered
+# with that copy, and --fix-paths and --continue run only from it.
+trusted_files=(hack/migration/port-pr.sh hack/migration/port-pr-body.md
+  hack/automation/fill-template.sh hack/automation/template.jq)
+trusted="$state_dir/trusted"
+# The trusted copy of this script, as an absolute path to type.
+trusted_cmd() { echo "$(cd "$trusted/hack/migration" && pwd -P)/port-pr.sh"; }
+require_trusted() {
+  [ -d "$trusted/hack/migration" ] ||
+    die "no trusted copy of the port scripts for #$pr in $trusted; start the port again"
+  [ "$here" = "$(cd "$trusted/hack/migration" && pwd -P)" ] ||
+    die "the working tree holds the upstream patches and is not trusted; run $(trusted_cmd) instead"
+}
 
 for tool in git gh go; do
   command -v "$tool" >/dev/null 2>&1 || die "$tool is not installed"
@@ -114,6 +135,7 @@ rewrite_added() {
 }
 
 if [ "$fix" -eq 1 ]; then
+  require_trusted
   [ "$(git branch --show-current)" = "$branch" ] || die "switch to $branch first"
   [ -z "$(git diff --name-only --diff-filter=U)" ] ||
     die "resolve the conflicts first: $(git diff --name-only --diff-filter=U | tr '\n' ' ')"
@@ -156,6 +178,13 @@ if [ "$cont" -eq 0 ]; then
 
   rm -rf "$state_dir"
   mkdir -p "$state_dir/patches"
+  # The trusted copy, from the files of this run, before anything is applied.
+  root="$(cd "$here/../.." && pwd -P)"
+  for f in "${trusted_files[@]}"; do
+    [ -f "$root/$f" ] || die "$root/$f is missing"
+    mkdir -p "$trusted/$(dirname "$f")"
+    cp -p "$root/$f" "$trusted/$f"
+  done
   jq . <<<"$meta" >"$state_dir/meta.json"
   echo "$mb" >"$state_dir/merge-base"
   git diff --name-only "$mb" "$src/head" -- . ':!sdk/go/' >"$state_dir/outside.txt"
@@ -176,14 +205,16 @@ if [ "$cont" -eq 0 ]; then
   git switch --quiet -c "$branch" "$base"
   echo "$(git rev-parse HEAD)" >"$state_dir/start"
   if ! git am --quiet --3way "$@"; then
-    again="$0 --continue"
+    again="$(trusted_cmd) --continue"
     [ "$base" = origin/main ] || again="$again --base $base"
     [ "$push" -eq 0 ] || again="$again --push"
     cat >&2 <<EOF
 
-git am stopped on a conflict. Resolve it, then:
+git am stopped on a conflict. Resolve it, then run these commands; the
+scripts in the working tree now come from the upstream PR, so use the
+trusted copy:
   git add <files>
-  $0 --fix-paths $pr
+  $(trusted_cmd) --fix-paths $pr
   git am --continue
   $again $pr
 To give up: git am --abort && git switch - && git branch -D $branch
@@ -191,6 +222,7 @@ EOF
     exit 1
   fi
 else
+  require_trusted
   [ -f "$state_dir/meta.json" ] || die "no port of #$pr is in progress"
   [ "$(git branch --show-current)" = "$branch" ] || die "switch to $branch first"
   [ ! -d "$(git rev-parse --git-path rebase-apply)" ] ||
@@ -230,9 +262,10 @@ else
   outside='The PR changed only `sdk/go`, so nothing stays in core.'
 fi
 body="$state_dir/body.md"
+# The trusted copy renders the body (the working tree holds the PR's files).
 # Commit subjects and author names come from the core PR; fill-template.sh
 # inserts them as is and never scans them again for placeholders.
-"$here/../automation/fill-template.sh" "$body_tmpl" \
+"$trusted/hack/automation/fill-template.sh" "$trusted/hack/migration/port-pr-body.md" \
   CORE_PR="$core_repo#$pr" CORE_URL="$url" AUTHOR="@$author" HEAD_OID="$head_oid" \
   FREEZE_SHA="${freeze:-unknown}" COMMITS="$commits" OUTSIDE="$outside" >"$body"
 
@@ -246,7 +279,10 @@ sed 's/^/  | /' "$body"
 
 if [ "$push" -eq 0 ]; then
   echo
-  echo "Review the branch and body, then rerun with --continue --push to open the PR."
+  again="$(trusted_cmd) --continue --push"
+  [ "$base" = origin/main ] || again="$again --base $base"
+  echo "Review the branch and body, then open the PR with the trusted copy:"
+  echo "  $again $pr"
   exit 0
 fi
 
