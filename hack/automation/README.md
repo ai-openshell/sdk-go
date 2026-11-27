@@ -11,7 +11,8 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `bump-pr-body.md` | | PR body template for `open-bump-pr.sh`. |
 | `core-registry.sh` | | Sourced by `start-gateway.sh` and `open-bump-pr.sh`: `core_registry <version>` prints the registry that holds a core release's images, `quay.io/ai-openshell` for releases since the move and `ghcr.io/nvidia/openshell` for older ones. |
 | `merge-bump-pr.sh [--dry-run] [--auto-merge on\|off]` | `core:merge` | Merge stable proposals that change no proto: one commit with a provenance check from the bump App, exactly the pin bump, green checks, no `hold` label. Off unless `CORE_AUTO_MERGE` is `on`. |
-| `pin-bump.sh` | | Sourced by `open-bump-pr.sh` and `merge-bump-pr.sh`: `pin_bump_edit <tag> <kind>` makes the pin and README edits of a bump, `pin_bump_tree <base> <tag> <kind>` prints the tree a bump commit with only those edits has. |
+| `pin-bump.sh` | | Sourced by `open-bump-pr.sh` and `merge-bump-pr.sh`: `pin_bump_edit <tag> <kind>` makes the pin and README edits of a bump, `pin_bump_tree <base> <tag> <kind>` prints the tree a bump commit with only those edits has, `older <a> <b>` compares release tags. |
+| `merge-bump-pr-test.sh` | | Offline tests for `pin-bump.sh` and `merge-bump-pr.sh` in scratch Git repositories, with the gh stub in `testdata/merge-bump/bin/`; part of `workflows:check`. |
 | `tag-release.sh [--dry-run]` | `release:tag` | After a stable pin lands on `main`: create the lockstep tag `vX.Y.Z` and the GitHub release, then ask the Go module proxy for the version. |
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report; uncovered RPCs link to their open RPC coverage issues. |
@@ -80,3 +81,4 @@ Before an admin sets `CORE_AUTO_MERGE` to `on`:
 3. The bump App installation has checks write so `core-watch` can record provenance when auto-merge is enabled.
 4. The merge App is installed on this repository with contents and pull requests write, checks and statuses read, and issues write (for failure reports), and its secrets are in `sdk-bot`.
 5. The merge App is a PR-only bypass actor for `main-integrity` on this repository, so its merge can skip the code owner review.
+6. `mise run core:merge -- --dry-run --auto-merge on` with the merge App's token lists the open stable proposals it would merge, and each skip reason matches what you expect.

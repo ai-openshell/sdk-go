@@ -227,12 +227,14 @@ echo "Proto check passed: generated files match core $(yq -r '.inputs[0].tag' bu
 """
 
 [tasks."workflows:check"]
-description = "Lint GitHub workflows (actionlint with shellcheck, zizmor) and the hack/ scripts (shellcheck), run the RPC coverage issue tests"
+description = "Lint GitHub workflows (actionlint with shellcheck, zizmor) and the hack/ scripts (shellcheck), run the RPC coverage issue and core auto-merge tests"
 run = [
   "actionlint",
   "zizmor --offline --min-severity medium .github",
   "shellcheck -x -S warning hack/automation/*.sh hack/migration/*.sh",
+  "shellcheck -x -S warning hack/automation/testdata/merge-bump/bin/gh",
   "hack/automation/rpc-issues-test.sh",
+  "hack/automation/merge-bump-pr-test.sh",
 ]
 
 [tasks."docs:build"]
