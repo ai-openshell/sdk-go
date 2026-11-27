@@ -1163,6 +1163,143 @@ func TestSandboxWatch_StopCancelsStream(t *testing.T) {
 	}
 }
 
+// sandboxEvents returns n status snapshots for sb-1, so a test can fill the
+// Watch channel.
+func sandboxEvents(n int) []*pb.SandboxStreamEvent {
+	events := make([]*pb.SandboxStreamEvent, n)
+	for i := range events {
+		events[i] = &pb.SandboxStreamEvent{Payload: &pb.SandboxStreamEvent_Sandbox{Sandbox: &pb.Sandbox{
+			Metadata: &dm.ObjectMeta{Name: "sb-1", Id: "id-1"},
+			Status:   &pb.SandboxStatus{Phase: pb.SandboxPhase_SANDBOX_PHASE_PROVISIONING},
+		}}}
+	}
+	return events
+}
+
+// drainSandboxWatch collects events until the channel closes.
+func drainSandboxWatch(t *testing.T, w WatchInterface[*Sandbox]) []Event[*Sandbox] {
+	t.Helper()
+	var events []Event[*Sandbox]
+	timeout := time.After(5 * time.Second)
+	for {
+		select {
+		case ev, ok := <-w.ResultChan():
+			if !ok {
+				return events
+			}
+			events = append(events, ev)
+		case <-timeout:
+			t.Fatal("timed out waiting for the Watch channel to close")
+		}
+	}
+}
+
+// watchEnders are the two ways a caller ends a Watch. Both must close the
+// channel without an EventError.
+var watchEnders = []struct {
+	name string
+	end  func(cancel context.CancelFunc, w WatchInterface[*Sandbox])
+}{
+	{"ContextCancel", func(cancel context.CancelFunc, _ WatchInterface[*Sandbox]) { cancel() }},
+	{"Stop", func(_ context.CancelFunc, w WatchInterface[*Sandbox]) { w.Stop() }},
+}
+
+func TestSandboxWatch_EndUnblocksFullChannel(t *testing.T) {
+	// A consumer that ends the watch without reading must not leave the
+	// producer blocked on a full channel: it has to stop sending and close.
+	for _, tc := range watchEnders {
+		t.Run(tc.name, func(t *testing.T) {
+			const total = 100
+			mock := newMockSandboxServer()
+			mock.sandboxes["sb-1"] = &pb.Sandbox{
+				Metadata: &dm.ObjectMeta{Id: "id-1", Name: "sb-1"},
+				Status:   &pb.SandboxStatus{Phase: pb.SandboxPhase_SANDBOX_PHASE_PROVISIONING},
+			}
+			mock.watchEvents = sandboxEvents(total)
+			keepOpen := make(chan struct{})
+			defer close(keepOpen)
+			mock.watchKeepOpen = keepOpen
+			client, cleanup := setupSandboxTest(t, mock)
+			defer cleanup()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			w, err := client.Watch(ctx, "default", "sb-1")
+			require.NoError(t, err)
+			defer w.Stop()
+
+			ch := w.ResultChan()
+			require.Eventually(t, func() bool { return len(ch) == cap(ch) }, 5*time.Second, 5*time.Millisecond,
+				"producer never filled the channel")
+			tc.end(cancel, w)
+
+			events := drainSandboxWatch(t, w)
+			// The buffered events drain, plus at most one send that raced
+			// the end. A producer that ignored it would deliver all of them.
+			assert.LessOrEqual(t, len(events), cap(ch)+1)
+			for _, ev := range events {
+				assert.NotEqual(t, EventError, ev.Type, "ending the watch must not surface as an error: %v", ev.Err)
+			}
+		})
+	}
+}
+
+func TestSandboxWatch_EndClosesWithoutError(t *testing.T) {
+	for _, tc := range watchEnders {
+		t.Run(tc.name, func(t *testing.T) {
+			mock := newMockSandboxServer()
+			mock.sandboxes["sb-1"] = &pb.Sandbox{
+				Metadata: &dm.ObjectMeta{Id: "id-1", Name: "sb-1"},
+				Status:   &pb.SandboxStatus{Phase: pb.SandboxPhase_SANDBOX_PHASE_PROVISIONING},
+			}
+			mock.watchEvents = sandboxEvents(1)
+			keepOpen := make(chan struct{})
+			defer close(keepOpen)
+			mock.watchKeepOpen = keepOpen
+			client, cleanup := setupSandboxTest(t, mock)
+			defer cleanup()
+
+			ctx, cancel := context.WithCancel(context.Background())
+			defer cancel()
+			w, err := client.Watch(ctx, "default", "sb-1")
+			require.NoError(t, err)
+			defer w.Stop()
+
+			ev := <-w.ResultChan()
+			assert.Equal(t, EventAdded, ev.Type)
+
+			tc.end(cancel, w)
+			assert.Empty(t, drainSandboxWatch(t, w), "ending the watch must close the channel without an error event")
+		})
+	}
+}
+
+func TestSandboxWatch_DeadlineClosesWithoutError(t *testing.T) {
+	mock := newMockSandboxServer()
+	mock.sandboxes["sb-1"] = &pb.Sandbox{
+		Metadata: &dm.ObjectMeta{Id: "id-1", Name: "sb-1"},
+		Status:   &pb.SandboxStatus{Phase: pb.SandboxPhase_SANDBOX_PHASE_PROVISIONING},
+	}
+	mock.watchEvents = sandboxEvents(1)
+	keepOpen := make(chan struct{})
+	defer close(keepOpen)
+	mock.watchKeepOpen = keepOpen
+	client, cleanup := setupSandboxTest(t, mock)
+	defer cleanup()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	w, err := client.Watch(ctx, "default", "sb-1")
+	require.NoError(t, err)
+	defer w.Stop()
+
+	ev := <-w.ResultChan()
+	assert.Equal(t, EventAdded, ev.Type)
+
+	assert.Empty(t, drainSandboxWatch(t, w), "a passed deadline must close the channel without an error event")
+	assert.ErrorIs(t, ctx.Err(), context.DeadlineExceeded)
+}
+
 func TestSandboxWatch_RPCError(t *testing.T) {
 	mock := newMockSandboxServer()
 	mock.sandboxes["watch-err"] = &pb.Sandbox{

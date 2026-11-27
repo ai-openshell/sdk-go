@@ -117,6 +117,16 @@ type SandboxInterface interface {
 	ListAllProviders(ctx context.Context, workspace, sandboxName string, opts ...ListOptions) ([]*Provider, error)
 	WaitReady(ctx context.Context, workspace, name string, opts ...WaitOptions) (*Sandbox, error)
 	WaitStopped(ctx context.Context, workspace, name string, opts ...WaitOptions) (*Sandbox, error)
+	// Watch streams status changes for one sandbox. The first event is
+	// EventAdded, later ones EventModified, and EventDeleted once the sandbox
+	// is deleting.
+	//
+	// The channel closes when the server ends the stream, when StopOnTerminal
+	// sees a terminal phase, when ctx is cancelled or its deadline passes, or
+	// after Stop. Ending ctx or calling Stop closes it without an EventError:
+	// EventError reports only a stream failure, such as the gateway becoming
+	// unavailable. After the channel closes, check ctx.Err() to tell a timeout
+	// or cancellation apart from the server ending the stream.
 	Watch(ctx context.Context, workspace, name string, opts ...WatchOptions) (WatchInterface[*Sandbox], error)
 	GetLogs(ctx context.Context, workspace, sandboxName string, opts ...LogOption) (*LogResult, error)
 }
