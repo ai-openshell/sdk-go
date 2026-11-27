@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 // mockTokenSource implements oauth2.TokenSource for testing.
@@ -72,7 +74,135 @@ func TestGetRequestMetadata_ReturnsWhenContextCanceledDuringRefresh(t *testing.T
 	_, err = provider.GetRequestMetadata(ctx)
 
 	require.ErrorIs(t, err, context.Canceled)
+	assert.Equal(t, codes.Canceled, status.Code(err), "gRPC reports the cancellation, not Unauthenticated")
 	assert.Less(t, time.Since(started), time.Second)
+}
+
+// TestGetRequestMetadata_UsesCachedTokenDuringSlowRefresh verifies that
+// while a refresh is slow and the cached token has not expired, a request
+// with a deadline gets the cached token at half its deadline, a canceled
+// request gets it too, and once the cached token has expired the request
+// fails with the context's error.
+func TestGetRequestMetadata_UsesCachedTokenDuringSlowRefresh(t *testing.T) {
+	release := make(chan struct{})
+	t.Cleanup(func() { close(release) })
+	var calls atomic.Int32
+	expiry := time.Now().Add(3 * time.Second)
+	src := &mockTokenSource{tokenFunc: func() (*oauth2.Token, error) {
+		if calls.Add(1) == 1 {
+			// Inside the default 10 s leeway, so the next call refreshes.
+			return &oauth2.Token{AccessToken: "cached-token", Expiry: expiry}, nil
+		}
+		<-release
+		return &oauth2.Token{AccessToken: "late-token"}, nil
+	}}
+	provider, err := RefreshableToken(src)
+	require.NoError(t, err)
+	_, err = provider.GetRequestMetadata(context.Background())
+	require.NoError(t, err)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	start := time.Now()
+	md, err := provider.GetRequestMetadata(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "Bearer cached-token", md["authorization"])
+	elapsed := time.Since(start)
+	assert.Greater(t, elapsed, 800*time.Millisecond, "it waited about half the deadline")
+	assert.Less(t, elapsed, 1500*time.Millisecond, "it gave up at half the deadline")
+
+	canceled, cancelNow := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(20 * time.Millisecond)
+		cancelNow()
+	}()
+	md, err = provider.GetRequestMetadata(canceled)
+	require.NoError(t, err)
+	assert.Equal(t, "Bearer cached-token", md["authorization"])
+
+	time.Sleep(time.Until(expiry) + 100*time.Millisecond)
+	ctx, cancel = context.WithTimeout(context.Background(), 200*time.Millisecond)
+	defer cancel()
+	_, err = provider.GetRequestMetadata(ctx)
+	require.ErrorIs(t, err, context.DeadlineExceeded)
+	assert.Equal(t, codes.DeadlineExceeded, status.Code(err))
+	assert.Contains(t, err.Error(), "waiting for a token refresh")
+}
+
+// TestGetRequestMetadata_KeepsWaitingWhenCacheExpiresFirst verifies that a
+// request that reaches half its deadline after the cached token expired
+// keeps waiting for the refresh instead of sending the expired token.
+func TestGetRequestMetadata_KeepsWaitingWhenCacheExpiresFirst(t *testing.T) {
+	var calls atomic.Int32
+	src := &mockTokenSource{tokenFunc: func() (*oauth2.Token, error) {
+		if calls.Add(1) == 1 {
+			return &oauth2.Token{AccessToken: "cached-token", Expiry: time.Now().Add(200 * time.Millisecond)}, nil
+		}
+		time.Sleep(time.Second)
+		return &oauth2.Token{AccessToken: "late-token", Expiry: time.Now().Add(time.Hour)}, nil
+	}}
+	provider, err := RefreshableToken(src)
+	require.NoError(t, err)
+	_, err = provider.GetRequestMetadata(context.Background())
+	require.NoError(t, err)
+
+	// Half the deadline is 600 ms, after the cached token expired at 200 ms.
+	ctx, cancel := context.WithTimeout(context.Background(), 1200*time.Millisecond)
+	defer cancel()
+	md, err := provider.GetRequestMetadata(ctx)
+	require.NoError(t, err)
+	assert.Equal(t, "Bearer late-token", md["authorization"])
+}
+
+// TestGetRequestMetadata_RecordsRefreshNobodyWaitedFor verifies that the
+// outcome of a refresh is kept even when every request stopped waiting for
+// it: a failure starts the backoff, so the source is not asked on every
+// request, and a new token is used without asking the source again.
+func TestGetRequestMetadata_RecordsRefreshNobodyWaitedFor(t *testing.T) {
+	newProvider := func(t *testing.T, refresh func() (*oauth2.Token, error)) (AuthProvider, *atomic.Int32) {
+		t.Helper()
+		var calls atomic.Int32
+		src := &mockTokenSource{tokenFunc: func() (*oauth2.Token, error) {
+			if calls.Add(1) == 1 {
+				return &oauth2.Token{AccessToken: "cached-token", Expiry: time.Now().Add(5 * time.Second)}, nil
+			}
+			time.Sleep(150 * time.Millisecond)
+			return refresh()
+		}}
+		provider, err := RefreshableToken(src)
+		require.NoError(t, err)
+		_, err = provider.GetRequestMetadata(context.Background())
+		require.NoError(t, err)
+		return provider, &calls
+	}
+	call := func(t *testing.T, provider AuthProvider) string {
+		t.Helper()
+		ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+		defer cancel()
+		md, err := provider.GetRequestMetadata(ctx)
+		require.NoError(t, err)
+		return md["authorization"]
+	}
+
+	t.Run("failure starts the backoff", func(t *testing.T) {
+		provider, calls := newProvider(t, func() (*oauth2.Token, error) { return nil, errors.New("provider down") })
+		for range 10 {
+			assert.Equal(t, "Bearer cached-token", call(t, provider))
+			time.Sleep(100 * time.Millisecond)
+		}
+		// One initial fetch, the first refresh, and at most one more after
+		// the 1 s backoff.
+		assert.LessOrEqual(t, calls.Load(), int32(3))
+	})
+	t.Run("new token is used", func(t *testing.T) {
+		provider, calls := newProvider(t, func() (*oauth2.Token, error) {
+			return &oauth2.Token{AccessToken: "new-token", Expiry: time.Now().Add(time.Hour)}, nil
+		})
+		assert.Equal(t, "Bearer cached-token", call(t, provider))
+		time.Sleep(300 * time.Millisecond)
+		assert.Equal(t, "Bearer new-token", call(t, provider))
+		assert.Equal(t, int32(2), calls.Load())
+	})
 }
 
 // --- Phase 3 / US1 tests: automatic token refresh ---
@@ -422,6 +552,46 @@ func TestGetRequestMetadata_BackoffWithoutCachedTokenReturnsLastError(t *testing
 	_, err = provider.GetRequestMetadata(context.Background())
 	require.ErrorIs(t, err, errIDP)
 	assert.Equal(t, 1, src.calls(), "should not call Token() during backoff window")
+}
+
+func TestGetRequestMetadata_NilTokenStartsBackoff(t *testing.T) {
+	t.Run("no cached token", func(t *testing.T) {
+		src := &mockTokenSource{
+			tokenFunc: func() (*oauth2.Token, error) { return nil, nil },
+		}
+		provider, err := RefreshableToken(src)
+		require.NoError(t, err)
+
+		_, err = provider.GetRequestMetadata(context.Background())
+		require.ErrorIs(t, err, errNilToken)
+
+		_, err = provider.GetRequestMetadata(context.Background())
+		require.ErrorIs(t, err, errNilToken)
+		assert.Equal(t, 1, src.calls(), "a nil token must start the backoff")
+	})
+
+	t.Run("cached token", func(t *testing.T) {
+		var callNum atomic.Int32
+		src := &mockTokenSource{
+			tokenFunc: func() (*oauth2.Token, error) {
+				if callNum.Add(1) == 1 {
+					return &oauth2.Token{AccessToken: "stale", Expiry: time.Now().Add(5 * time.Second)}, nil
+				}
+				return nil, nil
+			},
+		}
+		provider, err := RefreshableToken(src) // default 10s leeway
+		require.NoError(t, err)
+
+		_, err = provider.GetRequestMetadata(context.Background())
+		require.NoError(t, err)
+		for range 2 {
+			md, err := provider.GetRequestMetadata(context.Background())
+			require.NoError(t, err)
+			assert.Equal(t, "Bearer stale", md["authorization"])
+		}
+		assert.Equal(t, 2, src.calls(), "a nil token must start the backoff")
+	})
 }
 
 func TestGetRequestMetadata_BackoffResetsOnSuccess(t *testing.T) {

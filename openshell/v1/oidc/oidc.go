@@ -15,6 +15,8 @@ import (
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/options"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // Login performs an interactive OIDC authorization code login.
@@ -34,6 +36,9 @@ import (
 // exchanges the refresh token for a new one and rewrites the file. If the
 // context ends, discovery fails, or the file cannot be written, Login
 // returns the error; if the refresh fails for any other reason, it runs
+// the interactive flow. If ctx ends after the token request reached the
+// provider, a provider that rotates refresh tokens may already have
+// revoked the stored one; the next Login then gets invalid_grant and runs
 // the interactive flow. [WithInMemory] skips the refresh, because a
 // rotated refresh token would not be written back.
 //
@@ -64,7 +69,7 @@ func Login(ctx context.Context, gatewayName string, opts ...LoginOption) (*oauth
 	// FR-019: Check for existing valid token on disk before starting
 	// an interactive flow.
 	if tokenDir != "" {
-		stored, readErr := readToken(tokenDir)
+		stored, readErr := oidcclient.ReadToken(tokenDir)
 		if readErr == nil && stored != nil && sameClient(stored, cfg) {
 			if tok := stored.Token(); tok.Valid() {
 				return tok, nil
@@ -83,7 +88,7 @@ func Login(ctx context.Context, gatewayName string, opts ...LoginOption) (*oauth
 	}
 
 	// Run OIDC discovery to get provider endpoints.
-	provider, err := discover(ctx, cfg.issuer)
+	provider, err := oidcclient.Discover(ctx, cfg.issuer)
 	if err != nil {
 		return nil, err
 	}
@@ -126,7 +131,7 @@ func Login(ctx context.Context, gatewayName string, opts ...LoginOption) (*oauth
 
 	// Persist token to disk unless in-memory mode is requested.
 	if !cfg.inMemory && tokenDir != "" {
-		if writeErr := writeToken(tokenDir, oidctoken.FromToken(tok, cfg.issuer, cfg.clientID)); writeErr != nil {
+		if writeErr := oidcclient.WriteToken(tokenDir, oidctoken.FromToken(tok, cfg.issuer, cfg.clientID)); writeErr != nil {
 			return nil, writeErr
 		}
 	}
@@ -170,13 +175,13 @@ func resolveOIDCConfig(cfg *loginConfig, gatewayName string) (string, error) {
 }
 
 // supportsS256 checks if the OIDC provider advertises S256 PKCE support.
-func supportsS256(provider *providerConfig) bool {
+func supportsS256(provider *oidcclient.ProviderConfig) bool {
 	return slices.Contains(provider.CodeChallengeMethodsSupported, "S256")
 }
 
 // loginKeyboard performs the keyboard flow: builds the auth URL, shows
 // it to the user, and reads the pasted authorization code.
-func loginKeyboard(ctx context.Context, cfg *loginConfig, provider *providerConfig, state, challenge string) (string, error) {
+func loginKeyboard(ctx context.Context, cfg *loginConfig, provider *oidcclient.ProviderConfig, state, challenge string) (string, error) {
 	redirectURI := "urn:ietf:wg:oauth:2.0:oob"
 	authURL := buildAuthURL(provider.AuthorizationEndpoint, cfg.clientID, redirectURI, state, challenge, cfg.scopes)
 
@@ -200,7 +205,7 @@ func loginKeyboard(ctx context.Context, cfg *loginConfig, provider *providerConf
 // exchangeCode so that it exactly matches the URI used in the auth
 // request. When the function falls back to keyboard flow, the returned
 // redirectURI is the keyboard placeholder ("urn:ietf:wg:oauth:2.0:oob").
-func loginBrowser(ctx context.Context, cfg *loginConfig, provider *providerConfig, state, challenge string) (string, string, error) {
+func loginBrowser(ctx context.Context, cfg *loginConfig, provider *oidcclient.ProviderConfig, state, challenge string) (string, string, error) {
 	port := cfg.callbackPort
 	if port == 0 {
 		port = 8000

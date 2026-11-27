@@ -19,6 +19,8 @@ import (
 	"time"
 
 	"golang.org/x/oauth2"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // generateCodeVerifier creates a PKCE code verifier per RFC 7636.
@@ -195,7 +197,7 @@ func exchangeCode(ctx context.Context, tokenEndpoint, clientID, code, redirectUR
 	}
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 
-	resp, err := oidcHTTPClient.Do(req)
+	resp, err := oidcclient.HTTPClient.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("%w: token request failed: %v", ErrAuthCode, err)
 	}

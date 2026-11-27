@@ -24,6 +24,8 @@ import (
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/gateway"
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // --- T021: Login entry point tests ---
@@ -63,7 +65,7 @@ func setupMockProvider(t *testing.T) *httptest.Server {
 // TestLogin_MissingOIDCConfig verifies that Login returns ErrOIDCConfig
 // when called without a gateway name and without WithIssuer/WithClientID.
 func TestLogin_MissingOIDCConfig(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := Login(context.Background(), "")
 	require.Error(t, err)
@@ -73,7 +75,7 @@ func TestLogin_MissingOIDCConfig(t *testing.T) {
 // TestLogin_MissingIssuer verifies that Login returns ErrOIDCConfig
 // when only WithClientID is provided (missing issuer).
 func TestLogin_MissingIssuer(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := Login(context.Background(), "", WithClientID("test-client"))
 	require.Error(t, err)
@@ -83,7 +85,7 @@ func TestLogin_MissingIssuer(t *testing.T) {
 // TestLogin_MissingClientID verifies that Login returns ErrOIDCConfig
 // when only WithIssuer is provided (missing client ID).
 func TestLogin_MissingClientID(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	_, err := Login(context.Background(), "", WithIssuer("https://example.com"))
 	require.Error(t, err)
@@ -94,7 +96,7 @@ func TestLogin_MissingClientID(t *testing.T) {
 // same issuer (ignoring a trailing slash) and client ID exists on disk,
 // Login returns it without starting an interactive flow.
 func TestLogin_ReusesValidToken(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Create a temp dir with a valid, non-expired token file.
 	tokenDir := t.TempDir()
@@ -104,7 +106,7 @@ func TestLogin_ReusesValidToken(t *testing.T) {
 		TokenType:    "Bearer",
 		Expiry:       time.Now().Add(1 * time.Hour),
 	}
-	err := writeToken(tokenDir, oidctoken.FromToken(existingToken,
+	err := oidcclient.WriteToken(tokenDir, oidctoken.FromToken(existingToken,
 		"https://issuer-should-not-be-called.example.com/", "test-client"))
 	require.NoError(t, err)
 
@@ -126,7 +128,7 @@ func TestLogin_ReusesValidToken(t *testing.T) {
 // the interactive flow. Since we use keyboard flow (no browser), we feed
 // it a code and verify a new token is returned.
 func TestLogin_ExpiredTokenTriggersFlow(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 	tokenDir := t.TempDir()
@@ -137,7 +139,7 @@ func TestLogin_ExpiredTokenTriggersFlow(t *testing.T) {
 		TokenType:   "Bearer",
 		Expiry:      time.Now().Add(-1 * time.Hour), // expired
 	}
-	err := writeToken(tokenDir, oidctoken.FromToken(expiredToken, provider.URL, "test-client"))
+	err := oidcclient.WriteToken(tokenDir, oidctoken.FromToken(expiredToken, provider.URL, "test-client"))
 	require.NoError(t, err)
 
 	// Start a callback server ourselves to simulate the auth code callback.
@@ -166,7 +168,7 @@ func TestLogin_ExpiredTokenTriggersFlow(t *testing.T) {
 // SDK build, is not reused: Login runs the flow and rewrites the file in
 // the CLI format.
 func TestLogin_ReplacesMismatchedStoredToken(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 	expiresAt := fmt.Sprint(time.Now().Add(time.Hour).Unix())
@@ -198,7 +200,7 @@ func TestLogin_ReplacesMismatchedStoredToken(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, "login-access-token", tok.AccessToken)
 
-			diskTok, err := readToken(tokenDir)
+			diskTok, err := oidcclient.ReadToken(tokenDir)
 			require.NoError(t, err)
 			require.NotNil(t, diskTok)
 			assert.Equal(t, "login-access-token", diskTok.AccessToken)
@@ -212,7 +214,7 @@ func TestLogin_ReplacesMismatchedStoredToken(t *testing.T) {
 // keyboard flow when WithKeyboardFlow() is set. The test provides a
 // mock OIDC provider and feeds an auth code through a reader.
 func TestLogin_KeyboardFlow(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 	tokenDir := t.TempDir()
@@ -233,7 +235,7 @@ func TestLogin_KeyboardFlow(t *testing.T) {
 	assert.Equal(t, "login-access-token", tok.AccessToken)
 
 	// Verify token was persisted to disk.
-	diskTok, err := readToken(tokenDir)
+	diskTok, err := oidcclient.ReadToken(tokenDir)
 	require.NoError(t, err)
 	require.NotNil(t, diskTok)
 	assert.Equal(t, "login-access-token", diskTok.AccessToken)
@@ -267,7 +269,7 @@ func TestLogin_AlwaysRequestsOpenIDScope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 
 			provider := setupMockProvider(t)
 			var prompt strings.Builder
@@ -329,7 +331,7 @@ func TestLogin_GatewayScopes(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			resetDiscoveryCache()
+			oidcclient.ResetDiscoveryCache()
 
 			provider := setupMockProvider(t)
 			var prompt strings.Builder
@@ -379,7 +381,7 @@ func extractAuthURL(t *testing.T, prompt string) *url.URL {
 // TestLogin_InMemorySkipsPersistence verifies that WithInMemory()
 // returns a token without writing to disk.
 func TestLogin_InMemorySkipsPersistence(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 	tokenDir := t.TempDir()
@@ -408,7 +410,7 @@ func TestLogin_InMemorySkipsPersistence(t *testing.T) {
 // TestLogin_DiscoveryFailure verifies that Login returns ErrDiscovery
 // when the OIDC provider is unreachable.
 func TestLogin_DiscoveryFailure(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Point to a server that doesn't exist.
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
@@ -427,7 +429,7 @@ func TestLogin_DiscoveryFailure(t *testing.T) {
 // from gateway metadata when a gateway name is provided. We use the
 // withGatewayResolver option to inject a fake gateway loader.
 func TestLogin_GatewayResolution(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 	tokenDir := t.TempDir()
@@ -457,7 +459,7 @@ func TestLogin_GatewayResolution(t *testing.T) {
 	assert.Equal(t, "login-access-token", tok.AccessToken)
 
 	// Verify token was persisted in the gateway dir.
-	diskTok, err := readToken(tokenDir)
+	diskTok, err := oidcclient.ReadToken(tokenDir)
 	require.NoError(t, err)
 	require.NotNil(t, diskTok)
 	assert.Equal(t, "login-access-token", diskTok.AccessToken)
@@ -468,7 +470,7 @@ func TestLogin_GatewayResolution(t *testing.T) {
 // TestLogin_GatewayMissingOIDCFields verifies that Login returns
 // ErrOIDCConfig when the gateway config has empty OIDC fields.
 func TestLogin_GatewayMissingOIDCFields(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	fakeConfig := &gateway.Config{
 		Name:     "no-oidc-gw",
@@ -489,7 +491,7 @@ func TestLogin_GatewayMissingOIDCFields(t *testing.T) {
 // TestLogin_GatewayResolutionError verifies that Login propagates
 // errors from gateway resolution.
 func TestLogin_GatewayResolutionError(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	gwErr := fmt.Errorf("gateway not found: no-such-gateway")
 
@@ -505,7 +507,7 @@ func TestLogin_GatewayResolutionError(t *testing.T) {
 // TestLogin_NoPKCESupport verifies that Login proceeds without PKCE
 // when the OIDC provider does not advertise S256 support.
 func TestLogin_NoPKCESupport(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Create a provider that does NOT list S256 in supported methods.
 	mux := http.NewServeMux()
@@ -556,7 +558,7 @@ func TestLogin_NoPKCESupport(t *testing.T) {
 // TestLogin_ContextCancellation verifies that Login respects context
 // cancellation during the interactive flow.
 func TestLogin_ContextCancellation(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 
@@ -580,7 +582,7 @@ func TestLogin_ContextCancellation(t *testing.T) {
 // TestLogin_CustomScopes verifies that WithScopes overrides the
 // default scopes sent in the authorization request.
 func TestLogin_CustomScopes(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Provider that captures the auth URL scope parameter.
 	mux := http.NewServeMux()
@@ -627,7 +629,7 @@ func TestLogin_CustomScopes(t *testing.T) {
 // loginBrowser falls back to keyboard flow when the callback server
 // port is already occupied and no custom port is set.
 func TestLoginBrowser_PortBusy_FallbackToKeyboard(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 
@@ -666,7 +668,7 @@ func TestLoginBrowser_PortBusy_FallbackToKeyboard(t *testing.T) {
 // TestLogin_ContextTimeout verifies that a Login with a very short
 // timeout returns a timeout-related error.
 func TestLogin_ContextTimeout(t *testing.T) {
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	provider := setupMockProvider(t)
 

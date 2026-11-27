@@ -16,6 +16,8 @@ import (
 	"golang.org/x/oauth2"
 
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 func loadOIDCTokenFixture(t *testing.T) []byte {
@@ -29,7 +31,7 @@ func TestReadToken_ConformanceFixture(t *testing.T) {
 	dir := t.TempDir()
 	require.NoError(t, os.WriteFile(filepath.Join(dir, oidctoken.FileName), loadOIDCTokenFixture(t), 0o600))
 
-	b, err := readToken(dir)
+	b, err := oidcclient.ReadToken(dir)
 	require.NoError(t, err)
 	require.NotNil(t, b)
 	assert.Equal(t, "conformance-access-token", b.AccessToken)
@@ -48,7 +50,7 @@ func TestWriteToken_MatchesConformanceFixture(t *testing.T) {
 		Expiry:       time.Unix(4102444800, 0),
 	}
 
-	require.NoError(t, writeToken(dir, oidctoken.FromToken(tok, "https://issuer.example.com", "openshell-cli")))
+	require.NoError(t, oidcclient.WriteToken(dir, oidctoken.FromToken(tok, "https://issuer.example.com", "openshell-cli")))
 
 	data, err := os.ReadFile(filepath.Join(dir, oidctoken.FileName))
 	require.NoError(t, err)
@@ -59,7 +61,7 @@ func TestWriteToken_OmitsEmptyOptionalFields(t *testing.T) {
 	dir := t.TempDir()
 	tok := &oauth2.Token{AccessToken: "access-only"}
 
-	require.NoError(t, writeToken(dir, oidctoken.FromToken(tok, "https://issuer.example.com", "openshell-cli")))
+	require.NoError(t, oidcclient.WriteToken(dir, oidctoken.FromToken(tok, "https://issuer.example.com", "openshell-cli")))
 
 	data, err := os.ReadFile(filepath.Join(dir, oidctoken.FileName))
 	require.NoError(t, err)
@@ -73,13 +75,13 @@ func TestWriteToken_ReplacesInsecureExistingFileWithOwnerOnlyFile(t *testing.T) 
 	path := filepath.Join(dir, oidctoken.FileName)
 	require.NoError(t, os.WriteFile(path, []byte("old"), 0o644))
 
-	require.NoError(t, writeToken(dir, oidctoken.Bundle{AccessToken: "secret"}))
+	require.NoError(t, oidcclient.WriteToken(dir, oidctoken.Bundle{AccessToken: "secret"}))
 
 	assertOwnerOnlyFilePermissions(t, path)
 }
 
 func TestWriteToken_InvalidDirectory(t *testing.T) {
-	err := writeToken("/nonexistent/path/that/does/not/exist", oidctoken.Bundle{AccessToken: "test"})
+	err := oidcclient.WriteToken("/nonexistent/path/that/does/not/exist", oidctoken.Bundle{AccessToken: "test"})
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrTokenPersist))
 }
@@ -87,7 +89,7 @@ func TestWriteToken_InvalidDirectory(t *testing.T) {
 func TestReadToken_MissingFile(t *testing.T) {
 	dir := t.TempDir()
 
-	tok, err := readToken(dir)
+	tok, err := oidcclient.ReadToken(dir)
 	assert.Nil(t, tok)
 	assert.NoError(t, err, "missing file should return nil token, no error")
 }
@@ -97,7 +99,7 @@ func TestReadToken_InvalidJSON(t *testing.T) {
 	err := os.WriteFile(filepath.Join(dir, "oidc_token.json"), []byte(`{invalid`), 0o600)
 	require.NoError(t, err)
 
-	_, err = readToken(dir)
+	_, err = oidcclient.ReadToken(dir)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrTokenPersist))
 }
@@ -105,7 +107,7 @@ func TestReadToken_InvalidJSON(t *testing.T) {
 func TestWriteToken_FilePermissions(t *testing.T) {
 	dir := t.TempDir()
 
-	err := writeToken(dir, oidctoken.Bundle{AccessToken: "perm-check"})
+	err := oidcclient.WriteToken(dir, oidctoken.Bundle{AccessToken: "perm-check"})
 	require.NoError(t, err)
 
 	assertOwnerOnlyFilePermissions(t, filepath.Join(dir, "oidc_token.json"))

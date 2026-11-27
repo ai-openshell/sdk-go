@@ -14,6 +14,10 @@ import (
 // FileName is the OIDC token bundle in a gateway directory.
 const FileName = "oidc_token.json"
 
+// RefreshWindow lets the gateway's token source share its renewal window
+// with the SDK cache without changing the contract for other token sources.
+type RefreshWindow time.Duration
+
 // Bundle is the CLI's on-disk OIDC token bundle (openshell-bootstrap OidcTokenBundle).
 type Bundle struct {
 	AccessToken  string  `json:"access_token"`

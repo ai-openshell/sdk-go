@@ -1,9 +1,10 @@
 // SPDX-FileCopyrightText: Copyright (c) 2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 // SPDX-License-Identifier: Apache-2.0
 
-package oidc
+package oidcclient
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,11 +17,11 @@ import (
 	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidctoken"
 )
 
-// writeToken persists an OIDC token bundle to disk as oidc_token.json in
+// WriteToken persists an OIDC token bundle to disk as oidc_token.json in
 // the given directory, in the CLI's format. The file is written with 0600
-// permissions (owner-only) to protect credentials, and on Windows the final
+// permissions (owner-only on Unix) to protect credentials, and on Windows the final
 // replace is retried briefly while another process has the file open.
-func writeToken(dir string, b oidctoken.Bundle) error {
+func WriteToken(dir string, b oidctoken.Bundle) error {
 	data, err := json.Marshal(b)
 	if err != nil {
 		return fmt.Errorf("%w: failed to marshal token: %v", ErrTokenPersist, err)
@@ -101,12 +102,26 @@ func isTransientReplaceError(goos string, err error) bool {
 		(errno == errorAccessDenied || errno == errorSharingViolation)
 }
 
-// readToken reads an existing oidc_token.json from the given
+// checkWritable returns ErrTokenPersist if a file cannot be created in dir.
+// It catches a missing write permission, not every later write failure,
+// such as a full disk.
+func checkWritable(dir string) error {
+	f, err := os.CreateTemp(dir, ".oidc-token-*")
+	if err != nil {
+		return fmt.Errorf("%w: cannot write to the token directory: %v", ErrTokenPersist, err)
+	}
+	name := f.Name()
+	_ = f.Close()
+	_ = os.Remove(name)
+	return nil
+}
+
+// ReadToken reads an existing oidc_token.json from the given
 // directory. It returns:
 //   - (bundle, nil) if the file exists and parses
 //   - (nil, nil) if the file does not exist
 //   - (nil, error) if the file exists but cannot be read or parsed
-func readToken(dir string) (*oidctoken.Bundle, error) {
+func ReadToken(dir string) (*oidctoken.Bundle, error) {
 	path := filepath.Join(dir, oidctoken.FileName)
 
 	data, err := os.ReadFile(path)
@@ -119,8 +134,38 @@ func readToken(dir string) (*oidctoken.Bundle, error) {
 
 	var bundle oidctoken.Bundle
 	if err := json.Unmarshal(data, &bundle); err != nil {
-		return nil, fmt.Errorf("%w: invalid JSON in %s: %v", ErrTokenPersist, oidctoken.FileName, err)
+		// Decoder errors can quote values from the token file.
+		return nil, fmt.Errorf("%w: invalid JSON in %s", ErrTokenPersist, oidctoken.FileName)
 	}
 
 	return &bundle, nil
+}
+
+// SavePendingToken retries a write while the file still contains the
+// access token that the pending token replaced.
+func SavePendingToken(ctx context.Context, dir string, bundle oidctoken.Bundle, replacedAccessToken string) error {
+	unlock, err := LockDir(ctx, dir)
+	if err != nil {
+		return fmt.Errorf("waiting for another refresh of %s: %w", oidctoken.FileName, err)
+	}
+	defer unlock()
+
+	_, _, err = replaceTokenIfCurrent(dir, bundle, func(current *oidctoken.Bundle) bool {
+		return current.AccessToken == replacedAccessToken
+	}, false)
+	return err
+}
+
+// replaceTokenIfCurrent rereads the file under the caller's refresh lock.
+// It returns the observed bundle and whether a write was attempted.
+func replaceTokenIfCurrent(dir string, bundle oidctoken.Bundle, matches func(*oidctoken.Bundle) bool, replaceUnreadable bool) (*oidctoken.Bundle, bool, error) {
+	current, err := ReadToken(dir)
+	if err != nil {
+		if !replaceUnreadable {
+			return nil, false, err
+		}
+	} else if current == nil || !matches(current) {
+		return current, false, nil
+	}
+	return current, true, WriteToken(dir, bundle)
 }

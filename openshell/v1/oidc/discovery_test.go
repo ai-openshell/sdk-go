@@ -13,6 +13,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/ai-openshell/sdk-go/openshell/v1/internal/oidcclient"
 )
 
 // wellKnownJSON returns a valid OIDC discovery document JSON string
@@ -37,9 +39,9 @@ func TestDiscover_ValidDocument(t *testing.T) {
 	defer srv.Close()
 
 	// Clear cache to avoid interference from other tests.
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	cfg, err := discover(context.Background(), srv.URL)
+	cfg, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.NoError(t, err)
 
 	assert.Equal(t, srv.URL, cfg.Issuer)
@@ -60,12 +62,12 @@ func TestDiscover_CachesResult(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	cfg1, err := discover(context.Background(), srv.URL)
+	cfg1, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.NoError(t, err)
 
-	cfg2, err := discover(context.Background(), srv.URL)
+	cfg2, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.NoError(t, err)
 
 	// Same pointer should be returned from cache.
@@ -85,12 +87,12 @@ func TestDiscover_DifferentIssuersNotCached(t *testing.T) {
 	srv2 := httptest.NewServer(handler)
 	defer srv2.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	cfg1, err := discover(context.Background(), srv1.URL)
+	cfg1, err := oidcclient.Discover(context.Background(), srv1.URL)
 	require.NoError(t, err)
 
-	cfg2, err := discover(context.Background(), srv2.URL)
+	cfg2, err := oidcclient.Discover(context.Background(), srv2.URL)
 	require.NoError(t, err)
 
 	// Different issuers should yield different cached entries.
@@ -103,9 +105,9 @@ func TestDiscover_HTTPError(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrDiscovery))
 }
@@ -117,9 +119,9 @@ func TestDiscover_InvalidJSON(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrDiscovery))
 }
@@ -132,9 +134,9 @@ func TestDiscover_MissingTokenEndpoint(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrDiscovery))
 	assert.Contains(t, err.Error(), "token_endpoint")
@@ -148,12 +150,12 @@ func TestDiscover_ContextCancelled(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel() // Cancel immediately.
 
-	_, err := discover(ctx, srv.URL)
+	_, err := oidcclient.Discover(ctx, srv.URL)
 	require.Error(t, err)
 	assert.True(t, errors.Is(err, ErrDiscovery))
 }
@@ -170,17 +172,17 @@ func TestDiscover_ConcurrentAccess(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	var wg sync.WaitGroup
-	results := make([]*providerConfig, 10)
+	results := make([]*oidcclient.ProviderConfig, 10)
 	errs := make([]error, 10)
 
 	for i := range 10 {
 		wg.Add(1)
 		go func(idx int) {
 			defer wg.Done()
-			results[idx], errs[idx] = discover(context.Background(), srv.URL)
+			results[idx], errs[idx] = oidcclient.Discover(context.Background(), srv.URL)
 		}(i)
 	}
 	wg.Wait()
@@ -208,9 +210,9 @@ func TestDiscover_NoDeviceEndpointIsOK(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	cfg, err := discover(context.Background(), srv.URL)
+	cfg, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.NoError(t, err)
 	assert.Empty(t, cfg.DeviceAuthorizationEndpoint)
 }
@@ -225,13 +227,13 @@ func TestDiscover_TrailingSlashNormalized(t *testing.T) {
 	}))
 	defer srv.Close()
 
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
 	// Call with trailing slash and without; should be same cache entry.
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.NoError(t, err)
 
-	_, err = discover(context.Background(), srv.URL+"/")
+	_, err = oidcclient.Discover(context.Background(), srv.URL+"/")
 	require.NoError(t, err)
 
 	assert.Equal(t, 1, callCount, "trailing slash should be normalized for caching")
@@ -242,9 +244,9 @@ func TestDiscover_RejectsIssuerMismatch(t *testing.T) {
 		_, _ = w.Write([]byte(wellKnownJSON("https://attacker.example")))
 	}))
 	defer srv.Close()
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "issuer")
 }
@@ -255,9 +257,9 @@ func TestDiscover_RejectsInsecureRemoteEndpoint(t *testing.T) {
 		_, _ = w.Write([]byte(`{"issuer":"` + srv.URL + `","authorization_endpoint":"http://example.com/authorize","token_endpoint":"` + srv.URL + `/token"}`))
 	}))
 	defer srv.Close()
-	resetDiscoveryCache()
+	oidcclient.ResetDiscoveryCache()
 
-	_, err := discover(context.Background(), srv.URL)
+	_, err := oidcclient.Discover(context.Background(), srv.URL)
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "authorization_endpoint")
 }
