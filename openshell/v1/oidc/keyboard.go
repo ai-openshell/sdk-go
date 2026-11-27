@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"sync"
 )
 
 type readResult struct {
@@ -46,52 +47,61 @@ func keyboardFlow(ctx context.Context, authURL string, input io.Reader, output i
 	return result.code, nil
 }
 
-type inputRequest struct {
-	input  io.Reader
-	result chan readResult
+// inputDispatcher keeps one scanner per reader. A timed-out login stops
+// waiting, and the line that scanner later reads stays queued for the next
+// login instead of being delivered to the abandoned request.
+type inputDispatcher struct {
+	mu      sync.Mutex
+	sources map[io.Reader]*lineSource
 }
 
-type inputDispatcher struct {
-	requests chan inputRequest
+type lineSource struct {
+	lines chan readResult
 }
 
 var keyboardInput = newInputDispatcher()
 
 func newInputDispatcher() *inputDispatcher {
-	d := &inputDispatcher{requests: make(chan inputRequest)}
-	go d.run()
-	return d
+	return &inputDispatcher{sources: make(map[io.Reader]*lineSource)}
 }
 
 func (d *inputDispatcher) read(ctx context.Context, input io.Reader) (readResult, error) {
 	if err := ctx.Err(); err != nil {
 		return readResult{}, fmt.Errorf("%w: %v", ErrTimeout, err)
 	}
-	request := inputRequest{input: input, result: make(chan readResult, 1)}
+	src := d.source(input)
 	select {
-	case d.requests <- request:
-	case <-ctx.Done():
-		return readResult{}, fmt.Errorf("%w: %v", ErrTimeout, ctx.Err())
-	}
-	select {
-	case result := <-request.result:
+	case result, ok := <-src.lines:
+		if !ok {
+			return readResult{err: fmt.Errorf("%w: no authorization code received (EOF)", ErrAuthCode)}, nil
+		}
 		return result, nil
 	case <-ctx.Done():
 		return readResult{}, fmt.Errorf("%w: %v", ErrTimeout, ctx.Err())
 	}
 }
 
-func (d *inputDispatcher) run() {
-	for request := range d.requests {
-		scanner := bufio.NewScanner(request.input)
-		if scanner.Scan() {
-			request.result <- readResult{code: strings.TrimSpace(scanner.Text())}
-			continue
-		}
-		if err := scanner.Err(); err != nil {
-			request.result <- readResult{err: fmt.Errorf("%w: failed to read authorization code: %v", ErrAuthCode, err)}
-		} else {
-			request.result <- readResult{err: fmt.Errorf("%w: no authorization code received (EOF)", ErrAuthCode)}
-		}
+func (d *inputDispatcher) source(input io.Reader) *lineSource {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	if src, ok := d.sources[input]; ok {
+		return src
 	}
+	src := &lineSource{lines: make(chan readResult, 1)}
+	d.sources[input] = src
+	go src.run(input)
+	return src
+}
+
+func (s *lineSource) run(input io.Reader) {
+	defer close(s.lines)
+	scanner := bufio.NewScanner(input)
+	for scanner.Scan() {
+		s.lines <- readResult{code: strings.TrimSpace(scanner.Text())}
+	}
+	if err := scanner.Err(); err != nil {
+		s.lines <- readResult{err: fmt.Errorf("%w: failed to read authorization code: %v", ErrAuthCode, err)}
+		return
+	}
+	s.lines <- readResult{err: fmt.Errorf("%w: no authorization code received (EOF)", ErrAuthCode)}
 }
