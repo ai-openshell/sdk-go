@@ -43,8 +43,9 @@ const (
 // emitted while the watcher reconnects, so a gateway that stays down looks
 // like a quiet sandbox. Bound the watch with a context deadline or call Stop
 // when that matters. This differs from Watch, which reports Unavailable as an
-// ERROR event immediately. A connection that dies without the transport
-// noticing (no keepalive, half-open TCP) stalls until the context ends.
+// ERROR event immediately. A connection that dies silently (half-open TCP,
+// an idle timeout on a load balancer or NAT) is caught by the client keepalive
+// within about 40 seconds and redialed like any other Unavailable.
 //
 // Loss is never silent. A recoverable server-side gap arrives as a
 // WatchLogKindWarning event and the stream continues. An unrecoverable gap ends
