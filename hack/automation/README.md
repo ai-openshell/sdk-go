@@ -9,6 +9,8 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `core-tags.sh` | `core:tags` | List ai-openshell/openshell release tags newer than the pin (`buf.gen.yaml`, `inputs[0].tag`), semver-sorted with pre-releases below their stable version. |
 | `open-bump-pr.sh <tag> [--dry-run]` | `core:bump` | Open the update proposal for one core tag: branch `core/<tag>`, pin change, regenerated bindings, proto diff in the body, labels `core-bump` plus `stable` or `prerelease`. Closes older pre-release proposals. |
 | `bump-pr-body.md` | | PR body template for `open-bump-pr.sh`. |
+| `fill-template.sh <template> KEY=value...` | | Print a template with its `{{KEY}}` placeholders filled (`fill` in `template.jq`): values are passed to jq as arguments, inserted as is and never scanned again, and a placeholder without an argument fails. Used by `open-bump-pr.sh` and `hack/migration/port-pr.sh`. |
+| `fill-template-test.sh` | | Offline tests for `fill-template.sh`; part of `workflows:check`. |
 | `core-registry.sh` | | Sourced by `start-gateway.sh` and `open-bump-pr.sh`: `core_registry <version>` prints the registry that holds a core release's images, `quay.io/ai-openshell` for releases since the move and `ghcr.io/nvidia/openshell` for older ones. |
 | `merge-bump-pr.sh [--dry-run] [--auto-merge on\|off]` | `core:merge` | Merge stable proposals that change no proto: one commit with a provenance check from the bump App, exactly the pin bump, green checks, no `hold` label. Off unless `CORE_AUTO_MERGE` is `on`. |
 | `pin-bump.sh` | | Sourced by `open-bump-pr.sh` and `merge-bump-pr.sh`: `pin_bump_edit <tag> <kind>` makes the pin and README edits of a bump, `pin_bump_tree <base> <tag> <kind>` prints the tree a bump commit with only those edits has, `older <a> <b>` compares release tags. |
@@ -20,6 +22,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `rpc-issues.jq` | | The planner for `rpc-issues.sh`: input document in, actions and rendered bodies out; no network. |
 | `rpc-rows.jq` | | Turns core's buf image and proto sources into the planner's input rows (signatures, comments, messages, links). |
 | `rpc-marker.jq` | | The hidden issue marker, parsed by `rpc-issues.jq` and `update-drift-issue.sh` (jq module). |
+| `template.jq` | | `fill`: the single-pass `{{KEY}}` template filler shared by `rpc-issues.jq` and `fill-template.sh` (jq module). |
 | `rpc-issue-body.md` | | Issue body template for `rpc-issues.jq`. |
 | `rpc-coverage.sh` | | The coverage rule shared by `rpc-issues.sh` and `drift-check.sh` (sourced, not run). |
 | `rpc-issues-lib.sh` | | Exceptions list parser and helpers for listing the bot's issues (sourced, not run). |

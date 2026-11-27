@@ -151,16 +151,12 @@ fixtures=$(cat "$work/fixtures.txt")
 # A fresh tag's images may not be pushed yet; new releases go to Quay.
 registry=$(core_registry "${tag#v}") || registry=quay.io/ai-openshell
 body="$work/body.md"
-OLD="$old" NEW="$tag" KIND="$kind" COMPARE_URL="$compare_url" IMAGE="$registry/gateway:${tag#v}" \
-GENERATED="${generated:-no generated files changed}" FIXTURES="${fixtures:-- no fixture changes}" \
-PROTO_DIFF="$proto_section" \
-  awk '{
-    while (match($0, /\{\{[A-Z_]+\}\}/)) {
-      key = substr($0, RSTART + 2, RLENGTH - 4)
-      $0 = substr($0, 1, RSTART - 1) ENVIRON[key] substr($0, RSTART + RLENGTH)
-    }
-    print
-  }' "$body_tmpl" >"$body"
+# Values are inserted as is and never scanned again, so upstream text such as
+# "{{GH_TOKEN}}" in the proto diff stays literal (fill-template.sh).
+"$here/fill-template.sh" "$body_tmpl" \
+  OLD="$old" NEW="$tag" KIND="$kind" COMPARE_URL="$compare_url" IMAGE="$registry/gateway:${tag#v}" \
+  GENERATED="${generated:-no generated files changed}" FIXTURES="${fixtures:-- no fixture changes}" \
+  PROTO_DIFF="$proto_section" >"$body"
 
 echo "Proposal for $tag ($kind), pin $old -> $tag:"
 git log --format='  %h %an <%ae>  %s' "$base..$branch"

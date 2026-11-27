@@ -10,7 +10,8 @@ The migration is tracked in NVIDIA/OpenShell#5031.
 | `message-rules.txt` | `git filter-repo --replace-message` rules: bare `#N` becomes `NVIDIA/OpenShell#N`. |
 | `verify-tree.sh <core-clone> <freeze-sha> <sdk-go-clone> <commit>` | Prove the imported tree is byte-identical to `sdk/go` at the freeze commit, compare commit, author, and sign-off counts, and reject bare references. |
 | `port-pr.sh <core-pr-number>` | Port an open NVIDIA/OpenShell PR into this repository with its original commits and authorship (branch `port/<n>`, label `port`). |
-| `port-pr-body.md` | PR body template used by `port-pr.sh`. |
+| `port-pr-body.md` | PR body template used by `port-pr.sh`, filled by `hack/automation/fill-template.sh`. |
+| `port-pr-test.sh` | Offline test of `port-pr.sh` against a synthetic upstream PR that replaces the renderer; part of `workflows:check`. |
 | `FREEZE` | The recorded freeze commit (`sha=<sha>`) and the stable core tag at the freeze (`tag=<tag>`). |
 
 ## Import procedure
@@ -24,6 +25,8 @@ The migration is tracked in NVIDIA/OpenShell#5031.
 ## Porting procedure
 
 1. From the root of a clean clone: `hack/migration/port-pr.sh <core-pr-number>`. It builds `port/<n>` from `origin/main` and prints the PR body. Nothing is pushed yet.
-2. On a conflict, resolve it and `git add` the files. Then run `port-pr.sh --fix-paths <n>`, `git am --continue`, and `port-pr.sh --continue <n>`.
-3. Review the branch and the body, then run `port-pr.sh --continue --push <n>` to push and open the PR.
+2. On a conflict, resolve it and `git add` the files. Then run `--fix-paths <n>`, `git am --continue`, and `--continue <n>` with the trusted copy of the script whose path `port-pr.sh` prints.
+3. Review the branch and the body, then run the trusted copy with `--continue --push <n>` to push and open the PR.
+
+After `git am`, the working tree holds the upstream PR's files, and a PR can change any script in it. `port-pr.sh` therefore copies itself and the files it runs later (`port-pr-body.md`, `hack/automation/fill-template.sh`, `template.jq`) to `$(git rev-parse --git-path port-src/<n>)/trusted/` before it applies anything, renders the PR body with that copy, and runs `--fix-paths` and `--continue` only from it.
 4. Port only the top PR of a stack. A PR that contains another PR's commits brings them along.

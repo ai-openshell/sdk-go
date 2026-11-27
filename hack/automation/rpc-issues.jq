@@ -24,6 +24,7 @@
 # whose last close or reopen actor the plan depends on.
 
 include "rpc-marker";
+include "template";
 
 def base_labels: ["help wanted", "rpc-coverage"];
 def readiness_labels: ["rpc:blocked", "rpc:ready"];
@@ -63,11 +64,6 @@ def issue_status:
   if .state == "OPEN" then "open"
   elif .last_actor_is_bot == true then "bot-closed"
   else "human-closed" end;
-
-# Replace the {{KEY}} placeholders of a template with the values of an
-# object in one pass, so text from core that contains "{{...}}" stays as is.
-def fill($vals):
-  gsub("\\{\\{(?<k>[A-Z_]+)\\}\\}"; $vals[.k] // "{{\(.k)}}");
 
 def normalize: gsub("\r"; "") | sub("\\s+$"; "");
 
