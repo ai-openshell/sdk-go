@@ -10,6 +10,9 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 | `open-bump-pr.sh <tag> [--dry-run]` | `core:bump` | Open the update proposal for one core tag: branch `core/<tag>`, pin change, regenerated bindings, proto diff in the body, labels `core-bump` plus `stable` or `prerelease`. Closes older pre-release proposals. |
 | `bump-pr-body.md` | | PR body template for `open-bump-pr.sh`. |
 | `core-registry.sh` | | Sourced by `start-gateway.sh` and `open-bump-pr.sh`: `core_registry <version>` prints the registry that holds a core release's images, `quay.io/ai-openshell` for releases since the move and `ghcr.io/nvidia/openshell` for older ones. |
+| `merge-bump-pr.sh [--dry-run] [--auto-merge on\|off]` | `core:merge` | Merge stable proposals that change no proto: one commit with a provenance check from the bump App, exactly the pin bump, green checks, no `hold` label. Off unless `CORE_AUTO_MERGE` is `on`. |
+| `pin-bump.sh` | | Sourced by `open-bump-pr.sh` and `merge-bump-pr.sh`: `pin_bump_edit <tag> <kind>` makes the pin and README edits of a bump, `pin_bump_tree <base> <tag> <kind>` prints the tree a bump commit with only those edits has, `older <a> <b>` compares release tags. |
+| `merge-bump-pr-test.sh` | | Offline tests for `pin-bump.sh` and `merge-bump-pr.sh` in scratch Git repositories, with the gh stub in `testdata/merge-bump/bin/`; part of `workflows:check`. |
 | `tag-release.sh [--dry-run]` | `release:tag` | After a stable pin lands on `main`: create the lockstep tag `vX.Y.Z` and the GitHub release, then ask the Go module proxy for the version. |
 | `drift-check.sh --out <file>` | `core:drift` | Compare core `main` against the pin: `buf breaking`, regenerate and build, uncovered RPCs. Writes the markdown report. |
 | `update-drift-issue.sh <report.md>` | | Create, update, or close the single `Core main drift` issue from a report; uncovered RPCs link to their open RPC coverage issues. |
@@ -28,7 +31,7 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
 
 | Workflow | Script |
 |----------|--------|
-| `core-watch.yml` (hourly) | `core-tags.sh`, then `open-bump-pr.sh` per tag, then `rpc-issues.sh` |
+| `core-watch.yml` (hourly) | job `watch`: `core-tags.sh`, then `open-bump-pr.sh` per tag, then `rpc-issues.sh`; job `merge` (only when `CORE_AUTO_MERGE` is `on`): `merge-bump-pr.sh` |
 | `release-tag.yml` (push to `main`) | `tag-release.sh` |
 | `core-drift.yml` (nightly) | `drift-check.sh`, then `update-drift-issue.sh` |
 | `e2e.yml` (reusable) | `start-gateway.sh`, `mise run e2e`, `stop-gateway.sh` |
@@ -52,3 +55,30 @@ Workflows run them with a token of the `ai-openshell-sdk-go` GitHub App (`ai-ope
   If they are expected, run core-watch by hand with the input `max_new_issues`, or locally `mise run core:rpc-issues -- --max-new <n>`.
 - **Preview**: `mise run core:rpc-issues -- --dry-run` prints every planned action with its body and changes nothing (it reads GitHub, so `gh` must be logged in).
   Without `--dry-run`, the script applies the plan only with an explicit `BOT_LOGIN` and the bot's token (core-watch passes both); under a person's `gh` login it stops before any write, because later runs would not manage the issues it opened.
+
+## Auto-merge for stable pins
+
+`merge-bump-pr.sh` is off until the repository variable `CORE_AUTO_MERGE` is `on`.
+It merges a stable proposal only when the release changes no proto: the regenerated bindings under `proto/` are identical, so the SDK needs no work and can be tagged right away.
+A release that changes the protos always waits for review; the SDK release may lag until the new features are wrapped and usable (see the RPC coverage issues).
+
+The proposal must be exactly a pin bump.
+`pin_bump_tree` rebuilds the expected tree from the merge base with the same edits `open-bump-pr.sh` makes (the pin in `buf.gen.yaml` and the README line), and the bump commit's tree has to match it.
+Any other change sends the proposal to review, including one inside `buf.gen.yaml` such as a plugin entry, a changed conformance fixture, or a second commit.
+When auto-merge is on, the bump App records a `core-bump/provenance` check on the stable commit it generated. The merge script verifies the App ID and the exact PR head SHA. A new head without that check goes through review, including proposals opened before auto-merge was enabled.
+The proposal also goes back to review when a check fails or someone adds the `hold` label.
+It waits for review, too, when its tag is not newer than the pin on `main`, or when `main` moved the pin since the proposal was cut (after an earlier proposal merged, a second one from the same base would only conflict).
+If GitHub refuses a merge, the script leaves that proposal for review, goes on with the others, and fails the run so the failure is reported; the comment explaining an unreviewed merge is posted only after the merge succeeds.
+Merges happen on the hourly run after the checks turn green, so a stable SDK release follows the core release within about two hours.
+
+The merge runs in its own core-watch job, `merge`, with the token of a second GitHub App that only merges (secrets `SDK_MERGE_CLIENT_ID` and `SDK_MERGE_PRIVATE_KEY` in `sdk-bot`).
+That job runs no generator or other code from core.
+The script checks the proposal; who may write a `core/*` branch and who may skip review are set by repository rules.
+Before an admin sets `CORE_AUTO_MERGE` to `on`:
+
+1. A ruleset on `core/*` lets only the `ai-openshell-sdk-go` App and maintainers create, update, or delete those branches.
+2. A ruleset on `main` requires the GitHub Actions `ci` and `e2e-gate` checks with no bypass actors, and the separate DCO rule stays in force. Auto-merge also requires an actual `e2e / e2e` pass on the proposal.
+3. The bump App installation has checks write so `core-watch` can record provenance when auto-merge is enabled.
+4. The merge App is installed on this repository with contents and pull requests write, checks and statuses read, and issues write (for failure reports), and its secrets are in `sdk-bot`.
+5. The merge App is a PR-only bypass actor for `main-integrity` on this repository, so its merge can skip the code owner review.
+6. `mise run core:merge -- --dry-run --auto-merge on` with the merge App's token lists the open stable proposals it would merge, and each skip reason matches what you expect.

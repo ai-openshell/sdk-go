@@ -1,8 +1,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
 # SPDX-License-Identifier: Apache-2.0
 
-# Opens one update proposal per new core release tag, then reconciles the RPC
-# coverage issues against the newest core tag (hack/automation/).
+# Opens one update proposal per new core release tag and reconciles the RPC
+# coverage issues against the newest core tag; when auto-merge is on, a
+# separate job merges stable proposals that change no proto
+# (hack/automation/).
 name: core-watch
 
 on:
@@ -43,6 +45,7 @@ jobs:
           permission-contents: write
           permission-pull-requests: write
           permission-issues: write
+          permission-checks: ${{ vars.CORE_AUTO_MERGE == 'on' && 'write' || '' }}
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -71,6 +74,7 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           INPUT_TAG: ${{ inputs.tag }}
+          CORE_AUTO_MERGE: ${{ vars.CORE_AUTO_MERGE }}
         run: |
           set -euo pipefail
           if [ -n "$INPUT_TAG" ]; then
@@ -103,3 +107,53 @@ jobs:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
         run: hack/automation/report-failure.sh core-watch "$RUN_URL"
+
+  # Merges stable proposals that change no proto and whose checks went green
+  # (hack/automation/merge-bump-pr.sh). Only when the CORE_AUTO_MERGE
+  # repository variable is on. A separate job with a separate App: only the
+  # merge App is a bypass actor on main-integrity, the bump App that pushes
+  # core/* branches is not, and this job runs no generator or other code
+  # from core.
+  merge:
+    name: merge
+    needs: watch
+    if: ${{ !cancelled() && vars.CORE_AUTO_MERGE == 'on' }}
+    environment: sdk-bot
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - id: app-token
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
+        with:
+          client-id: ${{ secrets.SDK_MERGE_CLIENT_ID }}
+          private-key: ${{ secrets.SDK_MERGE_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+          permission-checks: read
+          permission-statuses: read
+          permission-issues: write
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: jdx/mise-action@236a21c3b91f5db6d4e174b348674a0f0caac06d # v5.2.9
+        with:
+          install: false
+
+      - name: Install tools
+        run: mise install --locked yq
+
+      - name: Merge proposals that change no proto
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          CORE_AUTO_MERGE: ${{ vars.CORE_AUTO_MERGE }}
+        run: hack/automation/merge-bump-pr.sh
+
+      - name: Report failure
+        if: failure()
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: hack/automation/report-failure.sh core-watch-merge "$RUN_URL"

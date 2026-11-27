@@ -1,0 +1,70 @@
+#!/usr/bin/env bash
+# SPDX-FileCopyrightText: Copyright (c) 2025-2026 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+# SPDX-License-Identifier: Apache-2.0
+
+# gh stub for merge-bump-pr-test.sh. Answers the calls merge-bump-pr.sh
+# makes from the files in $GH_STUB_STATE:
+#   prs.json            what `gh pr list --json ...` returns (before --jq)
+#   runs-<sha>.json     check runs for <sha>; default: one successful
+#                       core-bump/provenance run from the bump App
+#   checks-<n>.json     `gh pr checks <n> --json name,bucket`; default checks.json
+#   refuse-<n>          `gh pr merge <n>` fails
+#   origin.git          bare repository a merge squashes the PR branch into
+# Merges and comments are appended to $GH_STUB_STATE/events, in order.
+set -euo pipefail
+
+state=${GH_STUB_STATE:?GH_STUB_STATE is not set}
+jq_expr=
+args=()
+while [ $# -gt 0 ]; do
+  case $1 in
+  --jq) jq_expr=$2; shift 2 ;;
+  *) args+=("$1"); shift ;;
+  esac
+done
+set -- "${args[@]}"
+
+case "$1 $2" in
+"pr list")
+  if [ -n "$jq_expr" ]; then jq -r "$jq_expr" "$state/prs.json"; else cat "$state/prs.json"; fi
+  ;;
+"api --method")
+  path=$4 sha=${4#*/commits/}
+  sha=${sha%/check-runs}
+  [ "$path" != "$sha" ] || { echo "gh stub: unexpected api path $path" >&2; exit 2; }
+  if [ -f "$state/runs-$sha.json" ]; then
+    cat "$state/runs-$sha.json"
+  else
+    jq -n --arg sha "$sha" \
+      '{check_runs: [{name: "core-bump/provenance", app: {id: 5613773}, head_sha: $sha, conclusion: "success"}]}'
+  fi
+  ;;
+"pr checks")
+  f="$state/checks-$3.json"
+  [ -f "$f" ] || f="$state/checks.json"
+  cat "$f"
+  ;;
+"pr comment")
+  echo "comment #$3" >>"$state/events"
+  ;;
+"pr merge")
+  n=$3
+  [ ! -f "$state/refuse-$n" ] || { echo "gh stub: merge of #$n refused" >&2; exit 1; }
+  branch=$(jq -r --argjson n "$n" '.[] | select(.number == $n) | .headRefName' "$state/prs.json")
+  tmp=$(mktemp -d)
+  trap 'rm -rf "$tmp"' EXIT
+  git clone --quiet "$state/origin.git" "$tmp/m"
+  cd "$tmp/m"
+  if ! git merge --quiet --squash "origin/$branch" >/dev/null 2>&1; then
+    echo "gh stub: #$n is not mergeable (conflict)" >&2
+    exit 1
+  fi
+  git -c user.name=stub -c user.email=stub@example.com commit --quiet -m "Merge #$n"
+  git push --quiet origin HEAD:main
+  echo "merge #$n" >>"$state/events"
+  ;;
+*)
+  echo "gh stub: unexpected call: gh $*" >&2
+  exit 2
+  ;;
+esac
