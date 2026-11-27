@@ -52,3 +52,6 @@ SDK release.
 
 A nightly job checks core's `main` for breaking proto changes and RPCs the SDK
 doesn't cover yet, and keeps one issue labeled `core-drift` up to date.
+
+[RELEASING.md](RELEASING.md) explains the whole release and dependency process,
+including the CI jobs, who can change what, and a runbook for releases.
