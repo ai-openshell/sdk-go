@@ -24,14 +24,20 @@ type clientConfig struct {
 // underlying SDK client is created.
 type ClientOption func(*clientConfig)
 
-// WithLogger sets the logger on the SDK client configuration.
+// WithLogger sets the concurrent-safe logger for sanitized unary completion and
+// retry diagnostics. Nil disables these diagnostics; see types.Logger. It does
+// not reach the token refresher of an auto-resolved OAuth2 provider; pass
+// WithAuth with v1.RefreshableToken and v1.WithLogger to log refresh warnings.
 func WithLogger(l types.Logger) ClientOption {
 	return func(c *clientConfig) {
 		c.logger = l
 	}
 }
 
-// WithTimeout sets the connection timeout for the SDK client.
+// WithTimeout sets the default unary RPC deadline when the caller supplies none.
+// Caller deadlines take precedence, including longer deadlines. One budget covers
+// retries and waits; streams and overall polling lifetimes use caller contexts.
+// Zero disables the default; negative values fail NewClient with ErrorInvalidArgument.
 func WithTimeout(d time.Duration) ClientOption {
 	return func(c *clientConfig) {
 		c.timeout = d
@@ -55,7 +61,9 @@ func WithAuth(provider types.AuthProvider) ClientOption {
 	}
 }
 
-// WithRetryPolicy sets the retry policy on the SDK client configuration.
+// WithRetryPolicy sets the safe-read unary retry policy, copied by NewClient.
+// Nil or zero MaxRetries disables configured retries. Zero waits default to
+// 100 ms initial and 5 s maximum; invalid fields fail NewClient. See types.RetryPolicy.
 func WithRetryPolicy(p *types.RetryPolicy) ClientOption {
 	return func(c *clientConfig) {
 		c.retryPolicy = p

@@ -4,7 +4,16 @@
 package types
 
 // Logger defines structured logging for the SDK. Compatible with logr.Logger
-// and slog.Logger adapters.
+// and slog.Logger adapters. Implementations must support concurrent calls.
+// Unary RPCs emit one completion with method, total duration, final status, and
+// attempt count. Completions use Error only for Unavailable, Internal, Unknown,
+// DeadlineExceeded and DataLoss; success and statuses that mean the gateway
+// answered the request (NotFound, AlreadyExists, FailedPrecondition, Canceled
+// and the like) use Debug. Scheduled retries use Debug
+// with method, upcoming attempt, and delay. Failure error arguments contain only
+// a sanitized status code. Bodies, credentials, auth metadata and raw server
+// errors are never logged. This contract excludes stream lifecycle and global
+// gRPC logging.
 type Logger interface {
 	Debug(msg string, keysAndValues ...any)
 	Info(msg string, keysAndValues ...any)

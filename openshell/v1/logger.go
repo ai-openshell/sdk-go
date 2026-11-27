@@ -8,5 +8,6 @@ import (
 )
 
 // Logger defines structured logging for the SDK. Compatible with logr.Logger
-// and slog.Logger adapters.
+// and slog.Logger adapters. Implementations must support concurrent calls.
+// See [types.Logger] for the diagnostics the SDK emits and what it never logs.
 type Logger = types.Logger
