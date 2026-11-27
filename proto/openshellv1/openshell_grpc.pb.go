@@ -149,7 +149,9 @@ type OpenShellClient interface {
 	// CreateSandbox; callers never name a filesystem path themselves. Only a
 	// client sharing the gateway's filesystem can complete the upload.
 	BeginRootfsTarStaging(ctx context.Context, in *BeginRootfsTarStagingRequest, opts ...grpc.CallOption) (*BeginRootfsTarStagingResponse, error)
-	// Fetch a sandbox by name.
+	// Fetch a sandbox by name. Response metadata x-openshell-direct-ssh: 1
+	// advertises support for TcpForwardInit.direct_ssh_sandbox_id for this
+	// caller. ForwardTcp authorizes each connection independently.
 	GetSandbox(ctx context.Context, in *GetSandboxRequest, opts ...grpc.CallOption) (*SandboxResponse, error)
 	// List sandboxes.
 	ListSandboxes(ctx context.Context, in *ListSandboxesRequest, opts ...grpc.CallOption) (*ListSandboxesResponse, error)
@@ -1404,7 +1406,9 @@ type OpenShellServer interface {
 	// CreateSandbox; callers never name a filesystem path themselves. Only a
 	// client sharing the gateway's filesystem can complete the upload.
 	BeginRootfsTarStaging(context.Context, *BeginRootfsTarStagingRequest) (*BeginRootfsTarStagingResponse, error)
-	// Fetch a sandbox by name.
+	// Fetch a sandbox by name. Response metadata x-openshell-direct-ssh: 1
+	// advertises support for TcpForwardInit.direct_ssh_sandbox_id for this
+	// caller. ForwardTcp authorizes each connection independently.
 	GetSandbox(context.Context, *GetSandboxRequest) (*SandboxResponse, error)
 	// List sandboxes.
 	ListSandboxes(context.Context, *ListSandboxesRequest) (*ListSandboxesResponse, error)
