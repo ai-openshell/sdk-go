@@ -66,6 +66,8 @@ The proposal must be exactly a pin bump.
 Any other change sends the proposal to review, including one inside `buf.gen.yaml` such as a plugin entry, a changed conformance fixture, or a second commit.
 When auto-merge is on, the bump App records a `core-bump/provenance` check on the stable commit it generated. The merge script verifies the App ID and the exact PR head SHA. A new head without that check goes through review, including proposals opened before auto-merge was enabled.
 The proposal also goes back to review when a check fails or someone adds the `hold` label.
+It waits for review, too, when its tag is not newer than the pin on `main`, or when `main` moved the pin since the proposal was cut (after an earlier proposal merged, a second one from the same base would only conflict).
+If GitHub refuses a merge, the script leaves that proposal for review, goes on with the others, and fails the run so the failure is reported; the comment explaining an unreviewed merge is posted only after the merge succeeds.
 Merges happen on the hourly run after the checks turn green, so a stable SDK release follows the core release within about two hours.
 
 The merge runs in its own core-watch job, `merge`, with the token of a second GitHub App that only merges (secrets `SDK_MERGE_CLIENT_ID` and `SDK_MERGE_PRIVATE_KEY` in `sdk-bot`).

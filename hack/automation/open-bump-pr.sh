@@ -46,17 +46,6 @@ case $tag in *-pre.*) kind=prerelease ;; *) kind=stable ;; esac
 
 die() { echo "ERROR: $*" >&2; exit 1; }
 
-# older <a> <b>: true when release tag a sorts below b (vX.Y.Z-pre.N < vX.Y.Z).
-older() {
-  awk -v a="$1" -v b="$2" '
-    function key(t,   s, pre, rank, v) {
-      s = t; sub(/^v/, "", s); pre = 0; rank = 1
-      if (index(s, "-pre.")) { pre = substr(s, index(s, "-pre.") + 5) + 0; s = substr(s, 1, index(s, "-pre.") - 1); rank = 0 }
-      split(s, v, ".")
-      return sprintf("%06d%06d%06d%d%06d", v[1], v[2], v[3], rank, pre)
-    }
-    BEGIN { exit !(key(a) < key(b)) }'
-}
 run() { if [ "$dry" -eq 1 ]; then echo "dry-run: $*"; else "$@"; fi; }
 
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run this from the root of the sdk-go clone"

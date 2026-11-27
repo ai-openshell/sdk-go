@@ -16,6 +16,9 @@
 # not trusted. A proposal is merged only when all of these hold:
 #   - open, not a draft, from branch core/vX.Y.Z of this repository into main
 #   - no "hold" label (a maintainer's way to keep it for review)
+#   - main still pins the tag the proposal was cut from, and the branch's tag
+#     is newer: after one proposal merges, an older one sharing its base
+#     would only conflict, and a downgrade always waits for review
 #   - exactly one commit since main, with a successful provenance check from
 #     the bump App on that exact SHA
 #   - the commit's tree is exactly the tree pin_bump_tree (pin-bump.sh)
@@ -24,6 +27,8 @@
 #     proto/ changed (the generated bindings are identical), no conformance
 #     fixture changed, and no other edit to buf.gen.yaml, such as a plugin.
 #   - the checks in required_checks passed and none failed or is pending
+# A refused merge leaves that proposal for review and the run goes on with
+# the others; the script exits non-zero at the end so the failure is reported.
 # Repository rules limit writes to core/*, enforce required checks without
 # bypass, and let the merge App bypass code owner review on pull requests.
 # Run from the root of an sdk-go clone.
@@ -55,14 +60,13 @@ esac
 die() { echo "ERROR: $*" >&2; exit 1; }
 [ "$(git rev-parse --show-toplevel)" = "$(pwd -P)" ] || die "run this from the root of the sdk-go clone"
 
-git fetch --quiet origin main
-
 prs=$(gh pr list -R "$sdk_repo" --label core-bump --label stable --state open \
   --json number,headRefName,headRefOid,baseRefName,isDraft,isCrossRepository,labels \
   --jq '.[] | [.number, .headRefName, .headRefOid, .baseRefName, .isDraft, .isCrossRepository,
                 ([.labels[].name] | index("hold") != null)] | @tsv')
 [ -n "$prs" ] || { echo "No open stable core-bump proposals."; exit 0; }
 
+failed=0
 while IFS=$'\t' read -r n head sha base draft cross held; do
   skip() { echo "#$n: $*; leaving it for review."; }
   tag=${head#core/}
@@ -73,9 +77,17 @@ while IFS=$'\t' read -r n head sha base draft cross held; do
   [ "$held" = false ] || { skip "labeled hold"; continue; }
   [[ "$head" =~ ^core/v[0-9]+\.[0-9]+\.[0-9]+$ ]] || { skip "branch $head is not core/vX.Y.Z"; continue; }
 
-  git fetch --quiet origin "+refs/heads/$head:refs/remotes/origin/$head"
+  # Fetch main for each proposal: an earlier one in this run may have moved
+  # the pin.
+  git fetch --quiet origin "+refs/heads/main:refs/remotes/origin/main" \
+    "+refs/heads/$head:refs/remotes/origin/$head"
   [ "$(git rev-parse "origin/$head")" = "$sha" ] || { skip "head moved during the run"; continue; }
   mb=$(git merge-base origin/main "$sha")
+
+  main_pin=$(git show origin/main:buf.gen.yaml | yq -r '.inputs[0].tag')
+  mb_pin=$(git show "$mb:buf.gen.yaml" | yq -r '.inputs[0].tag')
+  [ "$main_pin" = "$mb_pin" ] || { skip "main moved the pin to $main_pin since this proposal was cut"; continue; }
+  older "$main_pin" "$tag" || { skip "$tag is not newer than the pin $main_pin on main"; continue; }
 
   count=$(git rev-list --count "$mb..$sha")
   [ "$count" = 1 ] || { skip "$count commits, expected 1"; continue; }
@@ -122,9 +134,17 @@ while IFS=$'\t' read -r n head sha base draft cross held; do
     sed 's/^/  | /' <<<"$comment"
     continue
   fi
-  gh pr comment "$n" -R "$sdk_repo" --body "$comment"
   # --match-head-commit refuses the merge if someone pushed since the checks.
   # --admin uses the merge App's ruleset bypass for the code owner review.
-  gh pr merge "$n" -R "$sdk_repo" --squash --admin --match-head-commit "$sha"
+  # Comment only after the merge, so a refused merge leaves no false claim.
+  if ! gh pr merge "$n" -R "$sdk_repo" --squash --admin --match-head-commit "$sha"; then
+    echo "ERROR: #$n: merging $tag failed; leaving it for review." >&2
+    failed=1
+    continue
+  fi
   echo "#$n: merged ($tag)."
+  gh pr comment "$n" -R "$sdk_repo" --body "$comment" ||
+    echo "WARNING: #$n merged, but the comment explaining why failed." >&2
 done <<<"$prs"
+
+exit "$failed"

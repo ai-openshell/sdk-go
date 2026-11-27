@@ -6,6 +6,18 @@
 # Sourced, not run. open-bump-pr.sh applies them; merge-bump-pr.sh rebuilds
 # them to check that a proposal is exactly a pin bump and nothing else.
 
+# older <a> <b>: true when release tag a sorts below b (vX.Y.Z-pre.N < vX.Y.Z).
+older() {
+  awk -v a="$1" -v b="$2" '
+    function key(t,   s, pre, rank, v) {
+      s = t; sub(/^v/, "", s); pre = 0; rank = 1
+      if (index(s, "-pre.")) { pre = substr(s, index(s, "-pre.") + 5) + 0; s = substr(s, 1, index(s, "-pre.") - 1); rank = 0 }
+      split(s, v, ".")
+      return sprintf("%06d%06d%06d%d%06d", v[1], v[2], v[3], rank, pre)
+    }
+    BEGIN { exit !(key(a) < key(b)) }'
+}
+
 # pin_bump_edit <tag> <kind>: in the current directory, set the pin in
 # buf.gen.yaml to <tag> and, for a stable <kind>, keep the README's
 # "generated from OpenShell core vX.Y.Z" line in step. The README line may
