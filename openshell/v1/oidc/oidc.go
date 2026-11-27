@@ -224,11 +224,15 @@ func loginBrowser(ctx context.Context, cfg *loginConfig, provider *providerConfi
 		_ = srv.Close()
 	}()
 
-	redirectURI := fmt.Sprintf("http://localhost:%d/callback", port)
+	redirectURI := fmt.Sprintf("http://%s:%d/callback", loopbackHost, port)
 	authURL := buildAuthURL(provider.AuthorizationEndpoint, cfg.clientID, redirectURI, state, challenge, cfg.scopes)
 
 	// Try to open the browser.
-	if browserErr := openBrowser(authURL); browserErr != nil {
+	open := openBrowser
+	if cfg.browserOpener != nil {
+		open = cfg.browserOpener
+	}
+	if browserErr := open(authURL); browserErr != nil {
 		// Browser failed, fall back to keyboard flow.
 		_ = srv.Close()
 		code, kbErr := loginKeyboard(ctx, cfg, provider, state, challenge)

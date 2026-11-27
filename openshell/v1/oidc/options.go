@@ -51,6 +51,7 @@ type loginConfig struct {
 	input           io.Reader                                  // override stdin for keyboard flow
 	output          io.Writer                                  // override stderr for keyboard flow
 	gatewayResolver func(name string) (*gateway.Config, error) // override gateway.LoadConfig
+	browserOpener   func(url string) error                     // override browser launch
 }
 
 // applyDefaults fills in default values for fields that were not set
@@ -249,5 +250,14 @@ func withOutput(w io.Writer) LoginOption {
 func withGatewayResolver(fn func(name string) (*gateway.Config, error)) LoginOption {
 	return func(c *loginConfig) {
 		c.gatewayResolver = fn
+	}
+}
+
+// withBrowserOpener overrides the browser launch used by the authorization
+// code flow. Tests use it to capture the authorization URL and complete the
+// callback without starting a browser.
+func withBrowserOpener(fn func(url string) error) LoginOption {
+	return func(c *loginConfig) {
+		c.browserOpener = fn
 	}
 }
