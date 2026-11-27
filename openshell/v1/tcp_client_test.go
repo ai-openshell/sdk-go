@@ -81,12 +81,12 @@ func (s *mockTCPServer) ForwardTcp(stream grpc.BidiStreamingServer[pb.TcpForward
 
 // --- Test setup ---
 
-func setupTCPTest(t *testing.T, mock *mockTCPServer) (*tcpClient, func()) {
+func setupTCPTest(t *testing.T, mock pb.OpenShellServer) (*tcpClient, func()) {
 	t.Helper()
 	return setupTCPTestWithResolver(t, mock, &stubSandboxResolver{})
 }
 
-func setupTCPTestWithResolver(t *testing.T, mock *mockTCPServer, resolver SandboxInterface) (*tcpClient, func()) {
+func setupTCPTestWithResolver(t *testing.T, mock pb.OpenShellServer, resolver SandboxInterface) (*tcpClient, func()) {
 	t.Helper()
 	lis := bufconn.Listen(bufSize)
 	srv := grpc.NewServer()
@@ -1286,6 +1286,125 @@ func TestTCPListen_HungSetupDoesNotBlockOthers(t *testing.T) {
 		t.Fatal("Close did not return while a tunnel setup was hung")
 	}
 	requireEOF(t, hung, time.Second)
+}
+
+// delayedReplyServer reads the request, and after a clean upload EOF waits
+// before sending one response. A canceled stream returns that error instead.
+type delayedReplyServer struct {
+	pb.UnimplementedOpenShellServer
+	delay    time.Duration
+	response []byte
+	gotData  chan struct{}
+	once     sync.Once
+	done     chan error
+}
+
+func newDelayedReplyServer(delay time.Duration, response []byte) *delayedReplyServer {
+	return &delayedReplyServer{
+		delay:    delay,
+		response: response,
+		gotData:  make(chan struct{}),
+		done:     make(chan error, 1),
+	}
+}
+
+func (s *delayedReplyServer) ForwardTcp(stream grpc.BidiStreamingServer[pb.TcpForwardFrame, pb.TcpForwardFrame]) error { //nolint:revive // proto-generated method name
+	err := s.forward(stream)
+	s.done <- err
+	return err
+}
+
+func (s *delayedReplyServer) forward(stream grpc.BidiStreamingServer[pb.TcpForwardFrame, pb.TcpForwardFrame]) error {
+	frame, err := stream.Recv()
+	if err != nil {
+		return err
+	}
+	if frame.GetInit() == nil {
+		return status.Errorf(codes.InvalidArgument, "first frame must be init")
+	}
+	for {
+		frame, err = stream.Recv()
+		if err == io.EOF {
+			if s.delay > 0 {
+				time.Sleep(s.delay)
+			}
+			if len(s.response) == 0 {
+				return nil
+			}
+			return stream.Send(&pb.TcpForwardFrame{
+				Payload: &pb.TcpForwardFrame_Data{Data: s.response},
+			})
+		}
+		if err != nil {
+			return err
+		}
+		if len(frame.GetData()) > 0 {
+			s.once.Do(func() { close(s.gotData) })
+		}
+	}
+}
+
+func TestTCPListen_HalfCloseDeliversResponse(t *testing.T) {
+	mock := newDelayedReplyServer(200*time.Millisecond, []byte("RESPONSE"))
+	client, cleanup := setupTCPTest(t, mock)
+	defer cleanup()
+
+	ln, err := client.Listen(context.Background(), "default", "my-sandbox", 8080, 0)
+	require.NoError(t, err)
+	defer func() { _ = ln.Close() }()
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	_, err = conn.Write([]byte("REQUEST"))
+	require.NoError(t, err)
+	require.NoError(t, conn.(*net.TCPConn).CloseWrite())
+
+	require.NoError(t, conn.SetReadDeadline(time.Now().Add(5*time.Second)))
+	body, err := io.ReadAll(conn)
+	require.NoError(t, err)
+	assert.Equal(t, "RESPONSE", string(body))
+}
+
+func TestTCPListen_FullCloseTearsDown(t *testing.T) {
+	mock := newDelayedReplyServer(0, []byte("RESPONSE"))
+	client, cleanup := setupTCPTest(t, mock)
+	defer cleanup()
+
+	ln, err := client.Listen(context.Background(), "default", "my-sandbox", 8080, 0)
+	require.NoError(t, err)
+	defer func() { _ = ln.Close() }()
+
+	conn, err := net.Dial("tcp", ln.Addr().String())
+	require.NoError(t, err)
+	defer func() { _ = conn.Close() }()
+
+	_, err = conn.Write([]byte("REQUEST"))
+	require.NoError(t, err)
+
+	select {
+	case <-mock.gotData:
+	case <-time.After(2 * time.Second):
+		t.Fatal("server did not receive the request")
+	}
+
+	// A hard close resets the socket. The bridge must cancel the stream
+	// rather than treat the reset as a half-close it can answer later.
+	tcpConn := conn.(*net.TCPConn)
+	require.NoError(t, tcpConn.SetLinger(0))
+	require.NoError(t, tcpConn.Close())
+
+	select {
+	case err := <-mock.done:
+		require.Error(t, err)
+		assert.NotErrorIs(t, err, io.EOF)
+		st, ok := status.FromError(err)
+		require.True(t, ok)
+		assert.Equal(t, codes.Canceled, st.Code())
+	case <-time.After(2 * time.Second):
+		t.Fatal("full close left the forward stream open")
+	}
 }
 
 func TestTCPListen_FailedSetupClosesConn(t *testing.T) {

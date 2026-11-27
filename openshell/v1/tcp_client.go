@@ -214,29 +214,60 @@ func (tl *tunnelListener) serve(local net.Conn) {
 }
 
 // bridge copies data bidirectionally between the local connection and the
-// tunnel until either side closes, then closes both.
+// tunnel. A clean EOF half-closes the other write side and leaves the
+// opposite direction running, so a client that shuts down its write side
+// still receives the response. An error, or cancellation of the listen
+// context, closes both sides.
 func (tl *tunnelListener) bridge(local net.Conn, tunnel io.ReadWriteCloser) {
 	defer func() { _ = local.Close() }()
 	defer func() { _ = tunnel.Close() }()
 
-	done := make(chan struct{}, 2)
-
-	// Local → tunnel
+	// Listener close cancels tl.ctx. Connections stuck on a half-closed
+	// local read do not observe that cancel, so drop both sides explicitly.
+	done := make(chan struct{})
+	defer close(done)
 	go func() {
-		_, _ = io.Copy(tunnel, local)
-		done <- struct{}{}
+		select {
+		case <-tl.ctx.Done():
+			_ = local.Close()
+			_ = tunnel.Close()
+		case <-done:
+		}
 	}()
 
-	// Tunnel → local
+	errCh := make(chan error, 2)
 	go func() {
-		_, _ = io.Copy(local, tunnel)
-		done <- struct{}{}
+		_, err := io.Copy(tunnel, local)
+		if err == nil {
+			err = halfClose(tunnel)
+		}
+		errCh <- err
+	}()
+	go func() {
+		_, err := io.Copy(local, tunnel)
+		if err == nil {
+			err = halfClose(local)
+		}
+		errCh <- err
 	}()
 
-	<-done
-	_ = local.Close()
-	_ = tunnel.Close()
-	<-done
+	if err := <-errCh; err != nil {
+		_ = local.Close()
+		_ = tunnel.Close()
+	}
+	<-errCh
+}
+
+// halfClose shuts down the write side and leaves reads open. Writers that
+// cannot half-close are closed outright so the peer still observes EOF.
+func halfClose(w io.Writer) error {
+	if cw, ok := w.(interface{ CloseWrite() error }); ok {
+		return cw.CloseWrite()
+	}
+	if c, ok := w.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
 }
 
 // Close stops the listener from accepting new connections, cancels all
@@ -263,15 +294,17 @@ func (tl *tunnelListener) Addr() net.Addr {
 // data frames to dataCh. Read and Write may be called from different
 // goroutines, but multiple concurrent Read callers are not supported.
 type tcpForwardConn struct {
-	stream    grpc.BidiStreamingClient[pb.TcpForwardFrame, pb.TcpForwardFrame]
-	streamCtx context.Context
-	cancel    context.CancelFunc
-	sendMu    sync.Mutex
-	dataCh    chan []byte
-	done      chan struct{}
-	errOnce   sync.Once
-	err       error
-	buf       []byte
+	stream      grpc.BidiStreamingClient[pb.TcpForwardFrame, pb.TcpForwardFrame]
+	streamCtx   context.Context
+	cancel      context.CancelFunc
+	sendMu      sync.Mutex
+	writeClosed bool
+	writeErr    error
+	dataCh      chan []byte
+	done        chan struct{}
+	errOnce     sync.Once
+	err         error
+	buf         []byte
 }
 
 func (c *tcpForwardConn) setErr(err error) {
@@ -330,6 +363,12 @@ func (c *tcpForwardConn) Read(p []byte) (int, error) {
 func (c *tcpForwardConn) Write(p []byte) (int, error) {
 	c.sendMu.Lock()
 	defer c.sendMu.Unlock()
+	if c.writeClosed {
+		if c.writeErr != nil {
+			return 0, c.writeErr
+		}
+		return 0, io.ErrClosedPipe
+	}
 	err := c.stream.Send(&pb.TcpForwardFrame{
 		Payload: &pb.TcpForwardFrame_Data{Data: p},
 	})
@@ -339,9 +378,25 @@ func (c *tcpForwardConn) Write(p []byte) (int, error) {
 	return len(p), nil
 }
 
+// CloseWrite half-closes the upload side. The reply path stays open.
+func (c *tcpForwardConn) CloseWrite() error {
+	c.sendMu.Lock()
+	defer c.sendMu.Unlock()
+	return c.closeSendLocked()
+}
+
+func (c *tcpForwardConn) closeSendLocked() error {
+	if c.writeClosed {
+		return c.writeErr
+	}
+	c.writeClosed = true
+	c.writeErr = c.stream.CloseSend()
+	return c.writeErr
+}
+
 func (c *tcpForwardConn) Close() error {
 	c.sendMu.Lock()
-	err := c.stream.CloseSend()
+	err := c.closeSendLocked()
 	c.sendMu.Unlock()
 	c.cancel()
 	<-c.done
