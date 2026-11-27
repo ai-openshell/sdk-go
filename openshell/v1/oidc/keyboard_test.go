@@ -130,6 +130,29 @@ func TestKeyboardFlow_DisplaysInstructions(t *testing.T) {
 	)
 }
 
+func TestKeyboardFlow_TimeoutDoesNotStealNextCode(t *testing.T) {
+	pr, pw := io.Pipe()
+	t.Cleanup(func() {
+		_ = pw.Close()
+		_ = pr.Close()
+	})
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	_, err := keyboardFlow(ctx, "https://example.com/auth", pr, io.Discard)
+	require.Error(t, err)
+	assert.ErrorIs(t, err, ErrTimeout)
+
+	_, err = pw.Write([]byte("pasted-code\n"))
+	require.NoError(t, err)
+
+	ctx2, cancel2 := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel2()
+	code, err := keyboardFlow(ctx2, "https://example.com/auth", pr, io.Discard)
+	require.NoError(t, err)
+	assert.Equal(t, "pasted-code", code)
+}
+
 func TestKeyboardFlow_Timeout(t *testing.T) {
 	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancel()
