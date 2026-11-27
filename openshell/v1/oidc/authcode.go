@@ -75,6 +75,11 @@ func buildAuthURL(authEndpoint, clientID, redirectURI, state, challenge string, 
 	return u.String()
 }
 
+// loopbackHost is where the browser callback listens. The redirect URI
+// uses the same host so a resolver that maps localhost to ::1 still
+// reaches the IPv4 socket.
+const loopbackHost = "127.0.0.1"
+
 // callbackResult carries the authorization code (or error) from the
 // callback server to the auth code flow orchestrator.
 type callbackResult struct {
@@ -129,7 +134,7 @@ func startCallbackServer(ctx context.Context, port int, expectedState string) (*
 		send(callbackResult{code: code})
 	})
 
-	listener, err := net.Listen("tcp", fmt.Sprintf("127.0.0.1:%d", port))
+	listener, err := net.Listen("tcp", fmt.Sprintf("%s:%d", loopbackHost, port))
 	if err != nil {
 		return nil, nil, fmt.Errorf("%w: failed to start callback server on port %d: %v", ErrCallbackServer, port, err)
 	}

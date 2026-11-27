@@ -663,6 +663,86 @@ func TestLoginBrowser_PortBusy_FallbackToKeyboard(t *testing.T) {
 	assert.Equal(t, "login-access-token", tok.AccessToken)
 }
 
+// TestLogin_BrowserRedirectUsesLoopbackIP verifies that the authorization
+// URL and the token exchange both use the IPv4 loopback host the callback
+// server listens on.
+func TestLogin_BrowserRedirectUsesLoopbackIP(t *testing.T) {
+	resetDiscoveryCache()
+
+	var tokenRedirect string
+	mux := http.NewServeMux()
+	var srv *httptest.Server
+	mux.HandleFunc("/.well-known/openid-configuration", func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		doc := map[string]any{
+			"issuer":                           srv.URL,
+			"authorization_endpoint":           srv.URL + "/authorize",
+			"token_endpoint":                   srv.URL + "/token",
+			"code_challenge_methods_supported": []string{"S256"},
+		}
+		_ = json.NewEncoder(w).Encode(doc)
+	})
+	mux.HandleFunc("/token", func(w http.ResponseWriter, r *http.Request) {
+		require.NoError(t, r.ParseForm())
+		tokenRedirect = r.Form.Get("redirect_uri")
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(tokenResponseJSON("login-access-token", "login-refresh-token", 3600)))
+	})
+	srv = httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+
+	ln, err := net.Listen("tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	port := ln.Addr().(*net.TCPAddr).Port
+	require.NoError(t, ln.Close())
+
+	wantRedirect := fmt.Sprintf("http://127.0.0.1:%d/callback", port)
+	var authURL string
+	opener := func(raw string) error {
+		authURL = raw
+		parsed, parseErr := url.Parse(raw)
+		if parseErr != nil {
+			return parseErr
+		}
+		callback, parseErr := url.Parse(parsed.Query().Get("redirect_uri"))
+		if parseErr != nil {
+			return parseErr
+		}
+		q := callback.Query()
+		q.Set("code", "browser-auth-code")
+		q.Set("state", parsed.Query().Get("state"))
+		callback.RawQuery = q.Encode()
+		resp, getErr := http.Get(callback.String())
+		if getErr != nil {
+			return getErr
+		}
+		defer func() { _ = resp.Body.Close() }()
+		if resp.StatusCode != http.StatusOK {
+			return fmt.Errorf("callback status %s", resp.Status)
+		}
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	tok, err := Login(ctx, "",
+		WithIssuer(srv.URL),
+		WithClientID("test-client"),
+		WithInMemory(),
+		WithCallbackPort(port),
+		withBrowserOpener(opener),
+		withInput(strings.NewReader("")),
+	)
+	require.NoError(t, err)
+	assert.Equal(t, "login-access-token", tok.AccessToken)
+
+	parsed, err := url.Parse(authURL)
+	require.NoError(t, err)
+	assert.Equal(t, wantRedirect, parsed.Query().Get("redirect_uri"))
+	assert.Equal(t, wantRedirect, tokenRedirect)
+}
+
 // TestLogin_ContextTimeout verifies that a Login with a very short
 // timeout returns a timeout-related error.
 func TestLogin_ContextTimeout(t *testing.T) {
